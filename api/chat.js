@@ -2102,9 +2102,25 @@ const matcher = new EnhancedGrantMatcher(GRANTS);
 // Export the enhanced AI class for testing and external use
 export { UltraIntelligentConversationAI };
 
+
 // Enhanced grant finding function with caching
 function findTopGrants(q, n = 4) {
-  return matcher.findBestGrants(q, n);
+  try {
+    const results = matcher.findBestGrants(q, n);
+    console.log(`Found ${results.length} grants for query: "${q}"`);
+    return results;
+  } catch (error) {
+    console.error('Error finding grants:', error);
+    // Fallback: search by simple keywords
+    const lower = q.toLowerCase();
+    const fallbackResults = PROCESSED_GRANTS.filter(grant => {
+      return grant._searchText.includes(lower) || 
+             lower.includes(grant._name) ||
+             grant.keywords.some(keyword => lower.includes(keyword.toLowerCase()));
+    }).slice(0, n);
+    console.log(`Fallback found ${fallbackResults.length} grants`);
+    return fallbackResults;
+  }
 }
 
 // Parallel API calls for maximum speed
@@ -2856,72 +2872,111 @@ function generateLightningResponse(message, retrievedGrants = [], userProfile = 
 // Initialize the ultra-intelligent conversation AI
 const ultraAI = new UltraIntelligentConversationAI();
 
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { message, history, profile, conversationMode, context } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
   try {
-    // First, get relevant grants
+    console.log(`Chat request received: "${message}"`);
+    
+    // First, get relevant grants with enhanced logging
     const retrieved = findTopGrants(message, 4);
+    console.log(`Retrieved ${retrieved.length} grants for query`);
     
-    // Try ultra-intelligent AI first
-    const aiResponse = ultraAI.generateAdvancedResponse(message, { profile, context }, retrieved);
-    
-    // Update conversation memory with the exchange
-    ultraAI.updateConversationMemory(message, aiResponse.text, { profile });
-    
-    return res.json({
-      reply: aiResponse.text,
-      suggestions: aiResponse.suggestions || ["More Details", "Check Eligibility", "Browse Sectors"],
-      citations: retrieved.map(g => g.id),
-      reasoning: aiResponse.reasoning,
-      knowledgeReasoning: aiResponse.knowledgeReasoning || [],
-      contextAnalysis: aiResponse.contextAnalysis || {},
-      conversationInsights: {
-        intent: ultraAI.naturalLanguageUnderstanding.intentClassification,
-        sentiment: ultraAI.analyzeSentimentAdvanced(message),
-        urgency: ultraAI.detectUrgencyAdvanced(message),
-        topics: Array.from(ultraAI.conversationMemory.conversationTopics),
-        sessionQuality: ultraAI.learningSystem.conversationQuality,
-        knowledgeGained: ultraAI.conversationMemory.sessionInsights.knowledgeGained
-      },
-      fast: false,
-      aiLevel: "super-intelligent",
-      intelligenceFeatures: [
-        "knowledge-graph-integration",
-        "advanced-reasoning",
-        "personalized-context-analysis",
-        "multi-modal-understanding",
-        "adaptive-learning",
-        "causal-reasoning",
-        "hypothetical-scenarios",
-        "counterfactual-thinking"
-      ]
-    });
-  } catch (error) {
-    // Fallback to traditional approach
-    try {
-      const retrieved = findTopGrants(message, 4);
-      const result = await callAPIsInParallel(message, history, profile, retrieved);
+    // If we have relevant grants, always provide them first
+    if (retrieved && retrieved.length > 0) {
+      let response = `🎯 **Found ${retrieved.length} relevant schemes for you:**\n\n`;
+      
+      retrieved.forEach((grant, index) => {
+        response += `**${index + 1}. ${grant.name}** (${grant.sector})\n`;
+        response += `💰 **Benefit:** ${grant.amount}\n`;
+        response += `📝 **Description:** ${grant.description}\n`;
+        response += `👥 **Beneficiaries:** ${grant.beneficiaries}\n`;
+        response += `🌐 **Coverage:** ${grant.coverage}\n\n`;
+      });
+      
+      response += `**What would you like to know more about?**\n`;
+      response += `• "How to apply for [scheme name]"\n`;
+      response += `• "Am I eligible for [scheme name]"\n`;
+      response += `• "Tell me about [scheme name]"`;
       
       return res.json({
-        reply: result.reply,
-        suggestions: result.suggestions || ["More Details", "Check Eligibility", "Browse Sectors"],
+        reply: response,
+        suggestions: retrieved.slice(0, 2).map(g => `About ${g.name.split(" ")[0]}`),
         citations: retrieved.map(g => g.id),
-        fast: result.fast || true,
-        aiLevel: "standard"
+        fast: false,
+        aiLevel: "enhanced"
       });
-    } catch (fallbackError) {
-      // Emergency fallback
+    }
+    
+    // If no specific grants found, provide general assistance
+    let response = `🤖 **I'm your GrantTracker AI Assistant!**\n\n`;
+    response += `I understand you're asking about: **"${message}"**\n\n`;
+    response += `**I can help you with:**\n`;
+    response += `• Finding government grants and schemes\n`;
+    response += `• Checking eligibility for programs\n`;
+    response += `• Explaining application processes\n`;
+    response += `• Comparing different options\n`;
+    response += `• Providing personalized recommendations\n\n`;
+    response += `**Try asking:**\n`;
+    response += `• "I'm a farmer" or "I'm a student"\n`;
+    response += `• "Health schemes" or "Education grants"\n`;
+    response += `• "PM Kisan" or "Ayushman Bharat"\n`;
+    response += `• "How much benefit" or "Who can apply"\n\n`;
+    response += `**What would you like to explore?**`;
+    
+    return res.json({
+      reply: response,
+      suggestions: ["Health Programs", "Education Grants", "Agricultural Schemes", "Check Eligibility"],
+      citations: [],
+      fast: true,
+      aiLevel: "basic"
+    });
+    
+  } catch (error) {
+    console.error('Chat API error:', error);
+    
+    // Emergency fallback with basic grant information
+    try {
       const retrieved = findTopGrants(message, 4);
       const fastResponse = generateLightningResponse(message, retrieved, profile);
+      
       return res.json({
         reply: fastResponse.response,
         suggestions: fastResponse.suggestions,
         citations: retrieved.map(g => g.id),
         fast: true,
-        aiLevel: "basic"
+        aiLevel: "emergency-fallback"
+      });
+    } catch (emergencyError) {
+      console.error('Emergency fallback failed:', emergencyError);
+      
+      // Ultimate fallback - basic scheme information
+      const basicSchemes = [
+        "PM Kisan Samman Nidhi - ₹6,000/year for farmers",
+        "Ayushman Bharat - ₹5 Lakh health insurance for families", 
+        "Pradhan Mantri Awas Yojana - Housing for all",
+        "National Education Mission - Education support",
+        "Mid Day Meal Scheme - Free meals for school children",
+        "Soil Health Card Scheme - Free soil testing"
+      ];
+      
+      let response = `🤖 **GrantTracker AI Assistant**\n\n`;
+      response += `I'm here to help you discover government schemes and grants.\n\n`;
+      response += `**Popular Schemes Include:**\n`;
+      basicSchemes.forEach((scheme, i) => {
+        response += `${i + 1}. ${scheme}\n`;
+      });
+      response += `\n**Ask me anything about these schemes or tell me your situation for personalized help!**`;
+      
+      return res.json({
+        reply: response,
+        suggestions: ["PM Kisan details", "Ayushman Bharat info", "Education grants", "Housing schemes"],
+        citations: [],
+        fast: true,
+        aiLevel: "ultimate-fallback"
       });
     }
   }
