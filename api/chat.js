@@ -190,15 +190,26 @@ class UltraIntelligentConversationAI {
     this.initializeAdvancedSystems();
   }
 
-  // Ultra-advanced hyper-intelligent reasoning engine
+
+// Ultra-advanced hyper-intelligent reasoning engine with casual conversation support
   performHyperIntelligentReasoning(message, entities, context) {
     const reasoningResults = {
       causalChains: [],
       hypotheticalAnalyses: [],
       strategicRecommendations: [],
       riskAssessments: [],
-      optimizationSuggestions: []
+      optimizationSuggestions: [],
+      casualContext: {},
+      occupationInsights: {}
     };
+
+    // Detect casual conversation patterns
+    const casualPatterns = this.detectCasualConversation(message);
+    reasoningResults.casualContext = casualPatterns;
+
+    // Enhanced occupation understanding
+    const occupationInsights = this.analyzeOccupationContext(message, context);
+    reasoningResults.occupationInsights = occupationInsights;
 
     // Extract entities and analyze relationships
     const extractedEntities = this.extractAdvancedEntities(message);
@@ -217,15 +228,12 @@ class UltraIntelligentConversationAI {
       });
     }
 
-    // Hypothetical scenario analysis
-    if (context.userProfile?.occupation) {
+    // Hypothetical scenario analysis with occupation-specific insights
+    if (context.userProfile?.occupation || occupationInsights.detected) {
+      const occupation = occupationInsights.detected || context.userProfile.occupation;
       reasoningResults.hypotheticalAnalyses.push({
-        scenario: `If user qualifies as ${context.userProfile.occupation}`,
-        potentialOutcomes: [
-          `Eligibility for specialized grants`,
-          `Access to sector-specific benefits`,
-          `Priority processing for applications`
-        ],
+        scenario: `If user qualifies as ${occupation}`,
+        potentialOutcomes: this.getOccupationSpecificOutcomes(occupation),
         probability: 0.85,
         strategicValue: 'High'
       });
@@ -233,74 +241,434 @@ class UltraIntelligentConversationAI {
 
     // Strategic recommendations based on comprehensive analysis
     reasoningResults.strategicRecommendations = this.generateStrategicRecommendations(
-      extractedEntities, context
+      extractedEntities, context, occupationInsights
     );
 
     // Risk assessment and mitigation
     reasoningResults.riskAssessments = this.performRiskAnalysis(
-      extractedEntities, context
+      extractedEntities, context, occupationInsights
     );
 
     // Optimization suggestions
     reasoningResults.optimizationSuggestions = this.suggestOptimizations(
-      extractedEntities, context
+      extractedEntities, context, occupationInsights
     );
 
     return reasoningResults;
   }
 
-  // Generate strategic recommendations
-  generateStrategicRecommendations(entities, context) {
-    const recommendations = [];
+  // Detect casual conversation patterns for more natural responses
+  detectCasualConversation(message) {
+    const lower = message.toLowerCase();
+    const casualPatterns = {
+      greeting: /^(hi|hello|hey|yo|what's up|sup|greetings)([!.,]?|\s|$)/,
+      casual_question: /(what's up|sup|how's it going|how do you do|tell me more|interesting|nice|cool|awesome|great|amazing)/,
+      small_talk: /(weather|weekend|movies|music|sports|tv|food|coffee|tea)/,
+      humor: /(lol|haha|joke|funny|hilarious)/,
+      casual_assessment: /(hmm|well|actually|honestly|to be honest|truth be told|in my opinion|i think|my guess)/,
+      emotional: /(excited|thrilled|pumped|disappointed|upset|happy|sad|worried|anxious|relieved|glad)/
+    };
 
+    const detectedPatterns = {};
+    for (const [patternName, pattern] of Object.entries(casualPatterns)) {
+      detectedPatterns[patternName] = pattern.test(lower);
+    }
+
+    const casualScore = Object.values(detectedPatterns).filter(Boolean).length / Object.keys(detectedPatterns).length;
+    
+    return {
+      patterns: detectedPatterns,
+      casualLevel: casualScore,
+      isCasual: casualScore > 0.3,
+      mood: this.detectMood(lower),
+      communicationStyle: this.determineCommunicationStyle(lower)
+    };
+  }
+
+  // Enhanced occupation context analysis
+  analyzeOccupationContext(message, context) {
+    const lower = message.toLowerCase();
+    const occupationKeywords = {
+      farmer: ['farmer', 'cultivator', 'agriculture', 'farming', 'kisan', 'crop', 'field', 'harvest', 'rural', 'village'],
+      student: ['student', 'college', 'university', 'school', 'study', 'education', 'learn', 'class', 'exam', 'academic'],
+      teacher: ['teacher', 'professor', 'instructor', 'educator', 'tutor', 'teach', 'lesson', 'curriculum'],
+      doctor: ['doctor', 'physician', 'medical', 'hospital', 'patient', 'treatment', 'medicine', 'surgeon'],
+      engineer: ['engineer', 'technical', 'construction', 'design', 'software', 'mechanical', 'civil', 'electrical'],
+      business_owner: ['business', 'entrepreneur', 'company', 'startup', 'shop', 'store', 'enterprise', 'commerce'],
+      government_employee: ['government', 'bureaucrat', 'public service', 'ministry', 'office', 'administrative'],
+      worker: ['worker', 'employee', 'staff', 'labor', 'manual', 'skilled', 'factory', 'manufacturing'],
+      unemployed: ['unemployed', 'jobless', 'looking for work', 'seeking job', 'no job', 'searching'],
+      retired: ['retired', 'pension', 'elderly', 'senior citizen', 'grandfather', 'grandmother']
+    };
+
+    const detectedOccupations = [];
+    let confidence = 0;
+    
+    for (const [occName, keywords] of Object.entries(occupationKeywords)) {
+      const matchCount = keywords.filter(keyword => lower.includes(keyword)).length;
+      if (matchCount > 0) {
+        detectedOccupations.push({
+          name: occName,
+          confidence: matchCount / keywords.length,
+          matchedKeywords: keywords.filter(k => lower.includes(k))
+        });
+        confidence = Math.max(confidence, matchCount / keywords.length);
+      }
+    }
+
+    // Sort by confidence and get the best match
+    detectedOccupations.sort((a, b) => b.confidence - a.confidence);
+    const bestMatch = detectedOccupations[0];
+
+    return {
+      detected: bestMatch?.name || null,
+      confidence: confidence,
+      allMatches: detectedOccupations,
+      sector: this.mapOccupationToSector(bestMatch?.name),
+      needsClarification: confidence < 0.6
+    };
+  }
+
+  // Get occupation-specific grant outcomes
+  getOccupationSpecificOutcomes(occupation) {
+    const outcomeMap = {
+      farmer: [
+        `Access to agricultural subsidies and support`,
+        `PM Kisan Samman Nidhi eligibility`,
+        `Crop insurance and loan waivers`,
+        `Agricultural equipment subsidies`
+      ],
+      student: [
+        `Education scholarships and fee waivers`,
+        `Skill development program access`,
+        `Student loan benefits and interest subsidies`,
+        `Internship and training opportunities`
+      ],
+      teacher: [
+        `Professional development fund access`,
+        `Educational equipment and infrastructure support`,
+        `Research and academic grant opportunities`,
+        `Health and insurance benefits`
+      ],
+      doctor: [
+        `Healthcare infrastructure support`,
+        `Medical equipment subsidies`,
+        `Rural service incentives`,
+        `Research and innovation grants`
+      ],
+      engineer: [
+        `Innovation and technology grants`,
+        `Startup and entrepreneurship support`,
+        `Professional certification funding`,
+        `Infrastructure development opportunities`
+      ],
+      business_owner: [
+        `MSME and startup funding`,
+        `Business loan subsidies`,
+        `Market expansion support`,
+        `Technology adoption grants`
+      ],
+      worker: [
+        `Skill development and training programs`,
+        `Employment insurance benefits`,
+        `Housing and transportation subsidies`,
+        `Healthcare and insurance support`
+      ],
+      unemployed: [
+        `Job placement assistance programs`,
+        `Skill development and training`,
+        `Unemployment benefits and support`,
+        `Entrepreneurship and startup grants`
+      ]
+    };
+
+    return outcomeMap[occupation] || [
+      `Access to general government welfare programs`,
+      `Healthcare and insurance benefits`,
+      `Education and skill development support`,
+      `Financial assistance and subsidies`
+    ];
+  }
+
+  // Map occupation to relevant sector
+  mapOccupationToSector(occupation) {
+    const sectorMap = {
+      farmer: 'Agriculture',
+      student: 'Education',
+      teacher: 'Education',
+      doctor: 'Health',
+      engineer: 'Technology',
+      business_owner: 'Infrastructure',
+      worker: 'Infrastructure',
+      unemployed: 'Social Welfare',
+      retired: 'Social Welfare'
+    };
+    return sectorMap[occupation] || 'General';
+  }
+
+  // Detect user's mood from message
+  detectMood(message) {
+    const lower = message.toLowerCase();
+    
+    const positiveWords = ['happy', 'excited', 'great', 'awesome', 'fantastic', 'love', 'amazing', 'wonderful'];
+    const negativeWords = ['sad', 'frustrated', 'angry', 'worried', 'disappointed', 'upset', 'annoyed'];
+    const neutralWords = ['okay', 'fine', 'normal', 'usual', 'standard'];
+    
+    const positiveCount = positiveWords.filter(w => lower.includes(w)).length;
+    const negativeCount = negativeWords.filter(w => lower.includes(w)).length;
+    const neutralCount = neutralWords.filter(w => lower.includes(w)).length;
+    
+    if (positiveCount > negativeCount) return 'positive';
+    if (negativeCount > positiveCount) return 'negative';
+    if (neutralCount > 0) return 'neutral';
+    return 'neutral';
+  }
+
+  // Determine communication style preference
+  determineCommunicationStyle(message) {
+    const lower = message.toLowerCase();
+    
+    const formalIndicators = ['respectfully', 'sir', 'madam', 'please', 'kindly', 'would you', 'could you'];
+    const casualIndicators = ['hey', 'yo', 'sup', 'cool', 'awesome', 'lol', 'haha'];
+    const professionalIndicators = ['regarding', 'concerning', 'furthermore', 'additionally', 'in conclusion'];
+    
+    const formalScore = formalIndicators.filter(w => lower.includes(w)).length;
+    const casualScore = casualIndicators.filter(w => lower.includes(w)).length;
+    const professionalScore = professionalIndicators.filter(w => lower.includes(w)).length;
+    
+    if (formalScore > casualScore && formalScore > professionalScore) return 'formal';
+    if (casualScore > formalScore && casualScore > professionalScore) return 'casual';
+    if (professionalScore > 0) return 'professional';
+    
+    return 'balanced';
+  }
+
+
+  // Generate strategic recommendations with casual conversation support
+  generateStrategicRecommendations(entities, context, occupationInsights) {
+    const recommendations = [];
+    const isCasual = context.hyperIntelligentAnalysis?.casualContext?.isCasual || false;
+    const mood = context.hyperIntelligentAnalysis?.casualContext?.mood || 'neutral';
+    const communicationStyle = context.hyperIntelligentAnalysis?.casualContext?.communicationStyle || 'balanced';
+
+    // Tailored recommendations based on communication style
     if (entities.grants.length > 0) {
+      const primaryGrant = entities.grants[0];
+      let recommendation, rationale;
+      
+      if (isCasual && communicationStyle === 'casual') {
+        recommendation = `Hey! ${primaryGrant.name} looks pretty perfect for you!`;
+        rationale = `Based on what you've shared${occupationInsights.detected ? ` as a ${occupationInsights.detected}` : ''}, this could be exactly what you're looking for.`;
+      } else if (isCasual && communicationStyle === 'formal') {
+        recommendation = `I believe ${primaryGrant.name} would be highly beneficial for your situation.`;
+        rationale = `Given your background${occupationInsights.detected ? ` as a ${occupationInsights.detected}` : ''}, this program offers substantial advantages.`;
+      } else {
+        recommendation = `Consider applying for ${primaryGrant.name} as your primary option`;
+        rationale = `High alignment with your profile${occupationInsights.detected ? ` as a ${occupationInsights.detected}` : ''}`;
+      }
+
       recommendations.push({
         type: 'priority_action',
-        recommendation: `Consider applying for ${entities.grants[0].name} as primary option`,
-        rationale: `High alignment with your ${context.userProfile?.occupation || 'profile'}`,
+        recommendation,
+        rationale,
         urgency: 'Medium'
       });
     }
 
     if (entities.sectors.length > 0) {
+      const sector = entities.sectors[0];
+      let recommendation, rationale;
+      
+      if (isCasual && communicationStyle === 'casual') {
+        recommendation = `Let's dive deeper into ${sector.name} programs - there might be some hidden gems!`;
+        rationale = `This sector has tons of opportunities waiting to be discovered.`;
+      } else {
+        recommendation = `Explore all grants in ${sector.name} sector`;
+        rationale = `Comprehensive coverage of potential opportunities`;
+      }
+
       recommendations.push({
         type: 'exploratory_action',
-        recommendation: `Explore all grants in ${entities.sectors[0].name} sector`,
-        rationale: `Comprehensive coverage of potential opportunities`,
+        recommendation,
+        rationale,
         urgency: 'Low'
+      });
+    }
+
+    // Add occupation-specific recommendations
+    if (occupationInsights.detected) {
+      recommendations.push({
+        type: 'occupation_specific',
+        recommendation: `Perfect matches for ${occupationInsights.detected}s`,
+        rationale: `Specialized programs available for your profession`,
+        urgency: 'High'
       });
     }
 
     return recommendations;
   }
 
-  // Perform risk analysis
-  performRiskAnalysis(entities, context) {
+
+  // Perform risk analysis with casual conversation support
+  performRiskAnalysis(entities, context, occupationInsights) {
     const risks = [];
+    const isCasual = context.hyperIntelligentAnalysis?.casualContext?.isCasual || false;
 
     if (entities.grants.length > 0) {
+      const grant = entities.grants[0];
+      let riskDescription, mitigation;
+      
+      if (isCasual) {
+        riskDescription = `Eligibility check - just to make sure everything's in order`;
+        mitigation = `Let's double-check the requirements together, easy peasy!`;
+      } else {
+        riskDescription = 'Eligibility uncertainty';
+        mitigation = 'Verify specific eligibility criteria before applying';
+      }
+
       risks.push({
-        risk: 'Eligibility uncertainty',
+        risk: riskDescription,
         likelihood: 0.3,
         impact: 'Medium',
-        mitigation: 'Verify specific eligibility criteria before applying',
-        confidence: 0.88
+        mitigation: mitigation,
+        confidence: 0.88,
+        occupationSpecific: occupationInsights.detected ? 
+          `As a ${occupationInsights.detected}, you have good baseline eligibility` : null
       });
+    }
+
+    // Add occupation-specific risks
+    if (occupationInsights.detected) {
+      const occupationRisks = {
+        farmer: {
+          risk: 'Seasonal income variations may affect eligibility',
+          mitigation: 'Focus on annual income documentation and seasonal variations'
+        },
+        student: {
+          risk: 'Maintaining enrollment status throughout program duration',
+          mitigation: 'Ensure continuous education enrollment and good academic standing'
+        },
+        business_owner: {
+          risk: 'Business revenue documentation requirements',
+          mitigation: 'Maintain proper financial records and business registration'
+        },
+        unemployed: {
+          risk: 'Continuous employment seeking verification',
+          mitigation: 'Active job search documentation and skill development participation'
+        }
+      };
+
+      const specificRisk = occupationRisks[occupationInsights.detected];
+      if (specificRisk) {
+        risks.push({
+          ...specificRisk,
+          likelihood: 0.4,
+          impact: 'Low',
+          confidence: 0.75
+        });
+      }
     }
 
     return risks;
   }
 
-  // Suggest optimizations
-  suggestOptimizations(entities, context) {
-    const optimizations = [];
 
-    if (context.userProfile?.occupation === 'farmer') {
+  // Suggest optimizations with casual conversation support
+  suggestOptimizations(entities, context, occupationInsights) {
+    const optimizations = [];
+    const isCasual = context.hyperIntelligentAnalysis?.casualContext?.isCasual || false;
+    const communicationStyle = context.hyperIntelligentAnalysis?.casualContext?.communicationStyle || 'balanced';
+
+    const occupation = occupationInsights.detected || context.userProfile?.occupation;
+    
+    // Occupation-specific optimizations
+    if (occupation) {
+      const optimizationMap = {
+        farmer: {
+          optimization: 'Prepare agricultural documents and land records in advance',
+          expectedBenefit: 'Faster application processing and smoother verification',
+          implementationEffort: 'Low',
+          priority: 'High',
+          casual: `Pro tip: Get your land papers ready beforehand - it saves tons of time!`
+        },
+        student: {
+          optimization: 'Gather academic transcripts and enrollment certificates',
+          expectedBenefit: 'Quick eligibility verification and priority processing',
+          implementationEffort: 'Low',
+          priority: 'High',
+          casual: `Quick win: Have your transcripts handy - makes everything faster!`
+        },
+        business_owner: {
+          optimization: 'Organize business registration and financial statements',
+          expectedBenefit: 'Streamlined business grant applications and better approval rates',
+          implementationEffort: 'Medium',
+          priority: 'High',
+          casual: `Money move: Keep your business docs organized for faster approvals!`
+        },
+        teacher: {
+          optimization: 'Collect teaching certificates and institutional documentation',
+          expectedBenefit: 'Access to education sector specific grants and programs',
+          implementationEffort: 'Low',
+          priority: 'Medium',
+          casual: `Smart move: Your teaching credentials open up special opportunities!`
+        },
+        doctor: {
+          optimization: 'Prepare medical practice certificates and equipment documentation',
+          expectedBenefit: 'Healthcare infrastructure grants and equipment subsidies',
+          implementationEffort: 'Medium',
+          priority: 'High',
+          casual: `Pro tip: Your medical credentials can unlock some great benefits!`
+        },
+        engineer: {
+          optimization: 'Gather technical certifications and project portfolios',
+          expectedBenefit: 'Innovation grants and technology startup funding',
+          implementationEffort: 'Medium',
+          priority: 'High',
+          casual: `Awesome: Your tech skills can lead to some exciting funding opportunities!`
+        },
+        unemployed: {
+          optimization: 'Document job search activities and skill development efforts',
+          expectedBenefit: 'Employment support programs and skill training grants',
+          implementationEffort: 'Low',
+          priority: 'High',
+          casual: `Good news: There are programs specifically designed to help you get back on track!`
+        }
+      };
+
+      const optimization = optimizationMap[occupation];
+      if (optimization) {
+        optimizations.push({
+          optimization: isCasual && communicationStyle === 'casual' ? 
+            optimization.casual : optimization.optimization,
+          expectedBenefit: optimization.expectedBenefit,
+          implementationEffort: optimization.implementationEffort,
+          priority: optimization.priority,
+          occupationSpecific: true
+        });
+      }
+    }
+
+    // General optimizations based on conversation context
+    if (entities.grants.length > 0) {
+      const grant = entities.grants[0];
       optimizations.push({
-        optimization: 'Prepare agricultural documents in advance',
-        expectedBenefit: 'Faster application processing',
+        optimization: `Start with ${grant.name} application as your priority`,
+        expectedBenefit: 'Early application advantage and better processing',
         implementationEffort: 'Low',
-        priority: 'High'
+        priority: 'High',
+        grantSpecific: true
+      });
+    }
+
+    // Add conversation-specific optimizations
+    const conversationLength = context.conversationHistory?.length || 0;
+    if (conversationLength > 3) {
+      optimizations.push({
+        optimization: 'Consider bookmarking interesting programs for later reference',
+        expectedBenefit: 'Easy access to previously discovered opportunities',
+        implementationEffort: 'Low',
+        priority: 'Medium',
+        conversationEnhancement: true
       });
     }
 
@@ -1906,8 +2274,34 @@ async function callHuggingFace(messages, apiKey, model) {
   throw new Error('HuggingFace failed');
 }
 
-// Ultra-fast AI response generation with enhanced intelligence and typo tolerance
+
+// Enhanced AI response generation with anti-repetition and casual conversation
 function generateLightningResponse(message, retrievedGrants = [], userProfile = {}) {
+  // Response variation tracking to prevent repetition
+  const responseVariations = {
+    greetings: [
+      "👋 Hey there! I'm your GrantTracker AI Assistant!",
+      "😊 Hello! Ready to explore some amazing grants?",
+      "🚀 Hi! Let's discover some fantastic opportunities together!",
+      "✨ Hey! I can help you find the perfect grants and schemes!",
+      "🎯 Hi! What grants are you looking for today?"
+    ],
+    thanks: [
+      "😊 You're very welcome!",
+      "🙏 My pleasure!",
+      "👍 Glad I could help!",
+      "🎉 Happy to assist you!",
+      "💫 Always here to help!"
+    ],
+    noResults: [
+      "🤔 Let me think... I don't see perfect matches, but let's explore!",
+      "🔍 Hmm, let me search more broadly for you!",
+      "💡 I might need more details - can you tell me more?",
+      "🎯 Let me try a different approach to find what you need!",
+      "🚀 No worries! I have other ways to help you discover grants!"
+    ]
+  };
+
   // Normalize message for better typo handling
   const lower = message.toLowerCase().trim();
   const query = message.trim();
@@ -1926,6 +2320,34 @@ function generateLightningResponse(message, retrievedGrants = [], userProfile = 
     isFeatureQuery: /feature|function|capability|ability|option|service|tool|funct|capabil|abilit|servic/i.test(lower),
     isHelpQuery: /help|assist|support|guide|aid|assistance|helpp|assistt|suport|guidd/i.test(lower)
   };
+
+  // Casual conversation patterns
+  const casualPatterns = {
+    isCasualGreeting: /^(hi|hello|hey|yo|sup|what's up|greetings)([!.,]?|\s|$)/i.test(query),
+    isSmallTalk: /(how's it going|nice weather|cool|awesome|great|amazing|interesting)/i.test(lower),
+    isHumor: /(lol|haha|joke|funny|hilarious)/i.test(lower),
+    isCasualQuestion: /(tell me more|what do you think|how about|what about)/i.test(lower)
+  };
+
+  // Enhanced occupation detection
+  const occupationPatterns = {
+    farmer: /(farmer|farming|agriculture|cultivator|crop|kisan|field|rural|village)/i.test(lower),
+    student: /(student|college|university|school|study|education|learn|class|exam|academic)/i.test(lower),
+    teacher: /(teacher|professor|instructor|educator|tutor|teach|lesson)/i.test(lower),
+    doctor: /(doctor|physician|medical|hospital|patient|treatment|medicine)/i.test(lower),
+    engineer: /(engineer|technical|construction|design|software|mechanical)/i.test(lower),
+    business: /(business|entrepreneur|company|startup|shop|enterprise|commerce)/i.test(lower),
+    worker: /(worker|employee|staff|labor|manual|skilled|factory)/i.test(lower),
+    unemployed: /(unemployed|jobless|looking for work|seeking job|no job|searching)/i.test(lower)
+  };
+
+
+  // Detect occupation
+  const detectedOccupation = Object.entries(occupationPatterns).find(([_, pattern]) => pattern)?.[0] || null;
+
+  // Determine communication style based on casual patterns
+  const communicationStyle = casualPatterns.isHumor || casualPatterns.isCasualGreeting || casualPatterns.isSmallTalk ? 'casual' : 
+                            (patterns.isAbout && lower.includes('formal') ? 'formal' : 'balanced');
 
   // Handle website-related queries
   if (patterns.isWebsiteQuery || patterns.isFeatureQuery || patterns.isHelpQuery) {
@@ -2123,43 +2545,126 @@ function generateLightningResponse(message, retrievedGrants = [], userProfile = 
     };
   }
 
-  // Instant greetings
-  if (patterns.isGreeting) {
+
+  // Enhanced greetings with variations and occupation detection
+  if (patterns.isGreeting || casualPatterns.isCasualGreeting) {
+    const greetingVariations = responseVariations.greetings;
+    const randomGreeting = greetingVariations[Math.floor(Math.random() * greetingVariations.length)];
+    
+    let response = `${randomGreeting}\n\n`;
+    
+    // Add occupation-specific greeting if detected
+    if (detectedOccupation) {
+      const occupationGreetings = {
+        farmer: `🌾 Perfect! As a ${detectedOccupation}, you'll love the agricultural programs we have!`,
+        student: `🎓 Awesome! As a ${detectedOccupation}, there are amazing education opportunities!`,
+        teacher: `📚 Great! As a ${detectedOccupation}, education grants are right up your alley!`,
+        doctor: `⚕️ Excellent! As a ${detectedOccupation}, healthcare programs await!`,
+        engineer: `🔧 Cool! As a ${detectedOccupation}, tech and innovation grants are calling!`,
+        business: `💼 Wonderful! As a ${detectedOccupation}, entrepreneurship programs are perfect!`,
+        worker: `🔨 Good to know! As a ${detectedOccupation}, skill development programs abound!`,
+        unemployed: `🤝 I understand your situation - let me help you find the right support!`
+      };
+      
+      response += `${occupationGreetings[detectedOccupation]}\n\n`;
+    }
+    
+    response += `I can instantly help you find government grants and schemes. Try asking:\n` +
+                `• "What grants am I eligible for?"\n` +
+                `• "Show me agriculture schemes"\n` +
+                `• "Tell me about health benefits"\n` +
+                `• "How do I apply for PM Kisan?"\n\n` +
+                `**What would you like to explore?**`;
+    
+    const suggestions = detectedOccupation ? 
+      [`${detectedOccupation} specific grants`, "Check Eligibility", "Browse All"] : 
+      ["Check Eligibility", "Browse Grants", "Health Programs"];
+    
     return {
-      response: `👋 **Hello! I'm your GrantTracker AI Assistant!**\n\nI can instantly help you find government grants and schemes. Try asking:\n• "What grants am I eligible for?"\n• "Show me agriculture schemes"\n• "Tell me about health benefits"\n• "How do I apply for PM Kisan?"\n\n**What would you like to explore?**`,
-      suggestions: ["Check Eligibility", "Browse Grants", "Health Programs"]
+      response,
+      suggestions
     };
   }
 
-  // Instant thanks response
+
+  // Enhanced thanks response with variations
   if (patterns.isThanks) {
+    const thanksVariations = responseVariations.thanks;
+    const randomThanks = thanksVariations[Math.floor(Math.random() * thanksVariations.length)];
+    
+    let response = `${randomThanks} \n\n`;
+    
+    // Add personalized touch if occupation was detected
+    if (detectedOccupation) {
+      response += `As a ${detectedOccupation}, remember there are always new programs coming up. \n\n`;
+    }
+    
+    response += `I'm here 24/7 to help you discover government grants and benefits. Feel free to ask me anything about:\n` +
+                `• Eligibility requirements\n` +
+                `• Application processes\n` +
+                `• Scheme details\n` +
+                `• Benefits and coverage\n\n` +
+                `**What else can I help you with today?**`;
+    
+    const suggestions = detectedOccupation ? 
+      [`${detectedOccupation} updates`, "New Programs", "Browse All"] : 
+      ["More Help", "Browse All", "Get Started"];
+    
     return {
-      response: `😊 **You're very welcome!** \n\nI'm here 24/7 to help you discover government grants and benefits. Feel free to ask me anything about:\n• Eligibility requirements\n• Application processes\n• Scheme details\n• Benefits and coverage\n\n**What else can I help you with today?**`,
-      suggestions: ["More Help", "Browse All", "Get Started"]
+      response,
+      suggestions
     };
   }
 
-  // Personalized response based on user profile
-  if (patterns.isEligibility && Object.keys(userProfile).length > 0) {
-    const recommendations = matcher.getPersonalizedRecommendations(userProfile);
+
+  // Enhanced personalized response with occupation detection and casual conversation
+  if (patterns.isEligibility && (Object.keys(userProfile).length > 0 || detectedOccupation)) {
+    // Use detected occupation if no profile
+    const effectiveOccupation = detectedOccupation || userProfile.occupation;
+    const effectiveProfile = { ...userProfile, occupation: effectiveOccupation };
+    
+    const recommendations = matcher.getPersonalizedRecommendations(effectiveProfile);
     if (recommendations.length > 0) {
-      let response = `🎯 **Perfect matches for you!**\n\n`;
+      // Detect casual tone
+      const isCasual = casualPatterns.isSmallTalk || casualPatterns.isHumor || casualPatterns.isCasualQuestion;
+      
+      let response = isCasual ? 
+        `🎯 **Perfect! I found some awesome matches for you!**\n\n` :
+        `🎯 **Perfect matches for you!**\n\n`;
       
       recommendations.forEach((grant, index) => {
         response += `**${index + 1}. ${grant.name}** (${grant.sector})\n`;
         response += `💰 **Benefit:** ${grant.amount}\n`;
-        response += `📝 **Description:** ${grant.description}\n\n`;
+        
+        // Casual or professional description
+        if (isCasual && communicationStyle === 'casual') {
+          response += `📝 **Why it's great:** ${grant.description}\n\n`;
+        } else {
+          response += `📝 **Description:** ${grant.description}\n\n`;
+        }
       });
       
       response += `**✨ Personalized for you:**\n`;
-      if (userProfile.occupation) response += `• Profession: ${userProfile.occupation}\n`;
+      if (effectiveOccupation) response += `• Profession: ${effectiveOccupation}\n`;
       if (userProfile.location) response += `• Location: ${userProfile.location}\n`;
       if (userProfile.gender) response += `• Profile: ${userProfile.gender}\n\n`;
-      response += `**Ready to apply? Click any scheme for details!**`;
+      
+      const closing = isCasual && communicationStyle === 'casual' ? 
+        `**Ready to dive in? Click any scheme to get started!**` :
+        `**Ready to apply? Click any scheme for details!**`;
+      response += closing;
+      
+      const suggestions = recommendations.slice(0, 2).map(g => {
+        const action = isCasual && communicationStyle === 'casual' ? 
+          `Tell me: ${g.name.split(" ")[0]}` : 
+          `Learn: ${g.name.split(" ")[0]}`;
+        return action;
+      });
       
       return {
         response,
-        suggestions: recommendations.slice(0, 2).map(g => `Learn: ${g.name.split(" ")[0]}`),
+        suggestions,
+        detectedOccupation: effectiveOccupation
       };
     }
   }

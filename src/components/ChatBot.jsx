@@ -32,22 +32,52 @@ const USER_PREFERENCES = {
   }
 };
 
-// ChatGPT-Level Advanced Conversation Intelligence
+
+
+// ChatGPT-Level Advanced Conversation Intelligence with Performance Optimization
 class UltraIntelligentConversationEngine {
   constructor() {
+    // Performance optimization: Intelligent caching system
+    this.cache = {
+      intentCache: new Map(), // Cache classified intents
+      entityCache: new Map(), // Cache extracted entities
+      responseCache: new Map(), // Cache generated responses
+      grantCache: new Map(), // Cache grant matching results
+      maxCacheSize: 100,
+      cacheHitRate: 0,
+      cacheHits: 0,
+      cacheMisses: 0
+    };
+
     this.conversationMemory = {
       shortTerm: [], // Last 15 exchanges
       longTerm: new Map(), // Persistent topics
       userPreferences: new Map(),
       conversationTopics: new Set(),
       reasoningChain: [],
+      responseHistory: new Map(), // Track responses to avoid repetition
+      casualConversationTopics: new Set(), // Track casual conversation patterns
       sessionInsights: {
         userGoals: [],
         unresolvedQuestions: [],
         userFrustration: 0,
-        engagementLevel: 0
+        engagementLevel: 0,
+        conversationLength: 0,
+        topicsExplored: new Set(),
+        lastResponseType: null,
+        responseCount: 0,
+        averageResponseTime: 0,
+        totalProcessingTime: 0
       }
     };
+
+    // Performance optimization: Pre-compiled regex patterns
+    this.compiledPatterns = {
+      intents: new Map(),
+      entities: new Map(),
+      casual: new Map()
+    };
+    this.precompilePatterns();
     
     this.advancedReasoning = {
       causalChain: [],
@@ -75,6 +105,7 @@ class UltraIntelligentConversationEngine {
       }
     };
     
+
     this.conversationStrategies = {
       clarification: [
         'Could you provide more details about what you\'re looking for?',
@@ -97,6 +128,267 @@ class UltraIntelligentConversationEngine {
         'How can I help you further with this information?'
       ]
     };
+  }
+
+  // Performance Optimization: Pre-compile regex patterns for faster processing
+  precompilePatterns() {
+    // Intent patterns
+    const intentPatterns = {
+      eligibility_check: /eligible|qualify|can i|am i|eligibility|who can|what are/i,
+      information_seeking: /what is|how does|tell me about|explain|information|details/i,
+      application_guidance: /apply|application|register|how to apply|process|steps/i,
+      comparison: /compare|difference|vs|versus|better|best|which one/i,
+      recommendation: /recommend|suggest|advice|help me choose/i
+    };
+
+    // Entity patterns
+    const entityPatterns = {
+      grants: /(pm kisan|ayushman bharat|awas yojana|education mission|national education)/i,
+      sectors: /(agriculture|education|health|infrastructure|environment|technology|women)/i,
+      amounts: /₹(\d+(?:\.\d+)?)/gi,
+      urgentWords: /urgent|asap|immediately|emergency|critical/i,
+      highWords: /quickly|soon|priority|important|fast/i
+    };
+
+    // Casual conversation patterns
+    const casualPatterns = {
+      greetings: /(hello|hi|hey|good morning|good afternoon|good evening)/i,
+      thanks: /(thank you|thanks|thx|appreciate)/i,
+      compliments: /(great|awesome|amazing|excellent|good job|well done)/i,
+      casualInquiry: /(how are you|what\'s up|how\'s it going|how do you work|who are you)/i,
+      weather: /(weather|today\'s weather|is it raining|sunny|cloudy)/i,
+      jokes: /(joke|funny|make me laugh|haha|lol)/i,
+      personal: /(what can you do|tell me about yourself|describe yourself)/i
+    };
+
+    // Store compiled patterns
+    Object.entries(intentPatterns).forEach(([key, pattern]) => {
+      this.compiledPatterns.intents.set(key, pattern);
+    });
+
+    Object.entries(entityPatterns).forEach(([key, pattern]) => {
+      this.compiledPatterns.entities.set(key, pattern);
+    });
+
+    Object.entries(casualPatterns).forEach(([key, pattern]) => {
+      this.compiledPatterns.casual.set(key, pattern);
+    });
+  }
+
+  // Performance Optimization: Intelligent caching system
+  getCachedResult(cacheType, key) {
+    const cache = this.cache[cacheType + 'Cache'];
+    if (cache && cache.has(key)) {
+      this.cache.cacheHits++;
+      this.cache.cacheHitRate = this.cache.cacheHits / (this.cache.cacheHits + this.cache.cacheMisses);
+      return cache.get(key);
+    }
+    this.cache.cacheMisses++;
+    return null;
+  }
+
+  setCachedResult(cacheType, key, value) {
+    const cache = this.cache[cacheType + 'Cache'];
+    if (cache.size >= this.cache.maxCacheSize) {
+      // Remove oldest entry (simple FIFO)
+      const firstKey = cache.keys().next().value;
+      cache.delete(firstKey);
+    }
+    cache.set(key, value);
+  }
+
+  // Performance Optimization: Fast intent classification with caching
+  classifyIntent(message) {
+    const messageKey = message.toLowerCase().substring(0, 100);
+    const cached = this.getCachedResult('intent', messageKey);
+    if (cached) {
+      return cached;
+    }
+
+    const lower = message.toLowerCase();
+    const intents = {};
+    
+    // Use pre-compiled patterns for faster matching
+    this.compiledPatterns.intents.forEach((pattern, intentName) => {
+      const match = pattern.exec(lower);
+      intents[intentName] = { score: match ? 1.0 : 0, pattern };
+    });
+
+    // Partial matching for uncategorized intents
+    const keywords = ['eligible', 'qualify', 'what', 'how', 'explain', 'apply', 'compare', 'recommend'];
+    const matchCount = keywords.filter(keyword => lower.includes(keyword)).length;
+    intents['general'] = { score: Math.min(matchCount * 0.2, 0.8), pattern: null };
+
+    // Find best intent
+    const bestIntent = Object.entries(intents)
+      .reduce((best, [name, data]) => data.score > best.score ? { name, ...data } : best, 
+              { name: 'general', score: 0 });
+
+    const result = {
+      primary: bestIntent.name,
+      confidence: bestIntent.score,
+      allScores: intents
+    };
+
+    this.setCachedResult('intent', messageKey, result);
+    return result;
+  }
+
+  // Performance Optimization: Fast entity extraction with caching
+  extractEntities(message) {
+    const messageKey = message.toLowerCase().substring(0, 100);
+    const cached = this.getCachedResult('entity', messageKey);
+    if (cached) {
+      return cached;
+    }
+
+    const entities = {
+      grants: [],
+      sectors: [],
+      amounts: [],
+      people: [],
+      locations: []
+    };
+
+    const lower = message.toLowerCase();
+    
+    // Use cached grant data for faster matching
+    GRANTS.forEach(grant => {
+      if (lower.includes(grant.name.toLowerCase())) {
+        entities.grants.push({
+          name: grant.name,
+          sector: grant.sector,
+          confidence: 0.9
+        });
+      }
+    });
+
+    // Fast sector detection using pre-compiled patterns
+    this.compiledPatterns.entities.forEach((pattern, sectorName) => {
+      if (pattern.test(lower) && sectorName !== 'grants' && sectorName !== 'amounts') {
+        entities.sectors.push({ name: sectorName, confidence: 0.8 });
+      }
+    });
+
+    // Fast amount detection
+    const amountMatches = lower.match(/₹(\d+(?:\.\d+)?)/gi);
+    if (amountMatches) {
+      entities.amounts.push(...amountMatches.map(match => ({ value: match, confidence: 0.8 })));
+    }
+
+    this.setCachedResult('entity', messageKey, entities);
+    return entities;
+  }
+
+  // Performance Optimization: Optimized grant matching
+  findBestGrants(query, grants, limit = 4) {
+    const queryKey = query.toLowerCase().substring(0, 50);
+    const cached = this.getCachedResult('grant', queryKey);
+    if (cached) {
+      return cached;
+    }
+
+    const lower = query.toLowerCase();
+    const matches = grants.filter(grant => {
+      // Fast matching using pre-computed scores
+      let score = 0;
+      
+      if (grant.name.toLowerCase().includes(lower)) score += 3;
+      if (grant.description.toLowerCase().includes(lower)) score += 2;
+      if (grant.sector.toLowerCase().includes(lower)) score += 2;
+      
+      // Check keywords
+      grant.keywords.forEach(keyword => {
+        if (lower.includes(keyword.toLowerCase())) score += 1;
+      });
+      
+      return score > 0;
+    });
+
+    // Sort by relevance score
+    matches.sort((a, b) => {
+      const scoreA = this.calculateGrantScore(a, lower);
+      const scoreB = this.calculateGrantScore(b, lower);
+      return scoreB - scoreA;
+    });
+
+    const result = matches.slice(0, limit);
+    this.setCachedResult('grant', queryKey, result);
+    return result;
+  }
+
+  // Helper method for grant scoring
+  calculateGrantScore(grant, queryLower) {
+    let score = 0;
+    if (grant.name.toLowerCase().includes(queryLower)) score += 3;
+    if (grant.description.toLowerCase().includes(queryLower)) score += 2;
+    if (grant.sector.toLowerCase().includes(queryLower)) score += 2;
+    
+    grant.keywords.forEach(keyword => {
+      if (queryLower.includes(keyword.toLowerCase())) score += 1;
+    });
+    
+    return score;
+  }
+
+  // Performance monitoring
+  getPerformanceMetrics() {
+    return {
+      cacheHitRate: (this.cache.cacheHitRate * 100).toFixed(1) + '%',
+      cacheSize: {
+        intent: this.cache.intentCache.size,
+        entity: this.cache.entityCache.size,
+        response: this.cache.responseCache.size,
+        grant: this.cache.grantCache.size
+      },
+      conversationLength: this.conversationMemory.sessionInsights.conversationLength,
+      averageResponseTime: this.conversationMemory.sessionInsights.averageResponseTime.toFixed(2) + 'ms'
+    };
+  }
+
+  // Performance Optimization: Smart response generation with caching
+  generateAdvancedResponse(message, context = {}, retrievedGrants = []) {
+    const startTime = performance.now();
+    
+    const responseKey = `${message.substring(0, 50)}_${JSON.stringify(context).substring(0, 50)}`;
+    const cached = this.getCachedResult('response', responseKey);
+    if (cached && !this.checkResponseRepetition(message, context.intent?.primary)) {
+      return cached;
+    }
+
+    const intent = this.classifyIntent(message);
+    const entities = this.extractEntities(message);
+    const sentiment = this.analyzeSentiment(message);
+    const urgency = this.detectUrgency(message);
+    
+    const comprehensiveContext = {
+      intent,
+      entities,
+      sentiment,
+      urgency,
+      retrievedGrants,
+      conversationHistory: this.conversationMemory.shortTerm,
+      userProfile: context.profile || {}
+    };
+
+    // Select optimal response strategy
+    const strategy = this.selectResponseStrategy(comprehensiveContext);
+    
+    // Generate contextual response
+    const result = this.generateContextualResponse(strategy, comprehensiveContext);
+    
+    // Cache the result
+    this.setCachedResult('response', responseKey, result);
+    
+    // Update performance metrics
+    const endTime = performance.now();
+    const processingTime = endTime - startTime;
+    this.conversationMemory.sessionInsights.totalProcessingTime += processingTime;
+    this.conversationMemory.sessionInsights.averageResponseTime = 
+      this.conversationMemory.sessionInsights.totalProcessingTime / 
+      this.conversationMemory.sessionInsights.responseCount;
+
+    return result;
   }
 
   // Advanced conversation memory management
@@ -131,110 +423,11 @@ class UltraIntelligentConversationEngine {
     this.updateSessionInsights(exchange);
   }
 
-  // Advanced intent classification
-  classifyIntent(message) {
-    const lower = message.toLowerCase();
-    
-    const intents = {
-      eligibility_check: { 
-        pattern: /eligible|qualify|can i|am i|eligibility|who can|what are/i, 
-        score: 0 
-      },
-      information_seeking: { 
-        pattern: /what is|how does|tell me about|explain|information|details/i, 
-        score: 0 
-      },
-      application_guidance: { 
-        pattern: /apply|application|register|how to apply|process|steps/i, 
-        score: 0 
-      },
-      comparison: { 
-        pattern: /compare|difference|vs|versus|better|best|which one/i, 
-        score: 0 
-      },
-      recommendation: { 
-        pattern: /recommend|suggest|advice|help me choose/i, 
-        score: 0 
-      }
-    };
 
-    // Calculate confidence scores
-    Object.entries(intents).forEach(([intentName, intentData]) => {
-      if (intentData.pattern.test(lower)) {
-        intentData.score = 1.0;
-      } else {
-        // Partial matching
-        const keywords = this.getIntentKeywords(intentName);
-        const matchCount = keywords.filter(keyword => lower.includes(keyword)).length;
-        intentData.score = Math.min(matchCount * 0.2, 0.8);
-      }
-    });
+  // Code Structure Improvement: Consolidated intent classification (moved to performance optimized version)
 
-    // Find best intent
-    const bestIntent = Object.entries(intents)
-      .reduce((best, [name, data]) => data.score > best.score ? { name, ...data } : best, 
-              { name: 'general', score: 0 });
 
-    return {
-      primary: bestIntent.name,
-      confidence: bestIntent.score,
-      allScores: intents
-    };
-  }
-
-  getIntentKeywords(intent) {
-    const keywords = {
-      eligibility_check: ['eligible', 'qualify', 'eligibility', 'can i', 'am i'],
-      information_seeking: ['what', 'how', 'explain', 'details', 'information'],
-      application_guidance: ['apply', 'application', 'process', 'register', 'steps'],
-      comparison: ['compare', 'difference', 'better', 'best', 'which'],
-      recommendation: ['recommend', 'suggest', 'advice', 'help choose']
-    };
-    return keywords[intent] || [];
-  }
-
-  // Advanced entity extraction
-  extractEntities(message) {
-    const entities = {
-      grants: [],
-      sectors: [],
-      amounts: [],
-      people: [],
-      locations: []
-    };
-
-    const lower = message.toLowerCase();
-    
-    // Grant detection
-    GRANTS.forEach(grant => {
-      if (lower.includes(grant.name.toLowerCase())) {
-        entities.grants.push({
-          name: grant.name,
-          sector: grant.sector,
-          confidence: 0.9
-        });
-      }
-    });
-
-    // Sector detection
-    const sectors = ['agriculture', 'education', 'health', 'infrastructure', 'environment', 'technology', 'women'];
-    sectors.forEach(sector => {
-      if (lower.includes(sector)) {
-        entities.sectors.push({ name: sector, confidence: 0.8 });
-      }
-    });
-
-    // Amount detection
-    const amountPatterns = [/₹(\d+(?:\.\d+)?)/gi, /(\d+(?:\.\d+)?)\s*lakh/gi, /(\d+(?:\.\d+)?)\s*crore/gi];
-    amountPatterns.forEach(pattern => {
-      const matches = message.match(pattern);
-      if (matches) {
-        entities.amounts.push(...matches.map(match => ({ value: match, confidence: 0.8 })));
-      }
-    });
-
-    return entities;
-  }
+  // Code Structure Improvement: Consolidated entity extraction (moved to performance optimized version)
 
   // Advanced sentiment analysis
   analyzeSentiment(message) {
@@ -297,17 +490,360 @@ class UltraIntelligentConversationEngine {
     return Array.from(topics);
   }
 
+
   // Update session insights
   updateSessionInsights(exchange) {
     this.conversationMemory.sessionInsights.engagementLevel = Math.min(
       this.conversationMemory.sessionInsights.engagementLevel + 0.1, 1.0
     );
 
+    this.conversationMemory.sessionInsights.conversationLength += 1;
+    this.conversationMemory.sessionInsights.responseCount += 1;
+
+    // Track topics explored
+    exchange.context.intent && this.conversationMemory.sessionInsights.topicsExplored.add(exchange.context.intent.primary);
+    
+    // Update last response type
+    this.conversationMemory.sessionInsights.lastResponseType = exchange.context.intent?.primary || 'unknown';
+
     if (exchange.context.sentiment.overall === 'negative') {
       this.conversationMemory.sessionInsights.userFrustration = Math.min(
         this.conversationMemory.sessionInsights.userFrustration + 0.1, 1.0
       );
     }
+  }
+
+  // Enhanced Learning & Memory System - Track response patterns to avoid repetition
+  checkResponseRepetition(message, responseType) {
+    const messageKey = message.substring(0, 50).toLowerCase();
+    const responseKey = `${responseType}_${messageKey}`;
+    
+    // Check if we've used this response type recently for similar messages
+    const recentResponses = this.conversationMemory.shortTerm.slice(-3);
+    const hasRecentSimilarResponse = recentResponses.some(exchange => 
+      exchange.message.substring(0, 50).toLowerCase() === messageKey &&
+      exchange.context?.intent?.primary === responseType
+    );
+
+    if (hasRecentSimilarResponse) {
+      this.conversationMemory.responseHistory.set(responseKey, 
+        (this.conversationMemory.responseHistory.get(responseKey) || 0) + 1);
+      
+      // If we've used this combination too many times, suggest alternatives
+      if (this.conversationMemory.responseHistory.get(responseKey) > 2) {
+        return false; // Avoid repetition
+      }
+    }
+
+    return true; // Safe to use this response
+  }
+
+  // Advanced Personalization Engine - Deep behavioral analysis
+  analyzeUserBehavior(message, response, userProfile) {
+    const lowerMessage = message.toLowerCase();
+    const patterns = {
+      asksForDetails: /more details|explain further|tell me more/i.test(lowerMessage),
+      seeksComparisons: /compare|vs|difference|which.*better/i.test(lowerMessage),
+      wantsStepByStep: /step.*by.*step|how.*to|process|procedure/i.test(lowerMessage),
+      asksForRecommendations: /recommend|suggest|advice|best/i.test(lowerMessage),
+      expressesConfusion: /confused|don.*t understand|unclear/i.test(lowerMessage),
+      showsUrgency: /urgent|asap|immediately|quickly/i.test(lowerMessage)
+    };
+
+    // Update user preferences based on interaction patterns
+    Object.entries(patterns).forEach(([pattern, isMatch]) => {
+      if (isMatch) {
+        const currentCount = this.conversationMemory.userPreferences.get(pattern) || 0;
+        this.conversationMemory.userPreferences.set(pattern, currentCount + 1);
+      }
+    });
+
+    // Analyze response effectiveness
+    if (response && response.includes('?')) {
+      const engagementBoost = this.conversationMemory.sessionInsights.engagementLevel + 0.05;
+      this.conversationMemory.sessionInsights.engagementLevel = Math.min(engagementBoost, 1.0);
+    }
+
+    return this.getPersonalizedResponseStyle();
+  }
+
+  // Get personalized response style based on user behavior
+  getPersonalizedResponseStyle() {
+    const preferences = this.conversationMemory.userPreferences;
+    
+    // Analyze user preferences to determine optimal response style
+    const detailScore = (preferences.get('asksForDetails') || 0) * 2;
+    const stepScore = (preferences.get('wantsStepByStep') || 0) * 2;
+    const comparisonScore = (preferences.get('seeksComparisons') || 0) * 1.5;
+    
+    if (stepScore > detailScore && stepScore > comparisonScore) {
+      return 'step_by_step';
+    } else if (comparisonScore > detailScore) {
+      return 'comparison';
+    } else if (detailScore > 0) {
+      return 'elaborate';
+    }
+    
+    return 'balanced';
+  }
+
+  // Enhanced Casual Conversation Handling
+  handleCasualConversation(message) {
+    const lowerMessage = message.toLowerCase();
+    const casualPatterns = {
+      greetings: /(hello|hi|hey|good morning|good afternoon|good evening)/,
+      thanks: /(thank you|thanks|thx|appreciate)/,
+      compliments: /(great|awesome|amazing|excellent|good job|well done)/,
+      casualInquiry: /(how are you|what\'s up|how\'s it going|how do you work|who are you)/,
+      weather: /(weather|today\'s weather|is it raining|sunny|cloudy)/,
+      jokes: /(joke|funny|make me laugh|haha|lol)/,
+      personal: /(what can you do|tell me about yourself|describe yourself)/
+    };
+
+    // Track casual conversation patterns
+    Object.entries(casualPatterns).forEach(([pattern, regex]) => {
+      if (regex.test(lowerMessage)) {
+        this.conversationMemory.casualConversationTopics.add(pattern);
+      }
+    });
+
+    // Generate contextual casual responses
+    if (casualPatterns.greetings.test(lowerMessage)) {
+      return this.generatePersonalizedGreeting();
+    }
+    
+    if (casualPatterns.thanks.test(lowerMessage)) {
+      return this.generateContextualThanks();
+    }
+    
+    if (casualPatterns.compliments.test(lowerMessage)) {
+      return this.generateHumbleResponse();
+    }
+    
+    if (casualPatterns.casualInquiry.test(lowerMessage)) {
+      return this.generateSelfIntroduction();
+    }
+
+    return null; // Not a casual conversation
+  }
+
+  // Generate personalized greeting based on conversation history
+  generatePersonalizedGreeting() {
+    const sessionInsights = this.conversationMemory.sessionInsights;
+    const isReturningUser = sessionInsights.conversationLength > 5;
+    const topicsExplored = Array.from(sessionInsights.topicsExplored);
+    
+    let greeting = "Hello! ";
+    
+    if (isReturningUser && topicsExplored.length > 0) {
+      const recentTopic = topicsExplored[topicsExplored.length - 1];
+      greeting += `Welcome back! I see you've been exploring ${recentTopic.replace('_', ' ')} topics. `;
+    }
+    
+    greeting += "How can I help you discover the perfect government grants and schemes today?";
+    
+    const suggestions = [
+      "What's new in grants?",
+      "Continue our previous topic",
+      "Show me all schemes",
+      "Help me find specific grants"
+    ];
+
+    return {
+      text: greeting,
+      suggestions: suggestions,
+      reasoning: 'Personalized greeting based on conversation history'
+    };
+  }
+
+  // Generate contextual thank you response
+  generateContextualThanks() {
+    const engagementLevel = this.conversationMemory.sessionInsights.engagementLevel;
+    const responseCount = this.conversationMemory.sessionInsights.responseCount;
+    
+    let thanksMessage = "You're very welcome! 😊 ";
+    
+    if (engagementLevel > 0.7) {
+      thanksMessage += "I'm delighted that our conversation has been so helpful! ";
+    }
+    
+    if (responseCount > 10) {
+      thanksMessage += "We've covered quite a bit together - feel free to ask about anything else!";
+    } else {
+      thanksMessage += "Is there anything else you'd like to explore or understand better?";
+    }
+
+    const suggestions = [
+      "Tell me something interesting",
+      "Show me advanced features", 
+      "Help with complex queries",
+      "What else can you do?"
+    ];
+
+    return {
+      text: thanksMessage,
+      suggestions: suggestions,
+      reasoning: 'Contextual thank you response encouraging further engagement'
+    };
+  }
+
+  // Generate humble response to compliments
+  generateHumbleResponse() {
+    const response = "Thank you! 🙏 I strive to provide the most helpful and accurate information about government grants and schemes. ";
+    response += "My goal is to make finding the right opportunities as simple and efficient as possible for you. ";
+    response += "What specific area would you like to dive deeper into?";
+    
+    const suggestions = [
+      "How do you work?",
+      "Show me your capabilities",
+      "Test your knowledge",
+      "Help me with complex queries"
+    ];
+
+    return {
+      text: response,
+      suggestions: suggestions,
+      reasoning: 'Humble response to compliments redirecting to user needs'
+    };
+  }
+
+  // Generate self-introduction
+  generateSelfIntroduction() {
+    const intro = "I'm an ultra-intelligent AI assistant specializing in government grants and schemes! 🧠✨ ";
+    intro += "I can help you with:\n\n";
+    intro += "• **Smart Matching** - Find grants perfect for your profile\n";
+    intro += "• **Step-by-Step Guidance** - Navigate application processes easily\n";
+    intro += "• **Intelligent Comparisons** - Compare different schemes objectively\n";
+    intro += "• **Personalized Recommendations** - Get suggestions tailored to your needs\n\n";
+    intro += "I learn from our conversations to provide increasingly better assistance. What would you like to explore?";
+    
+    const suggestions = [
+      "Find grants for my profile",
+      "Show me your matching ability",
+      "Explain a complex scheme",
+      "Test your intelligence"
+    ];
+
+    return {
+      text: intro,
+      suggestions: suggestions,
+      reasoning: 'Comprehensive self-introduction showcasing capabilities'
+    };
+  }
+
+  // Enhanced Occupation Understanding
+  enhanceOccupationDetection(message, currentProfile) {
+    const lowerMessage = message.toLowerCase();
+    const occupationPatterns = {
+      // Agriculture & Rural
+      farmer: /(farmer|agriculture|farming|crop|livestock|agricultural|agrarian|fields|rural worker)/,
+      agriculturalWorker: /(farm worker|agricultural laborer|harvest|dairy|poultry)/,
+      
+      // Education & Students
+      student: /(student|college|university|school|education|studying|academic)/,
+      teacher: /(teacher|professor|instructor|educator|faculty|teaching)/,
+      researcher: /(researcher|scientist|phd|postdoc|academic research)/,
+      
+      // Healthcare
+      healthcareWorker: /(doctor|nurse|medical|healthcare|physician|surgeon|therapist)/,
+      patient: /(patient|medical treatment|health insurance|medical bill)/,
+      
+      // Technology & IT
+      itProfessional: /(software|developer|programmer|engineer|tech|it|computer|website)/,
+      startup: /(startup|founder|entrepreneur|business idea|innovation)/,
+      
+      // Women & Social
+      woman: /(woman|female|lady|girl|mother|wife|sister)/,
+      socialWorker: /(social worker|counselor|community|non-profit|social service)/,
+      
+      // Business & Employment
+      businessman: /(business|company|corporate|entrepreneur|owner|management)/,
+      employee: /(employee|worker|staff|job|employment|career)/,
+      unemployed: /(unemployed|jobless|seeking employment|looking for work)/,
+      
+      // Special Categories
+      veteran: /(veteran|military|ex-serviceman|defense)/,
+      disabled: /(disabled|disability|special needs|handicapped)/,
+      senior: /(senior|elderly|retired|old age|pension)/,
+      youth: /(youth|teen|adolescent|young adult|student)/
+    };
+
+    const detectedOccupations = [];
+    Object.entries(occupationPatterns).forEach(([occupation, pattern]) => {
+      if (pattern.test(lowerMessage)) {
+        detectedOccupations.push(occupation);
+      }
+    });
+
+    // Enhanced profile analysis
+    if (detectedOccupations.length > 0) {
+      const enhancedProfile = { ...currentProfile };
+      
+      detectedOccupations.forEach(occupation => {
+        switch (occupation) {
+          case 'farmer':
+          case 'agriculturalWorker':
+            enhancedProfile.occupation = 'farmer';
+            enhancedProfile.sector = 'agriculture';
+            enhancedProfile.location = 'rural';
+            break;
+          case 'student':
+          case 'teacher':
+          case 'researcher':
+            enhancedProfile.occupation = occupation;
+            enhancedProfile.sector = 'education';
+            break;
+          case 'healthcareWorker':
+          case 'patient':
+            enhancedProfile.occupation = occupation === 'patient' ? 'individual' : 'healthcare worker';
+            enhancedProfile.sector = 'healthcare';
+            break;
+          case 'itProfessional':
+          case 'startup':
+            enhancedProfile.occupation = occupation;
+            enhancedProfile.sector = 'technology';
+            enhancedProfile.incomeLevel = occupation === 'startup' ? 'variable' : 'medium';
+            break;
+          case 'woman':
+            enhancedProfile.gender = 'female';
+            if (!enhancedProfile.occupation) enhancedProfile.occupation = 'individual';
+            break;
+          case 'socialWorker':
+            enhancedProfile.occupation = 'social worker';
+            enhancedProfile.sector = 'social';
+            break;
+          case 'businessman':
+          case 'employee':
+            enhancedProfile.occupation = occupation === 'businessman' ? 'business owner' : 'employee';
+            enhancedProfile.sector = 'business';
+            break;
+          case 'unemployed':
+            enhancedProfile.employmentStatus = 'unemployed';
+            enhancedProfile.occupation = 'seeking employment';
+            break;
+          case 'veteran':
+            enhancedProfile.category = 'veteran';
+            enhancedProfile.occupation = 'veteran';
+            break;
+          case 'disabled':
+            enhancedProfile.category = 'disabled';
+            enhancedProfile.needs = ['accessibility', 'special assistance'];
+            break;
+          case 'senior':
+            enhancedProfile.ageGroup = 'senior';
+            enhancedProfile.occupation = 'retired';
+            break;
+          case 'youth':
+            enhancedProfile.ageGroup = 'youth';
+            if (!enhancedProfile.occupation) enhancedProfile.occupation = 'student';
+            break;
+        }
+      });
+
+      return enhancedProfile;
+    }
+
+    return currentProfile;
   }
 
   // Generate advanced response with reasoning
@@ -334,64 +870,128 @@ class UltraIntelligentConversationEngine {
     return this.generateContextualResponse(strategy, comprehensiveContext);
   }
 
-  // Select optimal response strategy
+
+  // Dynamic Conversation Flow - Adaptive response strategy selection
   selectResponseStrategy(context) {
     const strategies = {
-      direct_answer: { weight: 0 },
-      clarification: { weight: 0 },
-      step_by_step: { weight: 0 },
-      comparison: { weight: 0 },
-      recommendation: { weight: 0 }
+      direct_answer: { weight: 0, baseScore: 0 },
+      clarification: { weight: 0, baseScore: 0 },
+      step_by_step: { weight: 0, baseScore: 0 },
+      comparison: { weight: 0, baseScore: 0 },
+      recommendation: { weight: 0, baseScore: 0 },
+      elaboration: { weight: 0, baseScore: 0 }
     };
 
-    // Intent-based strategy selection
+    // Base strategy selection from intent
     switch (context.intent.primary) {
       case 'information_seeking':
-        strategies.direct_answer.weight = 100;
-        strategies.elaboration.weight = 80;
+        strategies.direct_answer.baseScore = 100;
+        strategies.elaboration.baseScore = 80;
         break;
       case 'eligibility_check':
-        strategies.step_by_step.weight = 100;
-        strategies.recommendation.weight = 90;
+        strategies.step_by_step.baseScore = 100;
+        strategies.recommendation.baseScore = 90;
         break;
       case 'application_guidance':
-        strategies.step_by_step.weight = 100;
-        strategies.clarification.weight = 70;
+        strategies.step_by_step.baseScore = 100;
+        strategies.clarification.baseScore = 70;
         break;
       case 'comparison':
-        strategies.comparison.weight = 100;
-        strategies.elaboration.weight = 70;
+        strategies.comparison.baseScore = 100;
+        strategies.elaboration.baseScore = 70;
         break;
       case 'recommendation':
-        strategies.recommendation.weight = 100;
-        strategies.direct_answer.weight = 80;
+        strategies.recommendation.baseScore = 100;
+        strategies.direct_answer.baseScore = 80;
         break;
       default:
-        strategies.direct_answer.weight = 80;
-        strategies.recommendation.weight = 60;
+        strategies.direct_answer.baseScore = 80;
+        strategies.recommendation.baseScore = 60;
     }
 
-    // Contextual adjustments
+    // Dynamic contextual adjustments
+    const adjustments = {
+      direct_answer: 0,
+      clarification: 0,
+      step_by_step: 0,
+      comparison: 0,
+      recommendation: 0,
+      elaboration: 0
+    };
+
+    // Sentiment-based adjustments
     if (context.sentiment.overall === 'negative') {
-      strategies.clarification.weight += 30;
-      strategies.elaboration.weight += 20;
+      adjustments.clarification += 30;
+      adjustments.elaboration += 20;
+    } else if (context.sentiment.overall === 'positive') {
+      adjustments.direct_answer += 15;
+      adjustments.recommendation += 10;
     }
 
-    if (context.urgency.level === 'critical' || context.urgency.level === 'high') {
-      strategies.direct_answer.weight += 30;
-      strategies.step_by_step.weight += 20;
+    // Urgency-based adjustments
+    if (context.urgency.level === 'critical') {
+      adjustments.direct_answer += 40;
+      adjustments.step_by_step += 30;
+    } else if (context.urgency.level === 'high') {
+      adjustments.direct_answer += 25;
+      adjustments.step_by_step += 20;
     }
 
-    if (context.intent.confidence < 0.6) {
-      strategies.clarification.weight += 40;
+    // Confidence-based adjustments
+    if (context.intent.confidence < 0.4) {
+      adjustments.clarification += 50;
+    } else if (context.intent.confidence > 0.8) {
+      adjustments.direct_answer += 20;
     }
 
-    // Select best strategy
-    const bestStrategy = Object.entries(strategies)
-      .reduce((best, [name, data]) => data.weight > best.weight ? { name, ...data } : best, 
-              { name: 'direct_answer', weight: 0 });
+    // Conversation history-based adjustments
+    const conversationLength = this.conversationMemory.sessionInsights.conversationLength;
+    const topicsExplored = this.conversationMemory.sessionInsights.topicsExplored;
+    
+    if (conversationLength > 10) {
+      // Long conversation - prefer more sophisticated responses
+      adjustments.recommendation += 15;
+      adjustments.comparison += 15;
+    }
+    
+    if (topicsExplored.size > 3) {
+      // Multiple topics explored - prefer synthesis and connections
+      adjustments.elaboration += 20;
+      adjustments.comparison += 10;
+    }
 
-    return bestStrategy.name;
+    // User preference-based adjustments
+    const preferredStyle = this.getPersonalizedResponseStyle();
+    if (preferredStyle === 'step_by_step') {
+      adjustments.step_by_step += 25;
+    } else if (preferredStyle === 'comparison') {
+      adjustments.comparison += 25;
+    } else if (preferredStyle === 'elaborate') {
+      adjustments.elaboration += 25;
+    }
+
+    // Check for response repetition and avoid it
+    const lastResponseType = this.conversationMemory.sessionInsights.lastResponseType;
+    if (lastResponseType && adjustments[lastResponseType]) {
+      adjustments[lastResponseType] -= 20; // Reduce weight of last used strategy
+    }
+
+    // Calculate final weights
+    Object.keys(strategies).forEach(strategy => {
+      strategies[strategy].weight = strategies[strategy].baseScore + adjustments[strategy];
+    });
+
+    // Select best strategy with tie-breaking
+    const bestStrategies = Object.entries(strategies)
+      .sort(([,a], [,b]) => b.weight - a.weight);
+
+    // If top strategies are very close, add some randomness
+    if (bestStrategies.length > 1 && Math.abs(bestStrategies[0][1].weight - bestStrategies[1][1].weight) < 10) {
+      const randomIndex = Math.random() < 0.7 ? 0 : 1; // 70% chance to pick the best
+      return bestStrategies[randomIndex][0];
+    }
+
+    return bestStrategies[0][0];
   }
 
   // Generate contextual response
