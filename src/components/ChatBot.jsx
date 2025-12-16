@@ -687,9 +687,10 @@ class UltraIntelligentConversationEngine {
     };
   }
 
+
   // Generate humble response to compliments
   generateHumbleResponse() {
-    const response = "Thank you! 🙏 I strive to provide the most helpful and accurate information about government grants and schemes. ";
+    let response = "Thank you! 🙏 I strive to provide the most helpful and accurate information about government grants and schemes. ";
     response += "My goal is to make finding the right opportunities as simple and efficient as possible for you. ";
     response += "What specific area would you like to dive deeper into?";
     
@@ -709,7 +710,7 @@ class UltraIntelligentConversationEngine {
 
   // Generate self-introduction
   generateSelfIntroduction() {
-    const intro = "I'm an ultra-intelligent AI assistant specializing in government grants and schemes! 🧠✨ ";
+    let intro = "I'm an ultra-intelligent AI assistant specializing in government grants and schemes! 🧠✨ ";
     intro += "I can help you with:\n\n";
     intro += "• **Smart Matching** - Find grants perfect for your profile\n";
     intro += "• **Step-by-Step Guidance** - Navigate application processes easily\n";
@@ -846,29 +847,9 @@ class UltraIntelligentConversationEngine {
     return currentProfile;
   }
 
-  // Generate advanced response with reasoning
-  generateAdvancedResponse(message, context = {}, retrievedGrants = []) {
-    const intent = this.classifyIntent(message);
-    const entities = this.extractEntities(message);
-    const sentiment = this.analyzeSentiment(message);
-    const urgency = this.detectUrgency(message);
-    
-    const comprehensiveContext = {
-      intent,
-      entities,
-      sentiment,
-      urgency,
-      retrievedGrants,
-      conversationHistory: this.conversationMemory.shortTerm,
-      userProfile: context.profile || {}
-    };
 
-    // Select optimal response strategy
-    const strategy = this.selectResponseStrategy(comprehensiveContext);
-    
-    // Generate contextual response
-    return this.generateContextualResponse(strategy, comprehensiveContext);
-  }
+  // Advanced response generation - removed duplicate method
+  // The generateAdvancedResponse method is already implemented above with performance optimization
 
 
   // Dynamic Conversation Flow - Adaptive response strategy selection
@@ -1147,6 +1128,82 @@ class UltraIntelligentConversationEngine {
   }
 }
 
+
+// Enhanced error categorization and contextual error generation
+const categorizeError = (error) => {
+  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    return 'network_failure';
+  }
+  if (error.message.includes('timeout')) {
+    return 'timeout_error';
+  }
+  if (error.message.includes('unauthorized') || error.message.includes('401')) {
+    return 'authentication_error';
+  }
+  if (error.message.includes('server error') || error.message.includes('500')) {
+    return 'server_error';
+  }
+  return 'unknown_error';
+};
+
+const generateContextualError = (error, errorType, networkStatus) => {
+  const errorResponses = {
+    network_failure: {
+      message: `🔌 **Connection Issue Detected**\n\nI encountered a network problem while trying to connect to our servers. Don't worry - I can still help you with grant information!\n\n**What I can do right now:**\n• Provide general grant information\n• Answer eligibility questions\n• Guide you through application processes\n• Help with scheme comparisons\n\n**Try these actions:**\n• Ask about specific schemes (PM Kisan, Ayushman Bharat)\n• Check eligibility criteria\n• Get step-by-step guidance`,
+      suggestions: [
+        "Tell me about PM Kisan",
+        "What are health schemes?", 
+        "Check eligibility criteria",
+        "Application process help"
+      ],
+      recoverable: true
+    },
+    timeout_error: {
+      message: `⏱️ **Request Timeout**\n\nThe server took too long to respond, but I'm still here to help!\n\n**Available assistance:**\n• Instant grant information\n• Eligibility verification\n• Application guidance\n• Scheme comparisons\n\n**Quick actions you can try:**`,
+      suggestions: [
+        "PM Kisan details",
+        "Ayushman Bharat info",
+        "Check my eligibility", 
+        "How to apply"
+      ],
+      recoverable: true
+    },
+    server_error: {
+      message: `🛠️ **Server Maintenance**\n\nOur servers are currently experiencing issues, but I can still provide valuable assistance!\n\n**What works perfectly:**\n• Grant information and details\n• Eligibility checking\n• Application guidance\n• Scheme comparisons\n\n**Popular requests that work great:**`,
+      suggestions: [
+        "List all available schemes",
+        "Farmer benefits available",
+        "Health insurance options",
+        "Education grants"
+      ],
+      recoverable: true
+    },
+    authentication_error: {
+      message: `🔐 **Access Restricted**\n\nThere seems to be an authentication issue, but I can help with general grant information!\n\n**I can assist with:**\n• General grant details\n• Scheme comparisons\n• Eligibility criteria\n• Application processes\n\n**General information requests:**`,
+      suggestions: [
+        "Compare different schemes",
+        "General eligibility info",
+        "Application steps",
+        "Required documents"
+      ],
+      recoverable: true
+    }
+  };
+
+  const defaultError = {
+    message: `🤔 **Temporary Issue**\n\nI'm experiencing a technical hiccup, but I'm designed to handle this gracefully!\n\n**What I can still do:**\n• Provide comprehensive grant information\n• Answer questions about schemes\n• Help with eligibility checks\n• Guide through applications\n\n**Let's explore grants together:**`,
+    suggestions: [
+      "Show me popular schemes",
+      "Tell me about farmer benefits",
+      "Health scheme information",
+      "Education opportunities"
+    ],
+    recoverable: true
+  };
+
+  return errorResponses[errorType] || defaultError;
+};
+
 // Simple grant matcher class
 class AdvancedGrantMatcher {
   constructor(grants) {
@@ -1202,16 +1259,249 @@ export default function ChatBot() {
   const [userProfile, setUserProfile] = useState({});
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
+
   const [fastMode, setFastMode] = useState(true);
   const [conversationMode, setConversationMode] = useState('intelligent');
+  const [analyticsMode, setAnalyticsMode] = useState(false);
+  const [userSatisfaction, setUserSatisfaction] = useState({
+    currentScore: 0,
+    trend: 'neutral',
+    feedbackCount: 0,
+    lastUpdate: null
+  });
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    averageResponseTime: 0,
+    cacheHitRate: 0,
+    userEngagement: 0,
+    sessionSuccessRate: 0
+  });
+
+  const [analytics, setAnalytics] = useState({
+    sessionStart: Date.now(),
+    totalMessages: 0,
+    topicsExplored: new Set(),
+    responseTimes: [],
+    satisfactionScores: [],
+    errorCount: 0,
+    networkIssues: 0,
+    userJourney: []
+  });
+
+
+  // Enhanced UI State Management
+  const [uiState, setUIState] = useState({
+    isHighContrast: false,
+    reducedMotion: false,
+    focusMode: false,
+    compactMode: isMobile,
+    theme: 'auto',
+    keyboardNavigation: false
+  });
+
+
+  // Network Status Monitoring
+  const [networkStatus, setNetworkStatus] = useState({
+    isOnline: true,
+    connectionType: 'unknown',
+    quality: 'good'
+  });
+
+  // Proactive Assistance System
+  const [proactiveAssistance, setProactiveAssistance] = useState({
+    isEnabled: true,
+    lastInteraction: Date.now(),
+    conversationDepth: 0,
+    userEngagement: 0,
+    suggestedActions: [],
+    proactiveMessages: [],
+    sessionInsights: {
+      userGoals: new Set(),
+      unresolvedQuestions: [],
+      userFrustration: 0,
+      engagementLevel: 0,
+      conversationLength: 0
+    }
+  });
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
+
 
   // Initialize ultra-intelligent conversation engine
   const conversationEngine = useRef(new UltraIntelligentConversationEngine());
 
   // Initialize grant matcher (existing)
   const grantMatcher = useRef(new AdvancedGrantMatcher(GRANTS));
+
+  // Proactive Assistance System Functions
+  const analyzeProactiveOpportunities = useCallback((currentMessages, userProfile) => {
+    const opportunities = [];
+    const sessionLength = currentMessages.length;
+    
+    // Check for long conversations without specific action
+    if (sessionLength > 8 && !currentMessages.some(m => m.text.toLowerCase().includes('apply'))) {
+      opportunities.push({
+        type: 'application_guidance',
+        priority: 'high',
+        trigger: 'long_conversation_no_action',
+        message: "I've noticed we've been discussing various schemes. Would you like me to guide you through the application process for any specific scheme?"
+      });
+    }
+
+    // Check for repeated queries about same topic
+    const grantQueries = currentMessages.filter(m => 
+      m.sender === 'user' && (m.text.toLowerCase().includes('grant') || m.text.toLowerCase().includes('scheme'))
+    );
+    if (grantQueries.length >= 3) {
+      opportunities.push({
+        type: 'scheme_recommendation',
+        priority: 'medium',
+        trigger: 'repeated_queries',
+        message: "I see you've asked about multiple schemes. Based on your interests, let me recommend the most suitable ones for your profile."
+      });
+    }
+
+    // Check for unclear or confused messages
+    const confusedMessages = currentMessages.filter(m => 
+      m.sender === 'user' && (
+        m.text.toLowerCase().includes('confused') || 
+        m.text.toLowerCase().includes('don\'t understand') ||
+        m.text.toLowerCase().includes('not clear')
+      )
+    );
+    if (confusedMessages.length > 0) {
+      opportunities.push({
+        type: 'clarification',
+        priority: 'high',
+        trigger: 'confusion_detected',
+        message: "I want to make sure I'm helping you effectively. Would you prefer a simpler explanation or specific examples?"
+      });
+    }
+
+    // Check for eligibility-related questions without resolution
+    const eligibilityQueries = currentMessages.filter(m => 
+      m.sender === 'user' && m.text.toLowerCase().includes('eligible')
+    );
+    if (eligibilityQueries.length >= 2) {
+      opportunities.push({
+        type: 'eligibility_check',
+        priority: 'medium',
+        trigger: 'repeated_eligibility',
+        message: "Let me help you check your eligibility more systematically. What's your occupation and annual income range?"
+      });
+    }
+
+    return opportunities;
+  }, []);
+
+  const generateProactiveMessage = useCallback((opportunity, userProfile) => {
+    const messages = {
+      application_guidance: {
+        text: "🎯 **Ready to Take Action?**\n\nI've been helping you explore different schemes. Would you like me to guide you through applying for any specific scheme?\n\n**Popular next steps:**\n• Apply for PM Kisan (farmers)\n• Get Ayushman Bharat health card\n• Check housing scheme eligibility\n• Start education grant application",
+        suggestions: ["Guide me through PM Kisan application", "Help with Ayushman Bharat", "Check my housing eligibility", "Education grant process"]
+      },
+      scheme_recommendation: {
+        text: "💡 **Personalized Scheme Recommendations**\n\nBased on our conversation, here are the schemes most relevant to your needs:",
+        suggestions: ["Show me my top matches", "Explain PM Kisan benefits", "Health scheme comparison", "Application timeline"]
+      },
+      clarification: {
+        text: "🤝 **Let me Help You Better**\n\nI want to make sure my explanations are clear and helpful. What's the best way for me to assist you?",
+        suggestions: ["Use simpler language", "Give me real examples", "Show step-by-step process", "Compare different options"]
+      },
+      eligibility_check: {
+        text: "✅ **Let's Check Your Eligibility Together**\n\nTo provide accurate eligibility information, I need to understand your profile better.",
+        suggestions: ["I'm a farmer", "I need health insurance", "I'm a student", "I run a small business"]
+      }
+    };
+
+    const messageTemplate = messages[opportunity.type];
+    if (messageTemplate) {
+      return {
+        text: messageTemplate.text,
+        suggestions: messageTemplate.suggestions,
+        proactive: true,
+        trigger: opportunity.trigger
+      };
+    }
+
+    return null;
+  }, []);
+
+  const triggerProactiveAssistance = useCallback(() => {
+    if (!proactiveAssistance.isEnabled) return;
+
+    const opportunities = analyzeProactiveOpportunities(messages, userProfile);
+    const highPriorityOpportunity = opportunities.find(op => op.priority === 'high');
+    
+    if (highPriorityOpportunity) {
+      const proactiveMessage = generateProactiveMessage(highPriorityOpportunity, userProfile);
+      if (proactiveMessage) {
+        const msg = {
+          id: Date.now() + 1,
+          text: proactiveMessage.text,
+          sender: 'bot',
+          suggestions: proactiveMessage.suggestions,
+          timestamp: new Date(),
+          type: "proactive-message",
+          category: proactiveMessage.trigger
+        };
+        setMessages(prev => [...prev, msg]);
+        
+        setProactiveAssistance(prev => ({
+          ...prev,
+          lastInteraction: Date.now(),
+          conversationDepth: prev.conversationDepth + 1
+        }));
+      }
+    }
+  }, [messages, userProfile, proactiveAssistance.isEnabled, analyzeProactiveOpportunities, generateProactiveMessage]);
+
+  // Monitor conversation for proactive opportunities
+  useEffect(() => {
+    if (messages.length > 3 && isOpen) {
+      const timer = setTimeout(() => {
+        triggerProactiveAssistance();
+      }, 10000); // Check every 10 seconds after initial interaction
+      
+      return () => clearTimeout(timer);
+    }
+  }, [messages.length, isOpen, triggerProactiveAssistance]);
+
+  // Update proactive insights based on user interactions
+  const updateProactiveInsights = useCallback((messageText, responseType) => {
+    setProactiveAssistance(prev => {
+      const newInsights = { ...prev.sessionInsights };
+      
+      // Track user goals
+      if (messageText.toLowerCase().includes('apply')) {
+        newInsights.userGoals.add('application');
+      }
+      if (messageText.toLowerCase().includes('eligible')) {
+        newInsights.userGoals.add('eligibility_check');
+      }
+      if (messageText.toLowerCase().includes('compare')) {
+        newInsights.userGoals.add('comparison');
+      }
+
+      // Track engagement level
+      newInsights.engagementLevel = Math.min(newInsights.engagementLevel + 0.1, 1.0);
+      newInsights.conversationLength = prev.sessionInsights.conversationLength + 1;
+
+      // Track unresolved questions
+      if (responseType === 'clarification' || responseType === 'confusion') {
+        newInsights.unresolvedQuestions.push({
+          question: messageText,
+          timestamp: Date.now(),
+          context: 'proactive_monitoring'
+        });
+      }
+
+      return {
+        ...prev,
+        sessionInsights: newInsights
+      };
+    });
+  }, []);
+
 
   // Mobile detection and responsive design
   useEffect(() => {
@@ -1223,6 +1513,67 @@ export default function ChatBot() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Network Status Monitoring
+  useEffect(() => {
+    const updateNetworkStatus = () => {
+      const isOnline = navigator.onLine;
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      
+      setNetworkStatus({
+        isOnline,
+        connectionType: connection?.effectiveType || 'unknown',
+        quality: connection?.effectiveType ? 
+          (connection.effectiveType.includes('4g') ? 'excellent' : 
+           connection.effectiveType.includes('3g') ? 'good' : 'poor') : 'unknown'
+      });
+    };
+
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    
+    updateNetworkStatus();
+    
+    if (connection) {
+      connection.addEventListener('change', updateNetworkStatus);
+    }
+    
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    
+    return () => {
+      if (connection) {
+        connection.removeEventListener('change', updateNetworkStatus);
+      }
+      window.removeEventListener('online', updateNetworkStatus);
+      window.removeEventListener('offline', updateNetworkStatus);
+    };
+  }, []);
+
+  // Accessibility and UI State Management
+  useEffect(() => {
+    // Detect reduced motion preference
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setUIState(prev => ({ ...prev, reducedMotion: mediaQuery.matches }));
+      
+      const handleChange = () => {
+        setUIState(prev => ({ ...prev, reducedMotion: mediaQuery.matches }));
+      };
+      
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
+  }, []);
+
+  // Enhanced focus management for accessibility
+  useEffect(() => {
+    if (uiState.focusMode && isOpen) {
+      const chatInput = document.querySelector('[aria-label="Chat input field"]');
+      if (chatInput) {
+        chatInput.focus();
+      }
+    }
+  }, [uiState.focusMode, isOpen]);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -1254,6 +1605,7 @@ export default function ChatBot() {
     }
   }, []);
 
+
   // Voice input toggle
   const toggleVoiceInput = useCallback(() => {
     if (!recognition) {
@@ -1265,10 +1617,76 @@ export default function ChatBot() {
       recognition.stop();
       setIsListening(false);
     } else {
-      setIsListening(true);
-      recognition.start();
+      // Confirm before starting voice for the first time
+      if (!isListening && userProfile.voiceConsent !== true) {
+        const consent = confirm("🎤 Enable voice input? You can speak your messages instead of typing. Click 'OK' to enable.");
+        if (consent) {
+          setUserProfile(prev => ({ ...prev, voiceConsent: true }));
+          setIsListening(true);
+          recognition.start();
+        }
+      } else {
+        setIsListening(true);
+        recognition.start();
+      }
     }
-  }, [recognition, isListening]);
+  }, [recognition, isListening, userProfile.voiceConsent]);
+
+
+  // Enhanced Analytics Tracking System
+  const trackAnalytics = useCallback((eventType, data = {}) => {
+    const timestamp = Date.now();
+    const sessionDuration = timestamp - analytics.sessionStart;
+    
+    setAnalytics(prev => ({
+      ...prev,
+      totalMessages: prev.totalMessages + (eventType === 'message_sent' ? 1 : 0),
+      sessionDuration,
+      userJourney: [...prev.userJourney, { timestamp, eventType, data }]
+    }));
+
+    // Update performance metrics
+    if (eventType === 'response_received') {
+      const responseTime = data.responseTime || 0;
+      setAnalytics(prev => ({
+        ...prev,
+        responseTimes: [...prev.responseTimes.slice(-9), responseTime] // Keep last 10
+      }));
+    }
+
+    // Update satisfaction tracking
+    if (eventType === 'satisfaction_feedback') {
+      setUserSatisfaction(prev => ({
+        ...prev,
+        currentScore: data.score,
+        feedbackCount: prev.feedbackCount + 1,
+        lastUpdate: timestamp,
+        trend: data.trend || 'neutral'
+      }));
+      setAnalytics(prev => ({
+        ...prev,
+        satisfactionScores: [...prev.satisfactionScores.slice(-19), data.score] // Keep last 20
+      }));
+    }
+  }, [analytics.sessionStart]);
+
+  // Calculate real-time performance metrics
+  useEffect(() => {
+    const avgResponseTime = analytics.responseTimes.length > 0 
+      ? analytics.responseTimes.reduce((a, b) => a + b, 0) / analytics.responseTimes.length
+      : 0;
+    
+    const cacheHitRate = conversationEngine.current.getPerformanceMetrics().cacheHitRate;
+    const userEngagement = Math.min(analytics.totalMessages * 0.1, 1.0);
+    const successRate = analytics.totalMessages > 0 ? Math.min((analytics.totalMessages - analytics.errorCount) / analytics.totalMessages, 1.0) : 0;
+
+    setPerformanceMetrics({
+      averageResponseTime: avgResponseTime,
+      cacheHitRate: parseFloat(cacheHitRate),
+      userEngagement: userEngagement,
+      sessionSuccessRate: successRate
+    });
+  }, [analytics.responseTimes, analytics.totalMessages, analytics.errorCount]);
 
   // Enhanced scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -1333,7 +1751,9 @@ export default function ChatBot() {
     }, conversationMode === 'quick' ? 5 : 10);
   }, [conversationMode]);
 
-  // Ultra-intelligent message handling
+
+
+  // Ultra-intelligent message handling with analytics tracking
   const handleSend = useCallback(async (text = inputValue) => {
     if (!text.trim()) return;
 
@@ -1345,42 +1765,249 @@ export default function ChatBot() {
       type: "user-message"
     };
     
+    // Track message analytics
+    trackAnalytics('message_sent', { textLength: text.length });
+    
     setMessages(prev => [...prev, userMsg]);
     setInputValue("");
     setIsLoading(true);
     setIsTyping(false);
+    
+    const startTime = Date.now();
 
-    // Casual greeting responses
-    const lowerText = text.toLowerCase();
-    if (lowerText.includes('hello') || lowerText.includes('hi') || lowerText.includes('hey')) {
+    // Enhanced casual conversation handling
+    const lowerText = text.toLowerCase().trim();
+    
+    // Check for greetings (including variations like "halo", "helo", etc.)
+    const greetingPatterns = /(halo|helo|hello|hi|hey|good morning|good afternoon|good evening|whats up|what's up)/;
+    if (greetingPatterns.test(lowerText)) {
       setTimeout(() => {
+        const casualResponse = conversationEngine.current.handleCasualConversation(text) || {
+          text: `Hello! 👋 Great to see you! I'm here to help you find the perfect government grants and schemes. What can I assist you with today?`,
+          suggestions: generateRealisticSuggestions("greeting", text),
+          reasoning: 'Greeting response'
+        };
+        
         const instantResponse = {
           id: Date.now() + 1,
-          text: `Hello! How can I assist you with government grants and schemes today?`,
+          text: casualResponse.text,
           sender: 'bot',
-          suggestions: ["Check my eligibility", "Browse available grants", "Tell me about health schemes"],
+          suggestions: casualResponse.suggestions,
           timestamp: new Date(),
-          type: "bot-message"
+          type: "bot-message",
+          reasoning: casualResponse.reasoning
         };
+
         setMessages(prev => [...prev, instantResponse]);
         setIsLoading(false);
-      }, 50);
+        
+        // Track casual response analytics
+        const responseTime = Date.now() - startTime;
+        trackAnalytics('response_received', { 
+          responseTime, 
+          responseType: 'casual',
+          success: true 
+        });
+      }, 100);
       return;
     }
 
-    if (lowerText.includes('thank') || lowerText.includes('thanks')) {
+    // Enhanced thank you handling
+    const thankPatterns = /(thank you|thanks|thx|thnx|appreciate|grateful)/;
+    if (thankPatterns.test(lowerText)) {
       setTimeout(() => {
         const thanksResponse = {
           id: Date.now() + 1,
-          text: `😊 **You're very welcome!** \n\nI'm designed to provide intelligent, contextual assistance. Each conversation helps me understand you better and provide more personalized recommendations.\n\n**Is there anything else you'd like to explore or understand better?**`,
+          text: `😊 **You're very welcome!** I'm happy to help! \n\nI'm constantly learning to provide better assistance. Each conversation helps me understand your needs better.\n\n**What else can I help you discover today?**`,
           sender: 'bot',
-          suggestions: ["More Complex Queries", "How You Work", "Advanced Features", "Different Scenarios"],
+          suggestions: generateRealisticSuggestions("thanks", text),
           timestamp: new Date(),
-          type: "bot-message"
+          type: "bot-message",
+          reasoning: 'Thank you response with continued engagement'
         };
+
         setMessages(prev => [...prev, thanksResponse]);
         setIsLoading(false);
-      }, 50);
+        
+        // Track thanks response analytics
+        const responseTime = Date.now() - startTime;
+        trackAnalytics('response_received', { 
+          responseTime, 
+          responseType: 'thanks',
+          success: true 
+        });
+      }, 100);
+      return;
+    }
+
+    // Handle compliments
+    const complimentPatterns = /(great|awesome|amazing|excellent|good job|well done|brilliant|impressive)/;
+    if (complimentPatterns.test(lowerText)) {
+      setTimeout(() => {
+        const humbleResponse = {
+          id: Date.now() + 1,
+          text: `🙏 **Thank you so much!** I really appreciate the kind words. My goal is to make finding government grants as simple and helpful as possible for you.\n\n**What specific grant or scheme would you like to explore?**`,
+          sender: 'bot',
+          suggestions: generateRealisticSuggestions("compliment", text),
+          timestamp: new Date(),
+          type: "bot-message",
+          reasoning: 'Humble response to compliments'
+        };
+
+        setMessages(prev => [...prev, humbleResponse]);
+        setIsLoading(false);
+        
+        // Track compliment response analytics
+        const responseTime = Date.now() - startTime;
+        trackAnalytics('response_received', { 
+          responseTime, 
+          responseType: 'compliment',
+          success: true 
+        });
+      }, 100);
+      return;
+    }
+
+
+  // Handle casual inquiries about the AI
+    const aiInquiryPatterns = /(who are you|what can you do|tell me about yourself|how do you work|describe yourself)/;
+    if (aiInquiryPatterns.test(lowerText)) {
+      setTimeout(() => {
+        const selfIntro = conversationEngine.current.generateSelfIntroduction();
+        const introResponse = {
+          id: Date.now() + 1,
+          text: selfIntro.text,
+          sender: 'bot',
+          suggestions: selfIntro.suggestions,
+          timestamp: new Date(),
+          type: "bot-message",
+          reasoning: selfIntro.reasoning
+        };
+
+        setMessages(prev => [...prev, introResponse]);
+        setIsLoading(false);
+        
+        // Track AI inquiry response analytics
+        const responseTime = Date.now() - startTime;
+        trackAnalytics('response_received', { 
+          responseTime, 
+          responseType: 'self_intro',
+          success: true 
+        });
+      }, 100);
+      return;
+    }
+
+    // Handle "how are you" and casual conversation
+    const casualPatterns = /(how are you|how's it going|what's up|how do you feel|are you good)/;
+    if (casualPatterns.test(lowerText)) {
+      setTimeout(() => {
+        const casualResponse = {
+          id: Date.now() + 1,
+          text: `I'm doing great, thanks for asking! 😊 I'm always excited to help people discover government grants and schemes. \n\n**How are YOU doing today?** Is there something specific I can help you find?`,
+          sender: 'bot',
+          suggestions: generateRealisticSuggestions("casual", text),
+          timestamp: new Date(),
+          type: "bot-message",
+          reasoning: 'Casual conversation response maintaining engagement'
+        };
+
+        setMessages(prev => [...prev, casualResponse]);
+        setIsLoading(false);
+        
+        // Track casual conversation analytics
+        const responseTime = Date.now() - startTime;
+        trackAnalytics('response_received', { 
+          responseTime, 
+          responseType: 'casual_conversation',
+          success: true 
+        });
+      }, 100);
+      return;
+    }
+
+    // Handle weather/joke requests with redirect to grants
+    const diversionPatterns = /(weather|joke|funny|tell me a joke|what's the weather)/;
+    if (diversionPatterns.test(lowerText)) {
+      setTimeout(() => {
+        const redirectResponse = {
+          id: Date.now() + 1,
+          text: `I love your enthusiasm! 😄 While I don't handle weather or jokes, I'm actually really good at finding government grants and schemes that could benefit you!\n\n**Let me help you discover some opportunities instead!** What kind of grants or schemes are you looking for?`,
+          sender: 'bot',
+          suggestions: ["Show me agriculture grants", "Health insurance schemes", "Education opportunities", "Small business support"],
+          timestamp: new Date(),
+          type: "bot-message",
+          reasoning: 'Redirecting off-topic conversation back to core functionality'
+        };
+
+        setMessages(prev => [...prev, redirectResponse]);
+        setIsLoading(false);
+        
+        // Track diversion response analytics
+        const responseTime = Date.now() - startTime;
+        trackAnalytics('response_received', { 
+          responseTime, 
+          responseType: 'diversion_redirect',
+          success: true 
+        });
+      }, 100);
+      return;
+    }
+
+    // Handle clarification questions
+    const clarificationPatterns = /(i don't understand|confused|can you explain|what do you mean|not clear)/;
+    if (clarificationPatterns.test(lowerText)) {
+      setTimeout(() => {
+        const clarificationResponse = {
+          id: Date.now() + 1,
+          text: `No problem! Let me break this down more clearly for you. 🤔\n\n**Here's a simpler explanation:**\n\nI can help you:\n• Find grants you might be eligible for\n• Explain how to apply for schemes\n• Compare different government benefits\n• Answer questions about requirements\n\n**What specific aspect would you like me to explain differently?**`,
+          sender: 'bot',
+          suggestions: ["Explain in simple terms", "Give me an example", "What do I need to do?", "Show me the steps"],
+          timestamp: new Date(),
+          type: "bot-message",
+          reasoning: 'Providing clarification with simpler language and clear structure'
+        };
+
+        setMessages(prev => [...prev, clarificationResponse]);
+        setIsLoading(false);
+        
+        // Track clarification response analytics
+        const responseTime = Date.now() - startTime;
+        trackAnalytics('response_received', { 
+          responseTime, 
+          responseType: 'clarification',
+          success: true 
+        });
+      }, 100);
+      return;
+    }
+
+    // Handle urgency/frustration
+    const urgentPatterns = /(urgent|immediately|asap|quick|emergency|critical|help now)/;
+    if (urgentPatterns.test(lowerText)) {
+      setTimeout(() => {
+        const urgentResponse = {
+          id: Date.now() + 1,
+          text: `🚨 **I understand this is important!** Let me help you quickly:\n\n**Fastest way to get help:**\n• Tell me what you need (farmer, student, business, etc.)\n• I\'ll find relevant grants immediately\n• Give you step-by-step instructions\n\n**What\'s your situation?** (e.g., "I\'m a farmer", "I need health insurance", "I\'m a student")`,
+          sender: 'bot',
+          suggestions: ["I'm a farmer", "I need health help", "I'm a student", "I run a small business"],
+          timestamp: new Date(),
+          type: "bot-message",
+          reasoning: 'Immediate priority response for urgent requests'
+        };
+
+        setMessages(prev => [...prev, urgentResponse]);
+        setIsLoading(false);
+        
+        // Track urgent response analytics
+        const responseTime = Date.now() - startTime;
+        trackAnalytics('response_received', { 
+          responseTime, 
+          responseType: 'urgent',
+          success: true,
+          priority: 'high'
+        });
+      }, 100);
       return;
     }
 
@@ -1388,10 +2015,11 @@ export default function ChatBot() {
     const newProfile = grantMatcher.current.analyzeUserProfile(text, userProfile);
     setUserProfile(newProfile);
 
+
     try {
       // Enhanced API call with conversation context
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
       
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -1407,6 +2035,7 @@ export default function ChatBot() {
 
       clearTimeout(timeoutId);
 
+
       if (response.ok) {
         const data = await response.json();
         if (data?.reply) {
@@ -1420,50 +2049,178 @@ export default function ChatBot() {
           };
           setMessages(prev => [...prev, botMsg]);
           setIsLoading(false);
+          
+          // Track successful API response
+          const responseTime = Date.now() - startTime;
+          trackAnalytics('response_received', { 
+            responseTime, 
+            responseType: 'api_success',
+            success: true,
+            hasSuggestions: !!(data.suggestions && data.suggestions.length > 0)
+          });
           return;
         }
       }
       
       throw new Error('Remote AI unavailable');
+
+
     } catch (error) {
-      // Ultra-intelligent fallback with advanced reasoning
-      const retrievedGrants = grantMatcher.current.findBestGrants(text, 4);
-      const aiResponse = conversationEngine.current.generateAdvancedResponse(text, { profile: newProfile }, retrievedGrants);
+      // Track error analytics with enhanced categorization
+      const errorType = categorizeError(error);
+      const networkError = error.name === 'TypeError' && error.message.includes('fetch');
       
+      trackAnalytics('error_occurred', { 
+        errorType: errorType,
+        errorMessage: error.message,
+        hasNetworkError: networkError,
+        isOnline: networkStatus.isOnline,
+        connectionQuality: networkStatus.quality
+      });
+      
+      setAnalytics(prev => ({
+        ...prev,
+        errorCount: prev.errorCount + 1,
+        networkIssues: networkError ? prev.networkIssues + 1 : prev.networkIssues
+      }));
+      
+      // Enhanced contextual error response system
+      const contextualError = generateContextualError(error, errorType, networkStatus);
       const botMsg = {
         id: Date.now() + 1,
-        text: aiResponse.text + `\n\n🧠 *(Ultra-intelligent local AI response)*`,
+        text: contextualError.message,
         sender: 'bot',
-        suggestions: aiResponse.suggestions,
+        suggestions: contextualError.suggestions,
         timestamp: new Date(),
         type: "bot-message",
-        reasoning: aiResponse.reasoning
+        category: "error_response",
+        errorDetails: {
+          type: errorType,
+          timestamp: new Date().toISOString(),
+          recoverable: contextualError.recoverable
+        }
       };
+      
       setMessages(prev => [...prev, botMsg]);
       setIsLoading(false);
+      
+      // Track error response analytics
+      const responseTime = Date.now() - startTime;
+      trackAnalytics('response_received', { 
+        responseTime, 
+        responseType: 'error_handling',
+        success: contextualError.recoverable,
+        errorType: errorType,
+        isRecoverable: contextualError.recoverable
+      });
     }
   }, [inputValue, messages, userProfile, conversationMode]);
 
-  // Generate enhanced suggestions
+
+  // Generate enhanced suggestions with realistic capabilities
   const generateEnhancedSuggestions = useCallback((message, profile) => {
     const suggestions = [];
     const lower = message.toLowerCase();
     
     if (lower.includes('eligibility')) {
-      suggestions.push("Explain eligibility criteria", "Check specific requirements", "Compare with similar schemes");
+      suggestions.push("Who can apply for PM Kisan?", "What's the income limit?", "Check my eligibility");
     } else if (lower.includes('apply')) {
-      suggestions.push("Step-by-step process", "Required documents", "Application deadlines");
+      suggestions.push("How to apply for schemes", "Application process", "Required documents");
     } else if (lower.includes('compare')) {
-      suggestions.push("Side-by-side comparison", "Pros and cons", "Which is better for me?");
+      suggestions.push("Compare PM Kisan vs Ayushman Bharat", "Health scheme comparison", "Which scheme is better?");
     } else {
-      suggestions.push("More details", "Related schemes", "Application guidance");
+      suggestions.push("Tell me about PM Kisan", "What are health schemes?", "Agriculture grants");
     }
     
-    suggestions.push("What-if scenarios", "Expert advice", "Complex queries");
+    // Add realistic suggestions that AI can actually help with
+    suggestions.push("Explain a scheme", "Find schemes for farmers", "Health insurance options");
     return suggestions.slice(0, 4);
   }, []);
 
-  // Enhanced suggestion handling
+
+  // Generate dynamic, engaging placeholder text
+  const generateDynamicPlaceholder = useCallback(() => {
+    const hour = new Date().getHours();
+    const greetings = {
+      morning: "Good morning! 🌅 What grants can I help you discover today?",
+      afternoon: "Good afternoon! ☀️ How can I assist with your grant search?",
+      evening: "Good evening! 🌙 What government schemes are you interested in?",
+      night: "Working late? 🌙 I'm here to help find grants for you!"
+    };
+
+    const contextualHints = [
+      "Try: 'I'm a farmer looking for schemes'",
+      "Ask: 'What health insurance is available?'",
+      "Say: 'I need education grants'",
+      "Try: 'Compare PM Kisan and Ayushman Bharat'",
+      "Ask: 'How to apply for housing schemes'",
+      "Say: 'I need financial assistance'",
+      "Try: 'What grants for startups?'",
+      "Ask: 'How to check eligibility?'"
+    ];
+
+    const motivationalPhrases = [
+      "Let's find your perfect grant match! 🎯",
+      "Discover opportunities waiting for you! ✨",
+      "Your ideal scheme is just a question away! 🚀",
+      "Ready to unlock government benefits? 💎",
+      "Let's navigate grants together! 🧭",
+      "Your next opportunity starts here! 🌟"
+    ];
+
+    // Time-based greeting
+    let timeGreeting;
+    if (hour >= 5 && hour < 12) timeGreeting = greetings.morning;
+    else if (hour >= 12 && hour < 17) timeGreeting = greetings.afternoon;
+    else if (hour >= 17 && hour < 22) timeGreeting = greetings.evening;
+    else timeGreeting = greetings.night;
+
+    // Random contextual hint and motivational phrase
+    const randomHint = contextualHints[Math.floor(Math.random() * contextualHints.length)];
+    const randomMotivation = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
+
+    // Return mobile or desktop specific format
+    if (isMobile) {
+      return `${timeGreeting.split('!')[0]}! 💬 Ask me anything...`;
+    } else {
+      return `${timeGreeting} 💡 ${randomMotivation} \n💡 ${randomHint}`;
+    }
+  }, [isMobile]);
+
+  // Generate realistic suggestions for different conversation types
+  const generateRealisticSuggestions = useCallback((type, message) => {
+    const suggestions = {
+      greeting: [
+        "Tell me about available grants",
+        "How to find schemes for farmers", 
+        "Health insurance schemes",
+        "Education grants available"
+      ],
+      thanks: [
+        "Tell me about PM Kisan",
+        "What schemes are available?",
+        "How to check eligibility",
+        "Application process"
+      ],
+      compliment: [
+        "Can you help me find grants?",
+        "What are the top schemes?",
+        "How do I apply for benefits?",
+        "Explain health schemes"
+      ],
+      casual: [
+        "What can you help me with?",
+        "Show me available grants",
+        "Tell me about schemes",
+        "How to get started?"
+      ]
+    };
+    
+    return suggestions[type] || suggestions.greeting;
+  }, []);
+
+
+  // Enhanced suggestion handling with smart categorization
   const handleSuggestion = useCallback((suggestion) => {
     const navigationMap = {
       "View Dashboard": "/chart",
@@ -1471,16 +2228,74 @@ export default function ChatBot() {
       "About Us": "/about"
     };
 
+    const actionSuggestions = {
+      "Tell me about PM Kisan": () => {
+        const response = {
+          id: Date.now() + 1,
+          text: `🌾 **PM Kisan Samman Nidhi**\n\n**Key Benefits:**\n• ₹6,000 annually to eligible farmers\n• Direct bank transfer\n• No middlemen\n\n**Eligibility:**\n• Small & marginal farmers\n• Annual income limit applies\n• Land ownership verification\n\n**Application:**\n• Visit pmkisan.gov.in\n• Fill online form\n• Upload required documents\n• Track application status`,
+          sender: 'bot',
+          suggestions: ["How to apply?", "Check my eligibility", "Required documents", "Application status"],
+          timestamp: new Date(),
+          type: "bot-message",
+          category: "direct_info"
+        };
+        setMessages(prev => [...prev, response]);
+      },
+      "What health schemes available?": () => {
+        const response = {
+          id: Date.now() + 1,
+          text: `🏥 **Top Health Insurance Schemes:**\n\n**1. Ayushman Bharat**\n• ₹5 lakh health coverage\n• 50 crore beneficiaries\n• Cashless treatment\n\n**2. Pradhan Mantri Jan Arogya Yojana**\n• Family floater plan\n• 1,400+ covered procedures\n• Nationwide network\n\n**3. ESI Scheme**\n• Employees' health insurance\n• Medical benefits\n• Unemployment protection`,
+          sender: 'bot',
+          suggestions: ["Ayushman Bharat details", "Apply for health card", "Find nearby hospitals", "Check eligibility"],
+          timestamp: new Date(),
+          type: "bot-message",
+          category: "health_info"
+        };
+        setMessages(prev => [...prev, response]);
+      },
+      "How to check eligibility": () => {
+        const response = {
+          id: Date.now() + 1,
+          text: `✅ **How to Check Eligibility:**\n\n**Step-by-Step Process:**\n1. **Identify the Scheme** - Choose relevant scheme\n2. **Check Basic Criteria** - Age, income, occupation\n3. **Visit Official Portal** - Government websites\n4. **Use Eligibility Calculator** - Online tools available\n5. **Document Verification** - Gather required proofs\n\n**Quick Eligibility Check:**\n• **PM Kisan:** Farmer with cultivable land\n• **Ayushman Bharat:** Earning ≤₹5 lakh annually\n• **Housing:** Income ≤₹18 lakh (varies by location)`,
+          sender: 'bot',
+          suggestions: ["Check PM Kisan eligibility", "Ayushman Bharat criteria", "Income limits by scheme", "Document requirements"],
+          timestamp: new Date(),
+          type: "bot-message",
+          category: "guidance"
+        };
+        setMessages(prev => [...prev, response]);
+      },
+      "Compare PM Kisan and Ayushman Bharat": () => {
+        const response = {
+          id: Date.now() + 1,
+          text: `📊 **PM Kisan vs Ayushman Bharat Comparison:**\n\n| Aspect | PM Kisan | Ayushman Bharat |\n|--------|----------|------------------|\n| **Benefit** | ₹6,000/year | ₹5 lakh health cover |\n| **Target** | Farmers | All eligible families |\n| **Payment** | Quarterly | Medical emergencies |\n| **Coverage** | Direct cash | Hospitalization |\n| **Eligibility** | Land ownership | Income criteria |\n\n**Which is Better for You?**\n• **Farmer** → Both schemes (complementary)\n• **Non-farmer** → Ayushman Bharat\n• **Combined benefits** → Apply for both`,
+          sender: 'bot',
+          suggestions: ["Apply for both", "Check my eligibility", "Find common benefits", "Application process"],
+          timestamp: new Date(),
+          type: "bot-message",
+          category: "comparison"
+        };
+        setMessages(prev => [...prev, response]);
+      }
+    };
+
+    // Check if suggestion has predefined action
+    if (actionSuggestions[suggestion]) {
+      actionSuggestions[suggestion]();
+      return;
+    }
+
+    // Handle navigation suggestions
     if (navigationMap[suggestion]) {
       const route = navigationMap[suggestion];
       if (route.startsWith('/')) {
         navigate(route);
-      } else {
-        handleSend(suggestion);
+        return;
       }
-    } else {
-      handleSend(suggestion);
     }
+
+    // Default: send as chat message
+    handleSend(suggestion);
   }, [navigate, handleSend]);
 
   // Enhanced text formatting
@@ -1735,23 +2550,242 @@ export default function ChatBot() {
                 </p>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setAnalyticsMode(!analyticsMode)}
+                title="Toggle Analytics Dashboard"
+                style={{
+                  background: analyticsMode 
+                    ? "linear-gradient(135deg, #10b981, #059669)"
+                    : "rgba(6, 182, 212, 0.1)",
+                  border: `1px solid ${analyticsMode ? '#10b981' : '#06b6d4'}`,
+                  color: analyticsMode ? "#fff" : "#06b6d4",
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  fontSize: "10px",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px"
+                }}
+                aria-label="Toggle analytics dashboard"
+              >
+                📊 {analyticsMode ? "Hide" : "Show"} Analytics
+              </button>
+
+              {/* Network Status Indicator */}
+              <div 
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "4px 6px",
+                  background: networkStatus.isOnline 
+                    ? (networkStatus.quality === 'excellent' 
+                       ? "rgba(16, 185, 129, 0.1)" 
+                       : networkStatus.quality === 'good'
+                       ? "rgba(245, 158, 11, 0.1)"
+                       : "rgba(239, 68, 68, 0.1)")
+                    : "rgba(239, 68, 68, 0.1)",
+                  border: `1px solid ${
+                    networkStatus.isOnline 
+                      ? (networkStatus.quality === 'excellent' 
+                         ? '#10b981' 
+                         : networkStatus.quality === 'good'
+                         ? '#f59e0b'
+                         : '#ef4444')
+                      : '#ef4444'
+                  }`,
+                  borderRadius: "6px",
+                  fontSize: "10px",
+                  color: networkStatus.isOnline 
+                    ? (networkStatus.quality === 'excellent' 
+                       ? '#10b981' 
+                       : networkStatus.quality === 'good'
+                       ? '#f59e0b'
+                       : '#ef4444')
+                    : '#ef4444'
+                }}
+                title={`Network: ${networkStatus.connectionType} - ${networkStatus.quality}`}
+              >
+                <span style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: networkStatus.isOnline 
+                    ? (networkStatus.quality === 'excellent' 
+                       ? '#10b981' 
+                       : networkStatus.quality === 'good'
+                       ? '#f59e0b'
+                       : '#ef4444')
+                    : '#ef4444',
+                  animation: networkStatus.isOnline && networkStatus.quality !== 'poor' ? "pulse 2s infinite" : "none"
+                }} />
+                <span>
+                  {networkStatus.isOnline 
+                    ? (networkStatus.quality === 'excellent' ? '🟢' : 
+                       networkStatus.quality === 'good' ? '🟡' : '🔴')
+                    : '📵'
+                  }
+                </span>
+              </div>
+
+              {/* Enhanced Status Display */}
               <div style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "#10b981",
-                animation: "pulse 2s infinite"
-              }} />
-              <span style={{
-                color: "#10b981",
-                fontSize: "11px",
-                fontWeight: "500"
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                color: "#64748b",
+                fontSize: "10px"
               }}>
-                Online
-              </span>
+                {isListening ? "🎤 Listening..." : "💡 Ready to help"}
+              </div>
             </div>
+
           </div>
+
+          {/* Advanced Analytics Dashboard */}
+          {analyticsMode && (
+            <div style={{
+              padding: "12px 16px",
+              background: "linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95))",
+              borderBottom: "1px solid rgba(148, 163, 184, 0.1)",
+              animation: "slideDown 0.3s ease-out"
+            }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                gap: "12px",
+                marginBottom: "12px"
+              }}>
+                
+                {/* Performance Metrics */}
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1))",
+                  border: "1px solid rgba(102, 126, 234, 0.3)",
+                  borderRadius: "8px",
+                  padding: "8px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>⚡ Performance</div>
+                  <div style={{ fontSize: "16px", fontWeight: "600", color: "#667eea" }}>
+                    {performanceMetrics.averageResponseTime.toFixed(0)}ms
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                    Avg Response
+                  </div>
+                </div>
+
+                {/* Cache Hit Rate */}
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1))",
+                  border: "1px solid rgba(16, 185, 129, 0.3)",
+                  borderRadius: "8px",
+                  padding: "8px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>💾 Cache</div>
+                  <div style={{ fontSize: "16px", fontWeight: "600", color: "#10b981" }}>
+                    {performanceMetrics.cacheHitRate}
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                    Hit Rate
+                  </div>
+                </div>
+
+                {/* User Engagement */}
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1))",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
+                  borderRadius: "8px",
+                  padding: "8px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>🎯 Engagement</div>
+                  <div style={{ fontSize: "16px", fontWeight: "600", color: "#f59e0b" }}>
+                    {(performanceMetrics.userEngagement * 100).toFixed(0)}%
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                    Active Level
+                  </div>
+                </div>
+
+                {/* Success Rate */}
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.1))",
+                  border: "1px solid rgba(139, 92, 246, 0.3)",
+                  borderRadius: "8px",
+                  padding: "8px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>✅ Success</div>
+                  <div style={{ fontSize: "16px", fontWeight: "600", color: "#8b5cf6" }}>
+                    {(performanceMetrics.sessionSuccessRate * 100).toFixed(0)}%
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                    Completion
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Session Details */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "8px",
+                fontSize: "10px"
+              }}>
+                <div style={{ color: "#64748b" }}>
+                  📊 <strong>Messages:</strong> {analytics.totalMessages}
+                </div>
+                <div style={{ color: "#64748b" }}>
+                  ⏱️ <strong>Duration:</strong> {Math.floor((Date.now() - analytics.sessionStart) / 1000 / 60)}m
+                </div>
+                <div style={{ color: "#64748b" }}>
+                  ❌ <strong>Errors:</strong> {analytics.errorCount}
+                </div>
+                <div style={{ color: "#64748b" }}>
+                  🔗 <strong>Network Issues:</strong> {analytics.networkIssues}
+                </div>
+              </div>
+
+              {/* User Satisfaction Trend */}
+              {userSatisfaction.feedbackCount > 0 && (
+                <div style={{
+                  marginTop: "8px",
+                  padding: "6px 8px",
+                  background: "linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05))",
+                  border: "1px solid rgba(16, 185, 129, 0.2)",
+                  borderRadius: "6px"
+                }}>
+                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "4px" }}>
+                    😊 User Satisfaction: {userSatisfaction.currentScore}/5 
+                    {userSatisfaction.trend === 'up' && ' ↗️'}
+                    {userSatisfaction.trend === 'down' && ' ↘️'}
+                    {userSatisfaction.trend === 'neutral' && ' ➡️'}
+                  </div>
+                  <div style={{
+                    width: "100%",
+                    height: "4px",
+                    background: "rgba(16, 185, 129, 0.2)",
+                    borderRadius: "2px",
+                    overflow: "hidden"
+                  }}>
+                    <div style={{
+                      width: `${(userSatisfaction.currentScore / 5) * 100}%`,
+                      height: "100%",
+                      background: "linear-gradient(90deg, #10b981, #059669)",
+                      transition: "width 0.3s ease"
+                    }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Enhanced Messages Container */}
           <div style={{ 
@@ -1781,9 +2815,8 @@ export default function ChatBot() {
                   background: msg.sender === "user"
                     ? "linear-gradient(135deg, #667eea, #764ba2)"
                     : "linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08))",
+
                   color: msg.sender === "user" ? "#ffffff" : "#ffffff",
-                  textShadow: "0 0 3px rgba(102, 126, 234, 0.3), 0 0 6px rgba(118, 75, 162, 0.2), 0 0 9px rgba(240, 147, 251, 0.1)",
-                  animation: "softGlow 4s ease-in-out infinite",
                   textShadow: "0 0 3px rgba(102, 126, 234, 0.3), 0 0 6px rgba(118, 75, 162, 0.2), 0 0 9px rgba(240, 147, 251, 0.1)",
                   animation: "softGlow 4s ease-in-out infinite",
                   fontSize: "14px",
@@ -1891,13 +2924,14 @@ export default function ChatBot() {
             background: "rgba(15, 23, 42, 0.8)",
             paddingBottom: isMobile ? "12px" : "12px"
           }}>
+
             <div style={{ position: "relative", flex: 1 }}>
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                placeholder={isMobile ? "Type your question..." : "Ask me anything about grants..."}
+                placeholder={generateDynamicPlaceholder()}
                 aria-label="Chat input field"
                 style={{
                   width: "100%",
@@ -2015,12 +3049,24 @@ export default function ChatBot() {
           51%, 100% { opacity: 0; }
         }
         
+
         @keyframes softGlow {
           0%, 100% {
             text-shadow: 0 0 3px rgba(102, 126, 234, 0.3), 0 0 6px rgba(118, 75, 162, 0.2), 0 0 9px rgba(240, 147, 251, 0.1);
           }
           50% {
             text-shadow: 0 0 1px rgba(102, 126, 234, 0.2), 0 0 3px rgba(118, 75, 162, 0.15), 0 0 5px rgba(240, 147, 251, 0.08);
+          }
+        }
+
+        @keyframes slideDown {
+          from { 
+            transform: translateY(-10px); 
+            opacity: 0; 
+          }
+          to { 
+            transform: translateY(0); 
+            opacity: 1; 
           }
         }
 
