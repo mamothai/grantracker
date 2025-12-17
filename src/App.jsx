@@ -17,6 +17,7 @@ import ChatBot from "./components/ChatBot.jsx";
 
 import "./App.css";
 import "./scrollAnimations.css";
+import "./components/ChatBot.css";
 
 // Initialize scroll animations using Intersection Observer
 function initScrollAnimations() {
