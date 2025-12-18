@@ -21,11 +21,13 @@ const ChatBot = ({
   const [error, setError] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const [activeConversationFlow, setActiveConversationFlow] = useState(null);
   const [analytics, setAnalytics] = useState({
     messagesSent: 0,
     messagesReceived: 0,
     avgResponseTime: 0,
-    satisfactionScore: 0
+    satisfactionScore: 0,
+    complexQueriesHandled: 0
   });
 
   const messagesEndRef = useRef(null);
@@ -94,19 +96,29 @@ const ChatBot = ({
         setSuggestions([
           { id: 'search', text: 'Search for grants', icon: '🔍' },
           { id: 'eligibility', text: 'Check eligibility', icon: '✅' },
-          { id: 'deadline', text: 'Find deadlines', icon: '📅' }
+          { id: 'deadline', text: 'Find deadlines', icon: '📅' },
+          { id: 'guide', text: 'Step-by-step guide', icon: '📖' }
         ]);
       } else if (lastMessage.includes('help') || lastMessage.includes('support')) {
         setSuggestions([
           { id: 'contact', text: 'Contact support', icon: '📞' },
           { id: 'faq', text: 'View FAQ', icon: '❓' },
-          { id: 'guide', text: 'Get application guide', icon: '📖' }
+          { id: 'guide', text: 'Get detailed guide', icon: '📖' },
+          { id: 'compare', text: 'Compare options', icon: '⚖️' }
+        ]);
+      } else if (lastMessage.includes('step') || lastMessage.includes('guide') || lastMessage.includes('walk')) {
+        setSuggestions([
+          { id: 'next_step', text: 'Next step', icon: '➡️' },
+          { id: 'previous', text: 'Previous step', icon: '⬅️' },
+          { id: 'summary', text: 'Show summary', icon: '📊' },
+          { id: 'clear', text: 'End guide', icon: '🗑️' }
         ]);
       } else {
         setSuggestions([
           { id: 'more', text: 'Tell me more', icon: '📚' },
           { id: 'examples', text: 'Show examples', icon: '💡' },
-          { id: 'clear', text: 'Clear conversation', icon: '🗑️' }
+          { id: 'clear', text: 'Clear conversation', icon: '🗑️' },
+          { id: 'compare', text: 'Compare options', icon: '⚖️' }
         ]);
       }
     }
@@ -136,55 +148,139 @@ const ChatBot = ({
   useEffect(() => {
     const messagesSent = messages.filter(m => m.sender === 'user').length;
     const messagesReceived = messages.filter(m => m.sender === 'bot').length;
+    const complexQueries = messages.filter(m =>
+      m.metadata?.intent && ['multi_step_guide', 'comparison', 'detailed_info'].includes(m.metadata.intent)
+    ).length;
     
     setAnalytics(prev => ({
       ...prev,
       messagesSent,
       messagesReceived,
-      avgResponseTime: messagesReceived > 0 
+      avgResponseTime: messagesReceived > 0
         ? messages.filter(m => m.sender === 'bot').reduce((sum, m) => sum + (m.responseTime || 0), 0) / messagesReceived
-        : 0
+        : 0,
+      complexQueriesHandled: complexQueries
     }));
   }, [messages]);
 
-  // Natural Language Processing - Intent recognition
+  // Enhanced Natural Language Processing - Intent recognition with improved parsing
   const analyzeIntent = useCallback((text) => {
     const normalized = text.toLowerCase().trim();
     
-    // Greetings
-    if (/^(hello|hi|hey|greetings|good [morning|afternoon|evening])*/i.test(normalized)) {
-      return { intent: 'greeting', confidence: 0.9 };
+    // Remove common punctuation for better matching
+    const cleaned = normalized.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '');
+    
+    // Greetings - expanded patterns
+    if (/^(hello|hi|hey|greetings|good [morning|afternoon|evening]|howdy|yo|hey there|what's up|hi there)/i.test(cleaned)) {
+      return { intent: 'greeting', confidence: 0.95 };
     }
     
-    // Grants/funding related
-    if (/(grant|funding|scholarship|financial aid|bursary|subsidy)/i.test(normalized)) {
-      return { intent: 'grant_info', confidence: 0.8 };
+    // Grants/funding related - expanded patterns
+    if (/(grant|funding|scholarship|financial aid|bursary|subsidy|loan|financial assistance|money for|fund|finance)/i.test(cleaned)) {
+      return { intent: 'grant_info', confidence: 0.85 };
     }
     
-    // Eligibility
-    if (/(eligible|qualify|requirement|criteria)/i.test(normalized)) {
-      return { intent: 'eligibility', confidence: 0.85 };
+    // Eligibility - expanded patterns
+    if (/(eligible|qualify|requirement|criteria|qualification|who can apply|am i eligible|can i get|requirements for)/i.test(cleaned)) {
+      return { intent: 'eligibility', confidence: 0.9 };
     }
     
-    // Deadlines
-    if (/(deadline|due date|when|application period)/i.test(normalized)) {
-      return { intent: 'deadline', confidence: 0.8 };
+    // Deadlines - expanded patterns
+    if (/(deadline|due date|when|application period|when is|date for|last day|cutoff|closing date)/i.test(cleaned)) {
+      return { intent: 'deadline', confidence: 0.85 };
     }
     
-    // Help/support
-    if (/(help|support|assistance|trouble|issue|problem)/i.test(normalized)) {
-      return { intent: 'help', confidence: 0.75 };
+    // Help/support - expanded patterns
+    if (/(help|support|assistance|trouble|issue|problem|how to|guide|walk me through|explain|need help)/i.test(cleaned)) {
+      return { intent: 'help', confidence: 0.8 };
     }
     
-    // Thank you
-    if (/(thank|thanks|appreciate|great help)/i.test(normalized)) {
-      return { intent: 'gratitude', confidence: 0.9 };
+    // Thank you - expanded patterns
+    if (/(thank|thanks|appreciate|great help|thank you|thanks a lot|much appreciated|you're helpful)/i.test(cleaned)) {
+      return { intent: 'gratitude', confidence: 0.95 };
+    }
+    
+    // Clear conversation
+    if (/(clear|reset|start over|new conversation|empty|delete|remove)/i.test(cleaned)) {
+      return { intent: 'clear', confidence: 0.9 };
+    }
+    
+    // Specific grant queries
+    if (/(how much|amount|money|budget|cost)/i.test(cleaned)) {
+      return { intent: 'amount', confidence: 0.7 };
+    }
+    
+    // Complex multi-step queries
+    if (/(step by step|walk me through|process for|how do i|guide me|what are the steps|procedure for)/i.test(cleaned)) {
+      return { intent: 'multi_step_guide', confidence: 0.9 };
+    }
+    
+    // Comparison queries
+    if (/(compare|difference between|which is better|vs|versus|compare .* and .*)/i.test(cleaned)) {
+      return { intent: 'comparison', confidence: 0.85 };
+    }
+    
+    // Detailed information requests
+    if (/(details about|more information on|tell me about|explain|describe|what is)/i.test(cleaned)) {
+      return { intent: 'detailed_info', confidence: 0.8 };
     }
     
     return { intent: 'unknown', confidence: 0.1 };
   }, []);
+  
+  // Multi-step conversation flow management
+  const conversationFlows = {
+    'grant_application': {
+      steps: [
+        { id: 'find_grants', prompt: 'Let me help you find suitable grants. What type of funding are you looking for?' },
+        { id: 'check_eligibility', prompt: 'Great! Now let\'s check if you qualify. What is your organization type?' },
+        { id: 'gather_documents', prompt: 'You\'ll need certain documents. Do you have your financial statements ready?' },
+        { id: 'submit_application', prompt: 'Almost there! Would you like me to guide you through the submission process?' }
+      ],
+      currentStep: 0
+    },
+    'eligibility_check': {
+      steps: [
+        { id: 'organization_type', prompt: 'What type of organization are you (non-profit, business, individual)?' },
+        { id: 'location', prompt: 'Where is your organization located?' },
+        { id: 'revenue', prompt: 'What is your annual revenue range?' },
+        { id: 'summary', prompt: 'Based on your answers, here\'s what I found about your eligibility...' }
+      ],
+      currentStep: 0
+    }
+  };
+  
+  const startConversationFlow = useCallback((flowId) => {
+    if (conversationFlows[flowId]) {
+      setActiveConversationFlow({
+        ...conversationFlows[flowId],
+        id: flowId
+      });
+      return true;
+    }
+    return false;
+  }, []);
+  
+  const advanceConversationFlow = useCallback(() => {
+    if (activeConversationFlow) {
+      const updatedFlow = {
+        ...activeConversationFlow,
+        currentStep: activeConversationFlow.currentStep + 1
+      };
+      setActiveConversationFlow(updatedFlow);
+      
+      if (updatedFlow.currentStep >= updatedFlow.steps.length - 1) {
+        setTimeout(() => {
+          setActiveConversationFlow(null);
+        }, 3000);
+      }
+      
+      return updatedFlow;
+    }
+    return null;
+  }, [activeConversationFlow]);
 
-  // Generate context-aware response
+  // Enhanced context-aware response generation with improved error handling
   const generateResponse = useCallback(async (message, intent) => {
     setIsLoading(true);
     setIsTyping(true);
@@ -192,19 +288,21 @@ const ChatBot = ({
     const startTime = Date.now();
     
     try {
-      // Simulate API call with realistic delay
-      await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 400));
+      // Simulate API call with realistic delay (optimized for performance)
+      await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
       
-      // Context-aware responses based on intent and conversation history
+      // Enhanced context with conversation history and user preferences
       const context = {
         currentMessage: message,
         intent,
-        history: conversationHistoryRef.current.slice(-5),
+        history: conversationHistoryRef.current.slice(-10), // Keep last 10 messages for better context
         location: location.pathname,
-        language
+        language,
+        timestamp: new Date().toISOString(),
+        activeFlow: activeConversationFlow
       };
       
-      // Generate response based on context
+      // Generate response based on intent with fallback mechanisms
       let response = '';
       
       switch (intent.intent) {
@@ -212,22 +310,38 @@ const ChatBot = ({
           response = getGreetingResponse(message, language);
           break;
         case 'grant_info':
-          response = await getGrantInfoResponse(message, language);
+          response = await getGrantInfoResponse(message, language, context);
           break;
         case 'eligibility':
-          response = await getEligibilityResponse(message, language);
+          response = await getEligibilityResponse(message, language, context);
           break;
         case 'deadline':
-          response = await getDeadlineResponse(message, language);
+          response = await getDeadlineResponse(message, language, context);
           break;
         case 'help':
-          response = getHelpResponse(message, language);
+          response = getHelpResponse(message, language, context);
           break;
         case 'gratitude':
           response = getGratitudeResponse(message, language);
           break;
+        case 'clear':
+          response = getClearResponse(language);
+          break;
+        case 'amount':
+          response = await getAmountResponse(message, language, context);
+          break;
+        case 'multi_step_guide':
+          response = await getMultiStepGuideResponse(message, language, context);
+          break;
+        case 'comparison':
+          response = await getComparisonResponse(message, language, context);
+          break;
+        case 'detailed_info':
+          response = await getDetailedInfoResponse(message, language, context);
+          break;
         default:
-          response = getFallbackResponse(message, language);
+          // Enhanced fallback with context awareness
+          response = getFallbackResponse(message, language, context);
       }
       
       const responseTime = Date.now() - startTime;
@@ -240,29 +354,224 @@ const ChatBot = ({
         metadata: {
           intent: intent.intent,
           confidence: intent.confidence,
-          context
+          context,
+          processed: true
         }
       };
     } catch (err) {
       console.error('Error generating response:', err);
-      return {
-        text: getErrorResponse(language),
-        sender: 'bot',
-        timestamp: new Date().toISOString(),
-        isError: true
-      };
+      
+      // Enhanced error handling with specific error types
+      if (err.message.includes('network') || err.message.includes('fetch')) {
+        return {
+          text: getNetworkErrorResponse(language),
+          sender: 'bot',
+          timestamp: new Date().toISOString(),
+          isError: true,
+          errorType: 'network'
+        };
+      } else if (err.message.includes('timeout')) {
+        return {
+          text: getTimeoutErrorResponse(language),
+          sender: 'bot',
+          timestamp: new Date().toISOString(),
+          isError: true,
+          errorType: 'timeout'
+        };
+      } else {
+        return {
+          text: getErrorResponse(language),
+          sender: 'bot',
+          timestamp: new Date().toISOString(),
+          isError: true,
+          errorType: 'unknown'
+        };
+      }
     } finally {
       setIsLoading(false);
       setIsTyping(false);
     }
-  }, [location.pathname, language]);
+  }, [location.pathname, language, activeConversationFlow]);
+  
+  // Multi-step guide response
+  const getMultiStepGuideResponse = async (message, lang, context) => {
+    const responses = {
+      en: {
+        intro: 'I can guide you through this step by step. Let me start with the first step:',
+        step: 'Step {current} of {total}: {description}',
+        conclusion: 'You\'ve completed all the steps! Would you like to review anything or start over?'
+      },
+      es: {
+        intro: 'Puedo guiarte paso a paso. Empecemos con el primer paso:',
+        step: 'Paso {current} de {total}: {description}',
+        conclusion: '¡Has completado todos los pasos! ¿Te gustaría revisar algo o empezar de nuevo?'
+      },
+      fr: {
+        intro: 'Je peux vous guider étape par étape. Commençons par la première étape:',
+        step: 'Étape {current} sur {total}: {description}',
+        conclusion: 'Vous avez terminé toutes les étapes ! Voulez-vous réviser quelque chose ou recommencer ?'
+      },
+      de: {
+        intro: 'Ich kann Sie Schritt für Schritt führen. Beginnen wir mit dem ersten Schritt:',
+        step: 'Schritt {current} von {total}: {description}',
+        conclusion: 'Sie haben alle Schritte abgeschlossen! Möchten Sie etwas überprüfen oder von vorne beginnen?'
+      },
+      hi: {
+        intro: 'मैं आपको चरण दर चरण मार्गदर्शन कर सकता हूँ। पहले चरण से शुरू करें:',
+        step: 'चरण {current} में से {total}: {description}',
+        conclusion: 'आपने सभी चरणों को पूरा कर लिया है! क्या आप कुछ समीक्षा करना चाहते हैं या फिर से शुरू करना चाहते हैं?'
+      }
+    };
+    
+    // Start or continue a conversation flow
+    if (!activeConversationFlow) {
+      // Try to determine which flow to start based on message content
+      if (message.toLowerCase().includes('grant') || message.toLowerCase().includes('application')) {
+        startConversationFlow('grant_application');
+        return responses[lang].intro || responses.en.intro;
+      } else if (message.toLowerCase().includes('eligible') || message.toLowerCase().includes('qualify')) {
+        startConversationFlow('eligibility_check');
+        return responses[lang].intro || responses.en.intro;
+      }
+    }
+    
+    // If we have an active flow, continue it
+    if (activeConversationFlow && activeConversationFlow.currentStep < activeConversationFlow.steps.length) {
+      const currentStep = activeConversationFlow.steps[activeConversationFlow.currentStep];
+      const stepTemplate = responses[lang].step || responses.en.step;
+      const stepDescription = currentStep.prompt;
+      
+      return stepTemplate
+        .replace('{current}', activeConversationFlow.currentStep + 1)
+        .replace('{total}', activeConversationFlow.steps.length)
+        .replace('{description}', stepDescription);
+    }
+    
+    // Flow completed
+    return responses[lang].conclusion || responses.en.conclusion;
+  };
+  
+  // Comparison response
+  const getComparisonResponse = async (message, lang, context) => {
+    const responses = {
+      en: {
+        intro: 'Let me compare these options for you:',
+        comparison: 'Here\'s how they compare:',
+        conclusion: 'Would you like more details about either option?'
+      },
+      es: {
+        intro: 'Déjame comparar estas opciones para ti:',
+        comparison: 'Así es como se comparan:',
+        conclusion: '¿Te gustaría más detalles sobre alguna opción?'
+      },
+      fr: {
+        intro: 'Laissez-moi comparer ces options pour vous:',
+        comparison: 'Voici comment elles se comparent:',
+        conclusion: 'Voulez-vous plus de détails sur l\'une ou l\'autre option ?'
+      },
+      de: {
+        intro: 'Lass mich diese Optionen für Sie vergleichen:',
+        comparison: 'So vergleichen sie sich:',
+        conclusion: 'Möchten Sie mehr Details über eine der Optionen?'
+      },
+      hi: {
+        intro: 'मुझे इन विकल्पों की तुलना करने दें:',
+        comparison: 'यहाँ उनकी तुलना है:',
+        conclusion: 'क्या आप किसी विकल्प के बारे में और विवरण चाहते हैं?'
+      }
+    };
+    
+    return `${responses[lang].intro || responses.en.intro}\n\n${responses[lang].comparison || responses.en.comparison}\n\n${responses[lang].conclusion || responses.en.conclusion}`;
+  };
+  
+  // Detailed information response
+  const getDetailedInfoResponse = async (message, lang, context) => {
+    const responses = {
+      en: {
+        intro: 'Here\'s detailed information about that:',
+        section: '• {section}: {details}',
+        conclusion: 'Would you like to know more about any specific aspect?'
+      },
+      es: {
+        intro: 'Aquí tienes información detallada sobre eso:',
+        section: '• {section}: {details}',
+        conclusion: '¿Te gustaría saber más sobre algún aspecto específico?'
+      },
+      fr: {
+        intro: 'Voici des informations détaillées à ce sujet:',
+        section: '• {section}: {details}',
+        conclusion: 'Voulez-vous en savoir plus sur un aspect spécifique ?'
+      },
+      de: {
+        intro: 'Hier sind detaillierte Informationen dazu:',
+        section: '• {section}: {details}',
+        conclusion: 'Möchten Sie mehr über einen bestimmten Aspekt erfahren?'
+      },
+      hi: {
+        intro: 'यहाँ उस बारे में विस्तृत जानकारी है:',
+        section: '• {section}: {details}',
+        conclusion: 'क्या आप किसी विशेष पहलू के बारे में और जानना चाहते हैं?'
+      }
+    };
+    
+    return `${responses[lang].intro || responses.en.intro}\n\n• Point 1: Detailed information\n• Point 2: More details here\n• Point 3: Additional information\n\n${responses[lang].conclusion || responses.en.conclusion}`;
+  };
 
-  // Handle user message
+  // Input validation and sanitization
+  const validateAndSanitizeInput = useCallback((input) => {
+    if (!input || typeof input !== 'string') {
+      return { isValid: false, error: 'Invalid input type' };
+    }
+    
+    const trimmed = input.trim();
+    
+    // Check for excessive length
+    if (trimmed.length > 1000) {
+      return { isValid: false, error: 'Message too long (max 1000 characters)' };
+    }
+    
+    // Check for potentially malicious content
+    const dangerousPatterns = [
+      /<script.*?>/gi,
+      /<\/script>/gi,
+      /javascript:/gi,
+      /onerror\s*=/gi,
+      /onload\s*=/gi,
+      /eval\(/gi,
+      /document\.cookie/gi,
+      /window\.location/gi
+    ];
+    
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(trimmed)) {
+        return { isValid: false, error: 'Invalid characters detected' };
+      }
+    }
+    
+    // Check for excessive special characters
+    const specialCharCount = (trimmed.match(/[!@#$%^&*()_+{}\[\]:;<>,.?~\/\\]/g) || []).length;
+    if (specialCharCount > 20) {
+      return { isValid: false, error: 'Too many special characters' };
+    }
+    
+    return { isValid: true, cleaned: trimmed };
+  }, []);
+
+  // Handle user message with enhanced validation
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isLoading) return;
     
+    // Validate and sanitize input
+    const validation = validateAndSanitizeInput(inputValue);
+    
+    if (!validation.isValid) {
+      setError(validation.error);
+      setInputValue('');
+      return;
+    }
+    
     const userMessage = {
-      text: inputValue,
+      text: validation.cleaned,
       sender: 'user',
       timestamp: new Date().toISOString()
     };
@@ -272,24 +581,36 @@ const ChatBot = ({
     setMessages(updatedMessages);
     conversationHistoryRef.current = updatedMessages;
     
-    // Store in localStorage
-    localStorage.setItem(`chatbot_history_${sessionId}`, JSON.stringify(updatedMessages));
+    // Store in localStorage with size limit
+    try {
+      localStorage.setItem(`chatbot_history_${sessionId}`, JSON.stringify(updatedMessages));
+    } catch (e) {
+      console.error('Storage full, clearing old data');
+      // Clear old sessions if storage is full
+      localStorage.removeItem(`chatbot_history_${sessionId}`);
+      localStorage.setItem(`chatbot_history_${sessionId}`, JSON.stringify(updatedMessages.slice(-50)));
+    }
     
     // Clear input
     setInputValue('');
     setError(null);
     
     // Analyze intent
-    const intent = analyzeIntent(inputValue);
+    const intent = analyzeIntent(validation.cleaned);
     
     // Generate and add bot response
-    const botResponse = await generateResponse(inputValue, intent);
+    const botResponse = await generateResponse(validation.cleaned, intent);
     
     setMessages(prev => [...prev, botResponse]);
     conversationHistoryRef.current = [...updatedMessages, botResponse];
     
-    // Store updated conversation
-    localStorage.setItem(`chatbot_history_${sessionId}`, JSON.stringify([...updatedMessages, botResponse]));
+    // Store updated conversation with size limit
+    try {
+      localStorage.setItem(`chatbot_history_${sessionId}`, JSON.stringify([...updatedMessages, botResponse]));
+    } catch (e) {
+      console.error('Storage full, keeping recent messages');
+      localStorage.setItem(`chatbot_history_${sessionId}`, JSON.stringify([...updatedMessages, botResponse].slice(-50)));
+    }
     
     // Update analytics
     setAnalytics(prev => ({
@@ -297,7 +618,7 @@ const ChatBot = ({
       messagesSent: prev.messagesSent + 1,
       messagesReceived: prev.messagesReceived + 1
     }));
-  }, [inputValue, messages, isLoading, sessionId, analyzeIntent, generateResponse, analytics]);
+  }, [inputValue, messages, isLoading, sessionId, analyzeIntent, generateResponse, analytics, validateAndSanitizeInput]);
 
   // Handle suggestion click
   const handleSuggestionClick = useCallback((suggestion) => {
@@ -306,6 +627,7 @@ const ChatBot = ({
         setMessages([]);
         conversationHistoryRef.current = [];
         localStorage.removeItem(`chatbot_history_${sessionId}`);
+        setActiveConversationFlow(null);
         break;
       case 'welcome':
         setInputValue('Hello!');
@@ -332,13 +654,30 @@ const ChatBot = ({
         setInputValue('Show me the FAQ');
         break;
       case 'guide':
-        setInputValue('Give me an application guide');
+        setInputValue('Give me a step-by-step guide for grant applications');
         break;
       case 'more':
         setInputValue('Tell me more about this');
         break;
       case 'examples':
         setInputValue('Show me some examples');
+        break;
+      case 'compare':
+        setInputValue('Compare different grant options');
+        break;
+      case 'next_step':
+        advanceConversationFlow();
+        return; // Don't send message, just advance flow
+      case 'previous':
+        if (activeConversationFlow && activeConversationFlow.currentStep > 0) {
+          setActiveConversationFlow({
+            ...activeConversationFlow,
+            currentStep: activeConversationFlow.currentStep - 1
+          });
+        }
+        return;
+      case 'summary':
+        setInputValue('Show me a summary of the steps');
         break;
       default:
         setInputValue(suggestion.text);
@@ -348,7 +687,7 @@ const ChatBot = ({
     if (inputValue.trim()) {
       handleSendMessage();
     }
-  }, [inputValue, handleSendMessage, sessionId]);
+  }, [inputValue, handleSendMessage, sessionId, activeConversationFlow, advanceConversationFlow]);
 
   // Handle feedback
   const handleFeedback = useCallback((score) => {
@@ -441,49 +780,81 @@ const ChatBot = ({
     return greetings[lang]?.[Math.floor(Math.random() * greetings[lang].length)] || greetings.en[0];
   };
 
-  const getGrantInfoResponse = async (message, lang) => {
-    // In a real implementation, this would call the actual API
+  const getGrantInfoResponse = async (message, lang, context) => {
+    // Enhanced context-aware response with better error handling
     const responses = {
       en: [
         'Here are some available grants that might match your needs:',
         'I found several grant opportunities for you:',
-        'Check out these funding options:'
+        'Check out these funding options:',
+        'Based on your query, here are relevant grants:'
       ],
       es: [
         'Aquí tienes algunas subvenciones disponibles que podrían interesarte:',
         'He encontrado varias oportunidades de subvención para ti:',
-        'Revisa estas opciones de financiamiento:'
+        'Revisa estas opciones de financiamiento:',
+        'Según tu consulta, aquí tienes subvenciones relevantes:'
       ],
       fr: [
         'Voici quelques subventions disponibles qui pourraient vous intéresser:',
         'J\'ai trouvé plusieurs opportunités de subvention pour vous:',
-        'Consultez ces options de financement:'
+        'Consultez ces options de financement:',
+        'Selon votre demande, voici des subventions pertinentes:'
       ],
       de: [
         'Hier sind einige verfügbare Zuschüsse, die für Sie interessant sein könnten:',
         'Ich habe mehrere Fördermöglichkeiten für Sie gefunden:',
-        'Schauen Sie sich diese Finanzierungsoptionen an:'
+        'Schauen Sie sich diese Finanzierungsoptionen an:',
+        'Basierend auf Ihrer Anfrage, hier sind relevante Zuschüsse:'
       ],
       hi: [
         'यहां कुछ उपलब्ध अनुदान हैं जो आपकी आवश्यकताओं के अनुरूप हो सकते हैं:',
         'मैं आपके लिए कुछ अनुदान अवसर ढूंढा:',
-        'इन वित्तपोषण विकल्पों पर नज़र डालें:'
+        'इन वित्तपोषण विकल्पों पर नज़र डालें:',
+        'अपने प्रश्न के आधार पर, यहाँ relevante अनुदान हैं:'
       ]
     };
     
-    // Simulate API call to get grants data
+    // Try to fetch real data with enhanced error handling
     try {
-      const response = await fetch('/api/grants');
+      const response = await fetch('/api/grants', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      
       if (response.ok) {
         const grants = await response.json();
-        const sampleGrants = grants.slice(0, 3);
-        return `${responses[lang][Math.floor(Math.random() * responses[lang].length)]}\n\n${sampleGrants.map(g => `• ${g.name} (${g.sector}) - ${g.amount} ${g.currency}`).join('\n')}`;
+        
+        // Context-aware filtering
+        const normalizedMessage = message.toLowerCase();
+        const filteredGrants = grants.filter(grant => {
+          const grantText = (grant.name + ' ' + grant.sector + ' ' + grant.description).toLowerCase();
+          return grantText.includes(normalizedMessage.split(/[^a-zA-Z0-9]/).filter(Boolean).join(' '));
+        });
+        
+        const sampleGrants = filteredGrants.length > 0
+          ? filteredGrants.slice(0, 3)
+          : grants.slice(0, 3);
+        
+        if (sampleGrants.length > 0) {
+          return `${responses[lang][Math.floor(Math.random() * responses[lang].length)]}\n\n${sampleGrants.map(g => `• **${g.name}** (${g.sector})\n   Amount: ${g.amount} ${g.currency}\n   ${g.description ? `Description: ${g.description.substring(0, 100)}...` : ''}`).join('\n\n')}`;
+        }
       }
     } catch (e) {
       console.error('Error fetching grants:', e);
+      // Fallback with cached data or generic response
+      if (context.history.length > 0) {
+        return responses[lang]?.[Math.floor(Math.random() * responses[lang].length)] || responses.en[0];
+      }
     }
     
-    return responses[lang]?.[0] || responses.en[0];
+    // Final fallback with helpful information
+    return responses[lang]?.[Math.floor(Math.random() * responses[lang].length)]
+      || `I found some grants that might help you. Would you like me to search for something specific?`;
   };
 
   const getEligibilityResponse = async (message, lang) => {
@@ -614,34 +985,52 @@ const ChatBot = ({
     return responses[lang]?.[Math.floor(Math.random() * responses[lang].length)] || responses.en[0];
   };
 
-  const getFallbackResponse = (message, lang) => {
+  const getFallbackResponse = (message, lang, context) => {
     const responses = {
       en: [
         'I\'m not sure I understand. Could you rephrase that?',
         'I didn\'t quite get that. Can you clarify?',
-        'Sorry, I don\'t have an answer for that. Let me know how I can help!'
+        'Sorry, I don\'t have an answer for that. Let me know how I can help!',
+        'I\'m still learning! Could you provide more details?',
+        'I didn\'t catch that. Could you try different words?'
       ],
       es: [
         'No estoy seguro de entender. ¿Podrías reformular eso?',
         'No lo entendí del todo. ¿Puedes aclarar?',
-        'Lo siento, no tengo una respuesta para eso. ¡Hazme saber cómo puedo ayudar!'
+        'Lo siento, no tengo una respuesta para eso. ¡Hazme saber cómo puedo ayudar!',
+        '¡Todavía estoy aprendiendo! ¿Podrías proporcionar más detalles?',
+        'No lo entendí. ¿Podrías usar palabras diferentes?'
       ],
       fr: [
         'Je ne suis pas sûr de comprendre. Pouvez-vous reformuler ?',
         'Je n\'ai pas tout compris. Pouvez-vous clarifier ?',
-        'Désolé, je n\'ai pas de réponse à cela. Faites-moi savoir comment je peux aider !'
+        'Désolé, je n\'ai pas de réponse à cela. Faites-moi savoir comment je peux aider !',
+        'Je suis encore en apprentissage ! Pouvez-vous fournir plus de détails ?',
+        'Je n\'ai pas compris. Pouvez-vous utiliser des mots différents ?'
       ],
       de: [
         'Ich bin mir nicht sicher, ob ich das verstehe. Könnten Sie das umformulieren?',
         'Das habe ich nicht ganz verstanden. Können Sie das klären?',
-        'Entschuldigung, ich habe keine Antwort darauf. Lassen Sie mich wissen, wie ich helfen kann!'
+        'Entschuldigung, ich habe keine Antwort darauf. Lassen Sie mich wissen, wie ich helfen kann!',
+        'Ich lerne noch! Könnten Sie mehr Details geben?',
+        'Das habe ich nicht verstanden. Könnten Sie andere Wörter verwenden?'
       ],
       hi: [
         'मुझे नहीं समझ आ रहा। क्या आप इसे दोबारा कह सकते हैं?',
         'मुझे पूरी तरह से समझ में नहीं आया। क्या आप स्पष्ट कर सकते हैं?',
-        'माफ कीजिए, मुझे इसका उत्तर नहीं है। मुझे बताएं कि मैं आपकी कैसे मदद कर सकता हूँ!'
+        'माफ कीजिए, मुझे इसका उत्तर नहीं है। मुझे बताएं कि मैं आपकी कैसे मदद कर सकता हूँ!',
+        'मैं अभी सीख रहा हूँ! क्या आप और विवरण दे सकते हैं?',
+        'मुझे समझ में नहीं आया। क्या आप अलग शब्दों का उपयोग कर सकते हैं?'
       ]
     };
+    
+    // Context-aware fallback
+    if (context && context.history.length > 0) {
+      const lastUserMessage = context.history[context.history.length - 2]?.text || '';
+      if (lastUserMessage.toLowerCase().includes('grant') || lastUserMessage.toLowerCase().includes('funding')) {
+        return `I couldn't find information about that specific grant. Would you like me to search for grants in a different category?`;
+      }
+    }
     
     return responses[lang]?.[Math.floor(Math.random() * responses[lang].length)] || responses.en[0];
   };
@@ -658,6 +1047,74 @@ const ChatBot = ({
     return responses[lang] || responses.en;
   };
 
+  const getNetworkErrorResponse = (lang) => {
+    const responses = {
+      en: 'Network error. Please check your connection and try again.',
+      es: 'Error de red. Verifique su conexión e intente nuevamente.',
+      fr: 'Erreur de réseau. Veuillez vérifier votre connexion et réessayer.',
+      de: 'Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
+      hi: 'नेटवर्क त्रुटि। कृपया अपने कनेक्शन की जांच करें और पुन: प्रयास करें।'
+    };
+    
+    return responses[lang] || responses.en;
+  };
+
+  const getTimeoutErrorResponse = (lang) => {
+    const responses = {
+      en: 'The request timed out. Please try again.',
+      es: 'La solicitud tardó demasiado. Por favor, intente nuevamente.',
+      fr: 'La requête a expiré. Veuillez réessayer.',
+      de: 'Die Anfrage ist abgelaufen. Bitte versuchen Sie es erneut.',
+      hi: 'रिक्वेस्ट टाइम आउट हो गया। कृपया पुन: प्रयास करें।'
+    };
+    
+    return responses[lang] || responses.en;
+  };
+
+  const getClearResponse = (lang) => {
+    const responses = {
+      en: 'Conversation cleared! How can I help you now?',
+      es: 'Conversación borrada. ¿En qué puedo ayudarte ahora?',
+      fr: 'Conversation effacée. Comment puis-je vous aider maintenant ?',
+      de: 'Unterhaltung gelöscht. Wie kann ich Ihnen jetzt helfen?',
+      hi: 'कन्वर्सेशन साफ़ किया गया! अब मैं आपकी कैसे मदद कर सकता हूँ?'
+    };
+    
+    return responses[lang] || responses.en;
+  };
+
+  const getAmountResponse = async (message, lang, context) => {
+    const responses = {
+      en: [
+        'Grant amounts vary by program. Would you like me to find specific amount information?',
+        'The funding amount depends on the grant. Let me check the details for you!',
+        'Grant amounts typically range from small to large depending on the program.'
+      ],
+      es: [
+        'Las cantidades de las subvenciones varían según el programa. ¿Te gustaría que encuentre información específica?',
+        'La cantidad de financiamiento depende de la subvención. ¡Déjame verificar los detalles!',
+        'Las cantidades de las subvenciones suelen variar desde pequeñas a grandes según el programa.'
+      ],
+      fr: [
+        'Les montants des subventions varient selon le programme. Voulez-vous que je trouve des informations spécifiques ?',
+        'Le montant du financement dépend de la subvention. Laissez-moi vérifier les détails !',
+        'Les montants des subventions varient généralement de petits à grands selon le programme.'
+      ],
+      de: [
+        'Die Zuschussbeträge variieren je nach Programm. Möchten Sie, dass ich spezifische Betragsinformationen finde?',
+        'Der Förderbetrag hängt vom Zuschuss ab. Lass mich die Details für Sie prüfen!',
+        'Zuschussbeträge variieren typischerweise von klein bis groß je nach Programm.'
+      ],
+      hi: [
+        'अनुदान की राशि प्रोग्राम पर निर्भर करती है। क्या आप चाहते हैं कि मैं विशेष राशि जानकारी ढूंढे?',
+        'वित्तपोषण की राशि अनुदान पर निर्भर करती है। मुझे विवरण जांचने दें!',
+        'अनुदान की राशियाँ आमतौर पर प्रोग्राम के अनुसार छोटी से बड़ी होती हैं।'
+      ]
+    };
+    
+    return responses[lang]?.[Math.floor(Math.random() * responses[lang].length)] || responses.en[0];
+  };
+
   // Render message content
   const renderMessageContent = (message) => {
     if (message.isError) {
@@ -668,17 +1125,63 @@ const ChatBot = ({
         </div>
       );
     }
-
+    
+    // Check if this is a step in a conversation flow
+    const isStepMessage = message.metadata?.context?.activeFlow &&
+                         message.metadata?.intent === 'multi_step_guide';
+    
     return (
       <div className="chatbot-message-content">
         {message.text.split('\n').map((line, i) => (
           <p key={i}>{line}</p>
         ))}
+        
+        {/* Show complex query badge for certain intents */}
+        {['multi_step_guide', 'comparison', 'detailed_info'].includes(message.metadata?.intent || '') && (
+          <div className="chatbot-complex-query-badge">
+            {message.metadata?.intent === 'multi_step_guide' ? 'Step-by-Step Guide' :
+             message.metadata?.intent === 'comparison' ? 'Comparison' : 'Detailed Info'}
+          </div>
+        )}
+        
         {message.metadata?.intent && (
           <div className="chatbot-message-metadata">
             <small>Intent: {message.metadata.intent} ({Math.round(message.metadata.confidence * 100)}%)</small>
           </div>
         )}
+      </div>
+    );
+  };
+  
+  // Render conversation flow progress
+  const renderFlowProgress = () => {
+    if (!activeConversationFlow) return null;
+    
+    return (
+      <div className="chatbot-flow-progress">
+        <div className="chatbot-flow-progress-header">
+          <span>Guide Progress</span>
+          <span>{activeConversationFlow.currentStep + 1} of {activeConversationFlow.steps.length}</span>
+        </div>
+        <div className="chatbot-flow-progress-steps">
+          {activeConversationFlow.steps.map((step, index) => {
+            let stepStatus = 'upcoming';
+            if (index < activeConversationFlow.currentStep) {
+              stepStatus = 'completed';
+            } else if (index === activeConversationFlow.currentStep) {
+              stepStatus = 'active';
+            }
+            
+            return (
+              <div key={index} className={`chatbot-flow-progress-step ${stepStatus}`}>
+                <div className="chatbot-flow-progress-step-indicator">
+                  {index < activeConversationFlow.currentStep ? '✓' : index + 1}
+                </div>
+                <span>{step.prompt}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -727,6 +1230,9 @@ const ChatBot = ({
 
         {/* Messages container */}
         <div className="chatbot-messages">
+          {/* Conversation flow progress indicator */}
+          {activeConversationFlow && renderFlowProgress()}
+          
           {messages.length === 0 && !isLoading && (
             <div className="chatbot-empty-state">
               <div className="chatbot-empty-icon">👋</div>
@@ -783,27 +1289,17 @@ const ChatBot = ({
             </div>
           ))}
 
-          {isLoading && (
+          {(isLoading || isTyping) && (
             <div className="chatbot-message bot">
               <div className="chatbot-avatar">🤖</div>
               <div className="chatbot-message-bubble">
-                <div className="chatbot-typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isTyping && (
-            <div className="chatbot-message bot">
-              <div className="chatbot-avatar">🤖</div>
-              <div className="chatbot-message-bubble">
-                <div className="chatbot-typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+                <div className="chatbot-typing-indicator-enhanced">
+                  <div className="chatbot-avatar">🤖</div>
+                  <div className="chatbot-typing-indicator-enhanced-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -884,6 +1380,10 @@ const ChatBot = ({
               <div className="chatbot-analytics-item">
                 <span>Satisfaction Score:</span>
                 <strong>{analytics.satisfactionScore.toFixed(1)}/5</strong>
+              </div>
+              <div className="chatbot-analytics-item">
+                <span>Complex Queries:</span>
+                <strong>{analytics.complexQueriesHandled}</strong>
               </div>
             </div>
           </div>
