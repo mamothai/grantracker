@@ -65,6 +65,23 @@ class EnterpriseUserManager {
     
     return this.getRoleLevel() >= this.getRoleLevel(requiredRole);
   }
+
+  getCurrentUserPermissions() {
+    return this.currentUser.permissions || [];
+  }
+
+  getAllUsers() {
+    // For demo purposes, return a list of users
+    return [
+      {
+        id: this.currentUser.id,
+        name: this.currentUser.name,
+        role: this.currentUser.role,
+        permissions: this.currentUser.permissions,
+        status: 'active'
+      }
+    ];
+  }
 }
 
 // Enterprise Conversation Manager
@@ -221,6 +238,10 @@ class EnterpriseConversationManager {
     const uniqueUsers = new Set(this.conversations.map(conv => conv.userId)).size;
     const totalUsers = this.conversations.length;
     return totalUsers > 0 ? Math.round((uniqueUsers / totalUsers) * 100) : 0;
+  }
+
+  getAllConversations() {
+    return this.conversations;
   }
 }
 

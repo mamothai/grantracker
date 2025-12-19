@@ -25,9 +25,26 @@ class ErrorBoundary extends Component {
         return this.props.fallback;
       }
       
-      // Default fallback: return null (component won't render)
-      // This prevents the app from breaking
-      return null;
+      // Default fallback: show a proper error message
+      return (
+        <div style={{ 
+          padding: '2rem', 
+          color: 'white', 
+          textAlign: 'center',
+          backgroundColor: '#dc2626',
+          margin: '1rem',
+          borderRadius: '0.5rem'
+        }}>
+          <h2>Something went wrong</h2>
+          <p>The application encountered an error. Please refresh the page to try again.</p>
+          <details style={{ marginTop: '1rem', textAlign: 'left' }}>
+            <summary>Error Details</summary>
+            <pre style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
+              {this.state.error?.toString()}
+            </pre>
+          </details>
+        </div>
+      );
     }
 
     return this.props.children;
