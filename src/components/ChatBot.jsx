@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 // ChatBot Component - Best-in-Class Implementation with Comprehensive Website Coverage
@@ -35,9 +35,23 @@ const ChatBot = ({
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const typingTimeoutRef = useRef(null);
   const conversationHistoryRef = useRef([]);
   const proactiveTimeoutRef = useRef(null);
+
+  // Website navigation paths for direct navigation
+  const websitePaths = {
+    home: { path: '/', label: 'Home', icon: '🏠' },
+    about: { path: '/about', label: 'About GrantTracker', icon: 'ℹ️' },
+    dashboard: { path: '/chart', label: 'Analytics Dashboard', icon: '📊' },
+    benefits: { path: '/benefits', label: 'Government Benefits', icon: '🏛️' },
+    suggestions: { path: '/suggestions', label: 'Public Suggestions', icon: '💬' },
+    creator: { path: '/creator-login', label: 'Creator Portal', icon: '✍️' },
+    government: { path: '/gov-login', label: 'Government Dashboard', icon: '🏛️' },
+    create: { path: '/create-grant', label: 'Create Grant', icon: '📝' },
+    view: { path: '/view', label: 'Public View', icon: '👁️' }
+  };
 
   // Website content database for comprehensive responses
   const websiteContent = {
@@ -210,7 +224,41 @@ const ChatBot = ({
     // Remove common punctuation for better matching
     const cleaned = normalized.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '');
     
-    // Website navigation queries
+    // Direct navigation patterns (Enhanced)
+    if (/(home|landing|main page|start here|go home)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'home', confidence: 0.95 };
+    }
+    if (/(about|team|company|who are you|what is granttracker)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'about', confidence: 0.95 };
+    }
+    if (/(dashboard|analytics|chart|statistics|reports)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'dashboard', confidence: 0.9 };
+    }
+    if (/(benefits|schemes|government schemes|welfare)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'benefits', confidence: 0.9 };
+    }
+    if (/(suggestions|feedback|public|comment)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'suggestions', confidence: 0.9 };
+    }
+    if (/(creator|login|register|apply)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'creator', confidence: 0.85 };
+    }
+    if (/(government|official|admin|ministry)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'government', confidence: 0.85 };
+    }
+    if (/(create|new|submit)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'create', confidence: 0.85 };
+    }
+    if (/(view|public|see)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'view', confidence: 0.85 };
+    }
+    
+    // Quick action patterns
+    if (/(show me|navigate|go to|take me)/i.test(cleaned)) {
+      return { intent: 'show_actions', confidence: 0.8 };
+    }
+    
+    // Legacy website navigation queries (for backward compatibility)
     if (/(home|landing|main page|start here)/i.test(cleaned)) {
       return { intent: 'page_navigation', target: 'home', confidence: 0.95 };
     }
@@ -381,6 +429,31 @@ const ChatBot = ({
     return null;
   }, [activeConversationFlow]);
 
+  // Direct navigation handler
+  const handleDirectNavigation = useCallback((target) => {
+    const pathInfo = websitePaths[target];
+    if (pathInfo) {
+      navigate(pathInfo.path);
+      
+      // Add confirmation message
+      const navMessage = {
+        text: `Navigating to ${pathInfo.label}...`,
+        sender: 'bot',
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, navMessage]);
+      
+      // Close chat after navigation
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 1500);
+      
+      return true;
+    }
+    return false;
+  }, [navigate, websitePaths]);
+
   // Enhanced context-aware response generation with improved error handling
   const generateResponse = useCallback(async (message, intent) => {
     setIsLoading(true);
@@ -407,6 +480,19 @@ const ChatBot = ({
       let response = '';
       
       switch (intent.intent) {
+        case 'navigate':
+          const navigationSuccess = handleDirectNavigation(intent.target);
+          if (navigationSuccess) {
+            response = `Taking you to ${websitePaths[intent.target].label}!`;
+          } else {
+            response = 'I couldn\'t find that section. Let me show you what\'s available.';
+          }
+          break;
+          
+        case 'show_actions':
+          response = getQuickActionsResponse();
+          break;
+          
         case 'greeting':
           response = getGreetingResponse(message, language);
           break;
@@ -508,7 +594,14 @@ const ChatBot = ({
       setIsLoading(false);
       setIsTyping(false);
     }
-  }, [location.pathname, language, activeConversationFlow]);
+  }, [location.pathname, language, activeConversationFlow, handleDirectNavigation]);
+
+  // Quick actions response generator
+  const getQuickActionsResponse = () => {
+    return `Here's what you can navigate to directly:\n\n${Object.values(websitePaths).map(path => 
+      `${path.icon} **${path.label}**`
+    ).join('\n\n')}\n\nJust tell me where you'd like to go!`;
+  };
 
   // Multi-step guide response
   const getMultiStepGuideResponse = async (message, lang, context) => {
@@ -814,16 +907,19 @@ const ChatBot = ({
     return `${responses[lang] || responses.en}\n\n${sampleGrants.map(g => `• **${g.name}** (${g.sector})\n   Amount: ${g.amount}\n   ${g.description}`).join('\n\n')}`;
   };
 
+  // Enhanced greeting response with navigation options
+  const getEnhancedGreetingResponse = (message, lang) => {
+    const enhancedGreetings = {
+      en: 'Hello! 👋 I\'m your GrantTracker Assistant. I can help you with:\n\n🏠 **Navigate** to any page\n💰 **Find grants** and schemes\n📊 **Understand** dashboard analytics\n📝 **Apply** for funding\n❓ **Answer** your questions\n\nWhat would you like to do?',
+      es: '¡Hola! 👋 Soy tu Asistente de GrantTracker. Puedo ayudarte con:\n\n🏠 **Navegar** a cualquier página\n💰 **Encontrar** subvenciones y esquemas\n📊 **Entender** análisis del panel\n📝 **Solicitar** financiación\n❓ **Responder** tus preguntas\n\n¿Qué te gustaría hacer?'
+    };
+    return enhancedGreetings[lang] || enhancedGreetings.en;
+  };
+
   // Simplified versions of other response functions
   const getGreetingResponse = (message, lang) => {
-    const greetings = {
-      en: 'Hello! 👋 How can I assist you today?',
-      es: '¡Hola! 👋 ¿En qué puedo ayudarte hoy?',
-      fr: 'Bonjour ! 👋 Comment puis-je vous aider aujourd\'hui ?',
-      de: 'Hallo! 👋 Wie kann ich Ihnen heute helfen?',
-      hi: 'नमस्ते! 👋 मैं आज आपकी कैसे मदद कर सकता हूँ?'
-    };
-    return greetings[lang] || greetings.en;
+    // Enhanced greeting with navigation and feature overview
+    return getEnhancedGreetingResponse(message, lang);
   };
 
   const getEligibilityResponse = async (message, lang) => {
@@ -1429,6 +1525,47 @@ const ChatBot = ({
               <div className="chatbot-empty-icon">👋</div>
               <h4>Welcome to GrantTracker Assistant</h4>
               <p>How can I help you today?</p>
+              
+              {/* Quick Navigation Actions */}
+              <div className="chatbot-quick-actions">
+                <button
+                  className="chatbot-quick-action-btn"
+                  onClick={() => {
+                    setInputValue('Take me to home');
+                    handleSendMessage();
+                  }}
+                >
+                  🏠 Home
+                </button>
+                <button
+                  className="chatbot-quick-action-btn"
+                  onClick={() => {
+                    setInputValue('Show me the dashboard');
+                    handleSendMessage();
+                  }}
+                >
+                  📊 Dashboard
+                </button>
+                <button
+                  className="chatbot-quick-action-btn"
+                  onClick={() => {
+                    setInputValue('Tell me about benefits');
+                    handleSendMessage();
+                  }}
+                >
+                  🏛️ Benefits
+                </button>
+                <button
+                  className="chatbot-quick-action-btn"
+                  onClick={() => {
+                    setInputValue('Show me available grants');
+                    handleSendMessage();
+                  }}
+                >
+                  💰 Grants
+                </button>
+              </div>
+              
               <div className="chatbot-suggestions">
                 {suggestions.map(suggestion => (
                   <button
