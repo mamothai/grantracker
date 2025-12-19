@@ -1314,6 +1314,16 @@ const AdvancedGrantChatBot = () => {
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
         aria-expanded={isOpen}
+        aria-describedby="chatbot-description"
+        role="button"
+        type="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
       >
         <div className="toggle-content">
           <img 
@@ -1339,27 +1349,42 @@ const AdvancedGrantChatBot = () => {
 
       {/* Advanced AI Chat Window */}
       {isOpen && (
-        <div className={`advanced-chatbot-window ${isFullScreen ? 'fullscreen' : ''}`}>
+        <div 
+          className={`advanced-chatbot-window ${isFullScreen ? 'fullscreen' : ''}`}
+          role="dialog"
+          aria-labelledby="chatbot-title"
+          aria-describedby="chatbot-description"
+          aria-modal="true"
+        >
           {/* Enhanced Header with AI Status and Real-time Data */}
           <div className="advanced-chatbot-header">
             <div className="header-content">
               <img 
                 src={santaIcon} 
-                alt="AI Assistant" 
+                alt="AI Assistant for Grant Discovery" 
                 className="header-ai-icon"
                 width="32" 
                 height="32"
+                role="img"
+                aria-hidden="false"
               />
               <div className="header-info">
-                <h3>🎅 GrantTracker's AI Assistant</h3>
+                <h3 id="chatbot-title">🎅 GrantTracker's AI Assistant</h3>
+                <div id="chatbot-description" className="sr-only">
+                  AI-powered grant discovery assistant that helps find funding opportunities
+                </div>
                 <div className="ai-capabilities">
                   <span className="capability">🧠 ML-Powered</span>
                   <span className="capability">📊 Real-Time Data</span>
                   <span className="capability">⚡ API Connected</span>
                   <span className="capability">💡 Personalized</span>
                 </div>
-                <div className="real-time-status">
-                  <div className={`status-indicator ${apiStatus.connected ? 'connected' : 'disconnected'}`}></div>
+                <div className="real-time-status" role="status" aria-live="polite">
+                  <div 
+                    className={`status-indicator ${apiStatus.connected ? 'connected' : 'disconnected'}`}
+                    aria-label={apiStatus.connected ? 'Connected to live data' : 'Using offline data'}
+                    role="img"
+                  ></div>
                   <span className="status-text">
                     {apiStatus.connected ? 'Live Data' : 'Offline Mode'}
                   </span>
@@ -1376,6 +1401,8 @@ const AdvancedGrantChatBot = () => {
                 className="fullscreen-toggle"
                 onClick={toggleFullScreen}
                 title={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
+                aria-label={isFullScreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
+                type="button"
               >
                 {isFullScreen ? '⛶' : '⛶'}
               </button>
@@ -1383,6 +1410,8 @@ const AdvancedGrantChatBot = () => {
                 className="close-button"
                 onClick={handleClose}
                 title="Close chat"
+                aria-label="Close chat window"
+                type="button"
               >
                 ×
               </button>
@@ -1408,19 +1437,40 @@ const AdvancedGrantChatBot = () => {
           </div>
 
           {/* Messages Container */}
-          <div className="advanced-chatbot-messages">
+          <div 
+            className="advanced-chatbot-messages"
+            role="log"
+            aria-live="polite"
+            aria-label="Chat conversation"
+            tabIndex={-1}
+          >
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`advanced-chatbot-message ${message.sender}`}
+                role="article"
+                aria-label={`${message.sender === 'user' ? 'Your message' : 'AI response'}`}
               >
                 <div className="message-avatar">
                   {message.sender === 'user' ? (
-                    <div className="user-avatar">👤</div>
+                    <div className="user-avatar" role="img" aria-label="User">👤</div>
                   ) : (
                     <div className="ai-avatar">
-                      <img src={santaIcon} alt="AI" width="24" height="24" />
-                      <div className="ai-indicator">🤖</div>
+                      <img 
+                        src={santaIcon} 
+                        alt="AI Assistant" 
+                        width="24" 
+                        height="24"
+                        role="img"
+                        aria-hidden="true"
+                      />
+                      <div 
+                        className="ai-indicator" 
+                        role="img" 
+                        aria-label="AI powered response"
+                      >
+                        🤖
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1428,13 +1478,15 @@ const AdvancedGrantChatBot = () => {
                   {renderMessageContent(message)}
                   
                   {message.suggestions && (
-                    <div className="message-suggestions">
+                    <div className="message-suggestions" role="group" aria-label="Suggested responses">
                       {message.suggestions.map((suggestion, index) => (
                         <button
                           key={index}
                           className="suggestion-button"
                           onClick={() => handleSuggestionClick(suggestion)}
                           disabled={isLoading}
+                          aria-label={`Use suggestion: ${suggestion}`}
+                          type="button"
                         >
                           {suggestion}
                         </button>
@@ -1443,14 +1495,17 @@ const AdvancedGrantChatBot = () => {
                   )}
                   
                   {message.sender === 'bot' && !message.isWelcome && (
-                    <div className="feedback-section">
+                    <div className="feedback-section" role="group" aria-label="Rate this response">
                       <span className="feedback-label">Was this helpful?</span>
-                      <div className="feedback-buttons">
+                      <div className="feedback-buttons" role="radiogroup" aria-label="Rating">
                         {[1, 2, 3, 4, 5].map(rating => (
                           <button
                             key={rating}
                             className="feedback-button"
                             onClick={() => handleFeedback(message.id, rating)}
+                            aria-label={`Rate ${rating} out of 5 stars`}
+                            role="radio"
+                            type="button"
                           >
                             ⭐
                           </button>
@@ -1470,22 +1525,40 @@ const AdvancedGrantChatBot = () => {
 
             {/* Enhanced Typing Indicator */}
             {(isLoading || isTyping) && (
-              <div className="advanced-chatbot-message bot">
+              <div 
+                className="advanced-chatbot-message bot" 
+                role="status"
+                aria-live="polite"
+                aria-label="AI is processing your request"
+              >
                 <div className="message-avatar">
                   <div className="ai-avatar">
-                    <img src={santaIcon} alt="AI Processing" width="24" height="24" />
-                    <div className="ai-indicator processing">🧠</div>
+                    <img 
+                      src={santaIcon} 
+                      alt="AI Processing" 
+                      width="24" 
+                      height="24"
+                      role="img"
+                      aria-hidden="true"
+                    />
+                    <div 
+                      className="ai-indicator processing" 
+                      role="img"
+                      aria-label="AI is thinking"
+                    >
+                      🧠
+                    </div>
                   </div>
                 </div>
                 <div className="message-content">
-                  <div className="ai-typing-indicator">
+                  <div className="ai-typing-indicator" aria-hidden="true">
                     <div className="typing-animation">
                       <span className="typing-dot"></span>
                       <span className="typing-dot"></span>
                       <span className="typing-dot"></span>
                     </div>
-                    <span className="typing-text">AI is analyzing your question...</span>
                   </div>
+                  <span className="typing-text">AI is analyzing your question...</span>
                 </div>
               </div>
             )}
@@ -1526,27 +1599,52 @@ const AdvancedGrantChatBot = () => {
 
           {/* Enhanced Input Area */}
           <div className="advanced-chatbot-input">
-            <div className="input-container">
+            <form 
+              className="input-container" 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+              }}
+              role="form"
+              aria-label="Chat input form"
+            >
+              <label htmlFor="chat-input" className="sr-only">
+                Enter your message about grants
+              </label>
               <input
+                id="chat-input"
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Ask me anything about grants... (e.g., 'What grants for renewable energy startups?')"
                 disabled={isLoading}
                 className="ai-input"
                 maxLength={500}
+                autoComplete="off"
+                spellCheck="true"
+                aria-describedby="input-help"
+                aria-required="true"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isLoading}
                 className="ai-send-button"
                 type="submit"
+                aria-label={isLoading ? "Sending message..." : "Send message"}
               >
                 {isLoading ? '🧠' : '🚀'}
               </button>
+            </form>
+            <div id="input-help" className="sr-only">
+              Press Enter to send, Shift+Enter for new line
             </div>
-            <div className="input-suggestions">
+            <div className="input-suggestions" role="group" aria-label="Quick suggestions">
               <span className="suggestion-text">Try:</span>
               {[
                 'Small business grants',
@@ -1559,6 +1657,8 @@ const AdvancedGrantChatBot = () => {
                   className="input-suggestion"
                   onClick={() => handleSuggestionClick(suggestion)}
                   disabled={isLoading}
+                  aria-label={`Use suggestion: ${suggestion}`}
+                  type="button"
                 >
                   {suggestion}
                 </button>
