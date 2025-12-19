@@ -2,25 +2,7 @@
    GLOBAL STYLES
 --------------------------------------------------- */
 
-/* Force chatbot to bottom right with maximum specificity */
-.chatbot-container,
-div[class*="chatbot-container"],
-[class*="chatbot"][class*="container"] {
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  z-index: 1000 !important;
-  margin-bottom: 0 !important;
-  margin-right: 0 !important;
-}
-
-@media (max-width: 576px) {
-  .chatbot-container,
-  div[class*="chatbot-container"] {
-    bottom: 15px !important;
-    right: 15px !important;
-  }
-}
+/* ChatBot positioning is now handled by ChatBot-Enhanced.css */
 
 /* Ensure navbar has proper z-index and is always clickable */
 .nav {
