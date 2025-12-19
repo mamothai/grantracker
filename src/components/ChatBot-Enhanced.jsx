@@ -405,7 +405,15 @@ const ChatBot = ({
   };
 
   return (
-    <div className={`chatbot-container ${isOpen ? 'chatbot-open' : ''} ${accessibilityMode ? 'accessibility-mode' : ''}`}>
+    <div 
+      className={`chatbot-container ${isOpen ? 'chatbot-open' : ''} ${accessibilityMode ? 'accessibility-mode' : ''}`}
+      style={{
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        zIndex: 9999
+      }}
+    >
 
       {/* Enhanced Chat Toggle Button with Improved Santa Icon */}
       <button
