@@ -702,6 +702,7 @@ const AdvancedGrantChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [conversationState, setConversationState] = useState({});
   const [performanceMetrics, setPerformanceMetrics] = useState({
     responseTime: 0,
@@ -774,16 +775,15 @@ const AdvancedGrantChatBot = () => {
     };
   }, []);
 
-  // Initialize with AI welcome message
+  // Initialize with shorter welcome message
   useEffect(() => {
     const welcomeMessage = {
       id: 1,
-      text: "🎅 Welcome to GrantTracker's Advanced AI Assistant!\n\nI'm powered by real machine learning algorithms and connected to live grant databases. I can help you find the perfect grants for your needs:\n\n• 'What grants are available for small businesses in renewable energy?'\n• 'How much funding can I get for healthcare research?'\n• 'Am I eligible for SBIR grants?'\n• 'What are the deadlines for defense grants?'\n\n🤖 **Real-time features:**\n• Live grant data synchronization\n• ML-powered intent recognition\n• Personalized recommendations\n• Context-aware conversations\n• Sub-second response times\n\nI learn from our conversations to provide better recommendations!",
+      text: "🎅 Hi! I'm your AI grant assistant. I can help you find funding opportunities, check eligibility, and guide you through applications. What grants are you looking for?",
       sender: 'bot',
       timestamp: new Date(),
       isWelcome: true,
-      aiPowered: true,
-      realTimeConnected: true
+      aiPowered: true
     };
     setMessages([welcomeMessage]);
     
@@ -813,6 +813,52 @@ const AdvancedGrantChatBot = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  // Handle greetings and basic interactions
+  const handleGreeting = useCallback((query) => {
+    const greetings = ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening'];
+    const queryLower = query.toLowerCase();
+    
+    if (greetings.some(greeting => queryLower.includes(greeting))) {
+      return {
+        text: "Hello! I'm here to help you find grants and funding opportunities. What type of funding are you looking for?",
+        suggestions: [
+          "Show me small business grants",
+          "What research grants are available?",
+          "How do I check eligibility?",
+          "Tell me about application deadlines"
+        ]
+      };
+    }
+    
+    // Handle thanks
+    if (queryLower.includes('thank') || queryLower.includes('thanks')) {
+      return {
+        text: "You're welcome! I'm here to help you find the right grants. Is there anything else you'd like to know?",
+        suggestions: [
+          "Show me more grants",
+          "Help with applications",
+          "Check deadlines",
+          "Different funding types"
+        ]
+      };
+    }
+    
+    // Handle help requests
+    if (queryLower.includes('help') || queryLower.includes('what can you do')) {
+      return {
+        text: "I can help you with:\n\n• Finding grants for your specific needs\n• Checking if you're eligible\n• Understanding funding amounts\n• Application guidance\n• Deadline information\n\nWhat would you like to explore?",
+        suggestions: [
+          "Find grants for my business",
+          "Research funding opportunities",
+          "Check eligibility requirements",
+          "Application help"
+        ]
+      };
+    }
+    
+    return null;
+  }, []);
+
   // Advanced query processing with real-time API integration
   const processQuery = useCallback(async (query) => {
     const startTime = Date.now();
@@ -820,6 +866,25 @@ const AdvancedGrantChatBot = () => {
     setIsTyping(true);
 
     try {
+      // Handle greetings and basic interactions first
+      const greetingResponse = handleGreeting(query);
+      if (greetingResponse) {
+        const responseTime = Date.now() - startTime;
+        updatePerformanceMetrics(responseTime, 1.0);
+        
+        return {
+          ...greetingResponse,
+          timestamp: new Date(),
+          processingTime: responseTime,
+          metadata: {
+            intent: { primary: 'greeting', confidence: 1.0 },
+            entities: {},
+            source: 'local',
+            realTime: false
+          }
+        };
+      }
+
       // Try API first for real-time processing
       let apiResult = null;
       if (apiClient.current && apiStatus.connected) {
@@ -907,7 +972,7 @@ const AdvancedGrantChatBot = () => {
       setIsLoading(false);
       setIsTyping(false);
     }
-  }, [knowledgeProcessor, conversationManager, apiStatus, grantData]);
+  }, [knowledgeProcessor, conversationManager, apiStatus, grantData, handleGreeting]);
 
   const generateIntelligentResponse = (query, results) => {
     const { intent, entities, results: grants, recommendations } = results;
@@ -1097,6 +1162,15 @@ const AdvancedGrantChatBot = () => {
     }));
   };
 
+  // Handle suggestion click and send
+  const handleSuggestionClick = useCallback((suggestion) => {
+    setInputValue(suggestion);
+    // Auto-send the suggestion after a short delay
+    setTimeout(() => {
+      handleSendMessage();
+    }, 100);
+  }, []);
+
   // Handle user message
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -1134,6 +1208,33 @@ const AdvancedGrantChatBot = () => {
     }
 
   }, [inputValue, isLoading, processQuery, syncStatus]);
+
+  // Toggle full screen mode for mobile
+  const toggleFullScreen = useCallback(() => {
+    setIsFullScreen(!isFullScreen);
+  }, [isFullScreen]);
+
+  // Close chatbot
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    setIsFullScreen(false);
+  }, []);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+      if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        setIsOpen(!isOpen);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleClose]);
 
   // Handle feedback
   const handleFeedback = useCallback((messageId, rating) => {
@@ -1238,7 +1339,7 @@ const AdvancedGrantChatBot = () => {
 
       {/* Advanced AI Chat Window */}
       {isOpen && (
-        <div className="advanced-chatbot-window">
+        <div className={`advanced-chatbot-window ${isFullScreen ? 'fullscreen' : ''}`}>
           {/* Enhanced Header with AI Status and Real-time Data */}
           <div className="advanced-chatbot-header">
             <div className="header-content">
@@ -1269,6 +1370,22 @@ const AdvancedGrantChatBot = () => {
                   )}
                 </div>
               </div>
+            </div>
+            <div className="header-controls">
+              <button 
+                className="fullscreen-toggle"
+                onClick={toggleFullScreen}
+                title={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
+              >
+                {isFullScreen ? '⛶' : '⛶'}
+              </button>
+              <button 
+                className="close-button"
+                onClick={handleClose}
+                title="Close chat"
+              >
+                ×
+              </button>
             </div>
             <div className="header-stats">
               <div className="stat">
@@ -1316,7 +1433,8 @@ const AdvancedGrantChatBot = () => {
                         <button
                           key={index}
                           className="suggestion-button"
-                          onClick={() => setInputValue(suggestion)}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          disabled={isLoading}
                         >
                           {suggestion}
                         </button>
@@ -1423,6 +1541,7 @@ const AdvancedGrantChatBot = () => {
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isLoading}
                 className="ai-send-button"
+                type="submit"
               >
                 {isLoading ? '🧠' : '🚀'}
               </button>
@@ -1438,7 +1557,8 @@ const AdvancedGrantChatBot = () => {
                 <button
                   key={suggestion}
                   className="input-suggestion"
-                  onClick={() => setInputValue(suggestion)}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  disabled={isLoading}
                 >
                   {suggestion}
                 </button>
