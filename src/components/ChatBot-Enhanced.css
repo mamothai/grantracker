@@ -24,7 +24,7 @@
   position: fixed !important;
   bottom: 0 !important;
   right: 0 !important;
-  z-index: 1000 !important;
+  z-index: 1200 !important;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -34,7 +34,7 @@
 /* Ensure toggle button is always clickable with proper animations */
 .chatbot-toggle {
   pointer-events: auto;
-  z-index: 1001;
+  z-index: 1201;
   position: relative;
   background: linear-gradient(135deg, var(--christmas-red), var(--christmas-green));
   backdrop-filter: blur(10px);
