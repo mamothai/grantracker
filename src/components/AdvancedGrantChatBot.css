@@ -211,10 +211,57 @@
 /* Dark mode color adaptations */
 @media (prefers-color-scheme: dark) {
   :root {
-    --glass-bg: rgba(15, 23, 42, 0.95);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --gradient-surface: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.98) 100%);
-    --gradient-overlay: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(56, 189, 248, 0.1) 50%, rgba(125, 211, 252, 0.1) 100%);
+    --glass-bg: rgba(15, 23, 42, 0.98);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --gradient-surface: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%);
+    --gradient-overlay: linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(56, 189, 248, 0.12) 50%, rgba(125, 211, 252, 0.12) 100%);
+  }
+  
+  .advanced-chatbot-window {
+    background: rgba(15, 23, 42, 0.98);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--neutral-100);
+  }
+  
+  .advanced-chatbot-header {
+    background: rgba(15, 23, 42, 0.98);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+    color: var(--neutral-100);
+  }
+  
+  .advanced-chatbot-input {
+    background: rgba(15, 23, 42, 0.98);
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .ai-input {
+    background: rgba(15, 23, 42, 0.95);
+    color: var(--neutral-100);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .ai-input::placeholder {
+    color: var(--neutral-400) !important;
+  }
+  
+  .message-content {
+    color: var(--neutral-100);
+  }
+  
+  .advanced-chatbot-message.bot .message-content {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--neutral-100);
+  }
+  
+  .capability {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--neutral-300);
+  }
+  
+  .suggestion-text {
+    color: var(--neutral-400);
   }
 }
 
@@ -640,16 +687,16 @@ body {
 /* Enhanced Messages Container */
 .advanced-chatbot-messages {
   flex: 1;
-  padding: var(--space-5);
+  padding: var(--space-6);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: var(--ai-primary) transparent;
-  min-height: 400px;
-  max-height: 50vh;
+  min-height: 420px;
+  max-height: 55vh;
 }
 
 .advanced-chatbot-messages::-webkit-scrollbar {
@@ -673,10 +720,11 @@ body {
 /* Enhanced Messages */
 .advanced-chatbot-message {
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-5);
   animation: messageSlideIn 0.4s var(--ease-out);
   max-width: 100%;
   position: relative;
+  margin-bottom: var(--space-1);
 }
 
 .advanced-chatbot-message.user {
@@ -746,11 +794,11 @@ body {
 
 /* Message Content */
 .message-content {
-  max-width: 300px;
+  max-width: 320px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
-  padding: var(--space-4);
+  padding: var(--space-5);
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow-md);
   position: relative;
@@ -1130,8 +1178,9 @@ body {
 }
 
 .ai-input::placeholder {
-  color: var(--gray-400);
+  color: var(--gray-600);
   font-weight: var(--font-normal);
+  opacity: 1;
 }
 
 .ai-send-button {
@@ -1202,7 +1251,7 @@ body {
 
 .suggestion-text {
   font-size: var(--text-xs);
-  color: var(--gray-500);
+  color: var(--gray-700);
   font-weight: var(--font-medium);
 }
 
@@ -1568,11 +1617,11 @@ body {
   
   .advanced-chatbot-toggle {
     position: fixed !important;
-    bottom: var(--space-5) !important;
-    right: var(--space-5) !important;
+    bottom: var(--space-6) !important;
+    right: var(--space-6) !important;
     z-index: var(--z-modal) !important;
-    width: 52px !important;
-    height: 52px !important;
+    width: 56px !important;
+    height: 56px !important;
     padding: 0 !important;
     margin: 0 !important;
     border-radius: var(--radius-full) !important;
@@ -1581,20 +1630,20 @@ body {
     justify-content: center !important;
     background: var(--gradient-primary) !important;
     backdrop-filter: blur(20px) !important;
-    border: 1px solid var(--glass-border) !important;
-    box-shadow: var(--glass-shadow-lg) !important;
+    border: 2px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow-xl) !important;
     pointer-events: auto !important;
     cursor: pointer !important;
     overflow: hidden !important;
   }
   
   .advanced-chatbot-window {
-    width: calc(100vw - 16px) !important;
-    max-height: 85vh !important;
-    bottom: 72px !important;
-    right: 8px !important;
-    margin-right: 8px !important;
-    border-radius: var(--radius-xl) !important;
+    width: calc(100vw - 20px) !important;
+    max-height: 88vh !important;
+    bottom: 80px !important;
+    right: 10px !important;
+    margin-right: 10px !important;
+    border-radius: var(--radius-2xl) !important;
     position: fixed !important;
     z-index: var(--z-overlay) !important;
   }
@@ -1654,10 +1703,10 @@ body {
   }
   
   .advanced-chatbot-messages {
-    padding: var(--space-4);
-    gap: var(--space-3);
-    min-height: 300px;
-    max-height: 50vh;
+    padding: var(--space-5);
+    gap: var(--space-4);
+    min-height: 320px;
+    max-height: 55vh;
   }
   
   .advanced-chatbot-message {
@@ -1736,11 +1785,11 @@ body {
   }
   
   .advanced-chatbot-input {
-    padding: var(--space-4);
+    padding: var(--space-5);
   }
   
   .input-container {
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
   }
   
   .ai-input {
@@ -1894,22 +1943,56 @@ body {
   }
 }
 
-/* High Contrast Mode Support */
+/* High Contrast Mode Improvements */
 @media (prefers-contrast: high) {
+  .advanced-chatbot-toggle {
+    border: 3px solid var(--gray-800);
+    background: var(--primary-600) !important;
+    color: white !important;
+  }
+  
   .advanced-chatbot-window {
-    border: 2px solid var(--gray-800);
+    border: 3px solid var(--gray-700);
+    background: white;
   }
   
-  .advanced-chatbot-message-content {
+  .message-content {
     border: 2px solid var(--gray-600);
-  }
-  
-  .suggestion-button {
-    border: 2px solid var(--gray-500);
+    color: black !important;
   }
   
   .ai-input {
-    border: 2px solid var(--gray-600);
+    border: 3px solid var(--gray-600);
+    background: white;
+    color: black !important;
+  }
+  
+  .ai-input::placeholder {
+    color: var(--gray-700) !important;
+  }
+  
+  .ai-send-button {
+    border: 3px solid var(--gray-800);
+    background: var(--primary-600) !important;
+    color: white !important;
+  }
+  
+  .suggestion-button {
+    border: 3px solid var(--gray-500);
+    background: white;
+    color: black !important;
+  }
+  
+  .advanced-chatbot-message.user .message-content {
+    background: var(--primary-700) !important;
+    color: white !important;
+    border-color: var(--primary-800) !important;
+  }
+  
+  .advanced-chatbot-message.bot .message-content {
+    background: white !important;
+    color: black !important;
+    border-color: var(--gray-600) !important;
   }
 }
 
@@ -1923,24 +2006,50 @@ body {
 /* Touch Device Optimizations */
 @media (hover: none) and (pointer: coarse) {
   .suggestion-button {
-    padding: var(--space-4);
-    min-height: 48px;
+    padding: var(--space-5);
+    min-height: 52px;
+    font-size: var(--text-sm);
+    min-width: 44px;
   }
   
   .ai-send-button {
-    min-width: 48px;
-    min-height: 48px;
+    min-width: 56px;
+    min-height: 56px;
+    padding: var(--space-4);
   }
   
   .feedback-button {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: var(--space-2);
   }
   
   .fullscreen-toggle,
   .close-button {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    padding: var(--space-3);
+  }
+  
+  .ai-input {
+    min-height: 52px;
+    padding: var(--space-4) var(--space-5);
+    font-size: var(--text-base);
+  }
+  
+  .input-suggestion {
+    min-height: 44px;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+  }
+  
+  .quick-action-item {
+    min-height: 60px;
+    padding: var(--space-4);
   }
 }
 
