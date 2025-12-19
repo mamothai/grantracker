@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import santaIcon from '../assets/santa.svg';
 
-// ChatBot Component - Best-in-Class Implementation with Comprehensive Website Coverage
+// Enhanced ChatBot Component - Direct Navigation Focus
 const ChatBot = ({ 
   apiEndpoint = '/api/chat', 
   maxMessages = 100, 
@@ -16,62 +17,29 @@ const ChatBot = ({
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState(defaultLanguage);
-  const [suggestions, setSuggestions] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
-  const [feedback, setFeedback] = useState(null);
   const [sessionId, setSessionId] = useState(null);
-  const [activeConversationFlow, setActiveConversationFlow] = useState(null);
-  const [proactiveSuggestions, setProactiveSuggestions] = useState([]);
   const [accessibilityMode, setAccessibilityMode] = useState(false);
-  const [analytics, setAnalytics] = useState({
-    messagesSent: 0,
-    messagesReceived: 0,
-    avgResponseTime: 0,
-    satisfactionScore: 0,
-    complexQueriesHandled: 0
-  });
+  const [showQuickActions, setShowQuickActions] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const typingTimeoutRef = useRef(null);
-  const conversationHistoryRef = useRef([]);
-  const proactiveTimeoutRef = useRef(null);
 
-  // Website content database for comprehensive responses
-  const websiteContent = {
-    pages: {
-      home: {
-        title: "GrantTracker Portal - Home",
-        description: "A transparent digital system connecting officials, creators, and the public with verified grant activity",
-        features: ["500+ Active Grants", "₹50M+ Total Allocation", "100% Transparency", "Real-time tracking", "Public suggestions", "Government dashboard", "Creator portal"],
-        ctas: ["Explore Dashboard", "Creator Login", "Government Login", "Submit Feedback"]
-      },
-      about: {
-        title: "About GrantTracker",
-        description: "Transparent grants start with honest data. GrantTracker brings every stakeholder onto a single, verifiable source of truth",
-        features: ["End-to-end grant status", "Deadline & compliance guardrails", "Analytics & public transparency", "Real-time tracking", "Multi-sector support"],
-        stats: ["50K+ Grants mapped in pilots", "12 Sectors supported", "3x Faster reporting cycles"]
-      },
-      dashboard: {
-        title: "Analytics Dashboard",
-        description: "Live charts, distribution & analytics for grant allocations across sectors",
-        features: ["Real-time analytics", "Sector-wise distribution", "Geographic breakdown", "Performance metrics", "Export capabilities"]
-      },
-      benefits: {
-        title: "Government Benefits",
-        description: "Comprehensive government schemes and benefits designed to empower citizens across all sectors",
-        sectors: ["Agriculture", "Education", "Health", "Infrastructure", "Environment", "Technology", "Women & Child"]
-      }
-    },
-    grants: [
-      { id: "AGR-001", name: "PM Kisan Samman Nidhi", sector: "Agriculture", amount: "₹6,000/year", description: "Annual income support to farmers", details: "Provides ₹6,000 annually. Over 11 crore farmer families registered. ₹2.8 lakh crore disbursed.", yearLaunched: "2019", beneficiaries: "11 crore farmers", coverage: "National", keywords: ["kisan", "farmer", "agriculture", "income"], officialLink: "https://pmkisan.gov.in/" },
-      { id: "AGR-002", name: "Soil Health Card Scheme", sector: "Agriculture", amount: "Free testing", description: "Soil testing and nutrient management", details: "22 crore soil health cards issued. Improves balanced fertilizer use", yearLaunched: "2015", beneficiaries: "22 crore farmers", coverage: "National", keywords: ["soil", "health", "testing", "agriculture"], officialLink: "https://soilhealth.dac.gov.in/" },
-      { id: "EDU-001", name: "Mid Day Meal Scheme", sector: "Education", amount: "Free meals", description: "Nutritious meals to school children", details: "10 crore children receive daily meals. Improves attendance and learning.", yearLaunched: "1995", beneficiaries: "10 crore children", coverage: "National", keywords: ["midday meal", "education", "school", "nutrition", "student"], officialLink: "https://mdm.nic.in/" },
-      { id: "HEL-001", name: "Ayushman Bharat", sector: "Health", amount: "₹5 Lakh/family/year", description: "Cashless health insurance scheme", details: "11 crore families covered. Cashless treatment at 24,000+ hospitals. ₹5 lakh annual coverage per family.", yearLaunched: "2018", beneficiaries: "11 crore families", coverage: "National", keywords: ["ayushman bharat", "health insurance", "medical", "hospital"], officialLink: "https://pmjay.gov.in/" },
-      { id: "TECH-001", name: "Digital India Programme", sector: "Technology", amount: "Full funding", description: "Digital empowerment of India", details: "Broadband to all villages. Digital literacy and e-governance promotion.", yearLaunched: "2015", beneficiaries: "Entire population", coverage: "National", keywords: ["digital india", "technology", "broadband", "internet"], officialLink: "https://www.digitalindia.gov.in/" }
-    ]
+  // Website navigation paths
+  const websitePaths = {
+    home: { path: '/', label: 'Home', icon: '🏠' },
+    about: { path: '/about', label: 'About GrantTracker', icon: 'ℹ️' },
+    dashboard: { path: '/chart', label: 'Analytics Dashboard', icon: '📊' },
+    benefits: { path: '/benefits', label: 'Government Benefits', icon: '🏛️' },
+    suggestions: { path: '/suggestions', label: 'Public Suggestions', icon: '💬' },
+    creator: { path: '/creator-login', label: 'Creator Portal', icon: '✍️' },
+    government: { path: '/gov-login', label: 'Government Dashboard', icon: '🏛️' },
+    create: { path: '/create-grant', label: 'Create Grant', icon: '📝' },
+    view: { path: '/view', label: 'Public View', icon: '👁️' }
   };
 
   // Initialize session
@@ -100,89 +68,15 @@ const ChatBot = ({
     if (history) {
       try {
         const parsedHistory = JSON.parse(history);
-        conversationHistoryRef.current = parsedHistory;
         setMessages(parsedHistory);
       } catch (e) {
         console.error('Error loading conversation history:', e);
       }
     }
-
-    // Set up periodic cleanup
-    const cleanupInterval = setInterval(() => {
-      const sessions = JSON.parse(localStorage.getItem('chatbot_sessions') || '[]');
-      const now = Date.now();
-      const activeSessions = sessions.filter(s => now - s.createdAt < sessionTimeout);
-      if (activeSessions.length !== sessions.length) {
-        localStorage.setItem('chatbot_sessions', JSON.stringify(activeSessions));
-      }
-    }, 60 * 60 * 1000); // Every hour
-
-    return () => clearInterval(cleanupInterval);
-  }, []);
-
-  // Proactive support system
-  const generateProactiveSuggestions = useCallback(() => {
-    const path = location.pathname;
-    const suggestions = [];
-    
-    // Page-specific proactive suggestions
-    switch (path) {
-      case '/':
-        suggestions.push(
-          { id: 'view_dashboard', text: 'View live analytics dashboard', icon: '📊', action: 'navigate' },
-          { id: 'explore_grants', text: 'Explore available grants', icon: '💰', action: 'suggest' },
-          { id: 'about_platform', text: 'Learn about GrantTracker', icon: '📖', action: 'navigate' }
-        );
-        break;
-      case '/about':
-        suggestions.push(
-          { id: 'contact_team', text: 'Contact our team', icon: '💬', action: 'suggest' },
-          { id: 'partnership', text: 'Discuss partnership', icon: '🤝', action: 'suggest' }
-        );
-        break;
-      case '/chart':
-        suggestions.push(
-          { id: 'sector_details', text: 'Get sector-wise details', icon: '📈', action: 'suggest' },
-          { id: 'export_data', text: 'Export analytics data', icon: '📊', action: 'suggest' }
-        );
-        break;
-      case '/benefits':
-        suggestions.push(
-          { id: 'check_eligibility', text: 'Check eligibility for schemes', icon: '✅', action: 'suggest' },
-          { id: 'application_guide', text: 'Get application guidance', icon: '📝', action: 'suggest' }
-        );
-        break;
-      default:
-        suggestions.push(
-          { id: 'general_help', text: 'How can I help you?', icon: '❓', action: 'suggest' }
-        );
-    }
-    
-    return suggestions;
-  }, [location.pathname]);
-
-  // Show proactive suggestions when chat is opened
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      const suggestions = generateProactiveSuggestions();
-      setProactiveSuggestions(suggestions);
-      
-      // Clear proactive suggestions after 30 seconds
-      proactiveTimeoutRef.current = setTimeout(() => {
-        setProactiveSuggestions([]);
-      }, 30000);
-    }
-    
-    return () => {
-      if (proactiveTimeoutRef.current) {
-        clearTimeout(proactiveTimeoutRef.current);
-      }
-    };
-  }, [isOpen, messages.length, generateProactiveSuggestions]);
+  }, [sessionId, defaultLanguage]);
 
   // Accessibility improvements
   useEffect(() => {
-    // Check for accessibility preferences
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const prefersHighContrast = window.matchMedia('(prefers-contrast: high)').matches;
     
@@ -191,85 +85,56 @@ const ChatBot = ({
     }
   }, []);
 
-  // Enhanced Natural Language Processing - Comprehensive website coverage
+  // Enhanced Natural Language Processing for Direct Navigation
   const analyzeIntent = useCallback((text) => {
     const normalized = text.toLowerCase().trim();
-    
-    // Remove common punctuation for better matching
     const cleaned = normalized.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '');
     
-    // Website navigation queries
-    if (/(home|landing|main page|start here)/i.test(cleaned)) {
-      return { intent: 'page_navigation', target: 'home', confidence: 0.95 };
+    // Direct navigation patterns
+    if (/(home|landing|main page|start here|go home)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'home', confidence: 0.95 };
     }
     if (/(about|team|company|who are you|what is granttracker)/i.test(cleaned)) {
-      return { intent: 'page_navigation', target: 'about', confidence: 0.95 };
+      return { intent: 'navigate', target: 'about', confidence: 0.95 };
     }
     if (/(dashboard|analytics|chart|statistics|reports)/i.test(cleaned)) {
-      return { intent: 'page_navigation', target: 'dashboard', confidence: 0.9 };
+      return { intent: 'navigate', target: 'dashboard', confidence: 0.9 };
     }
     if (/(benefits|schemes|government schemes|welfare)/i.test(cleaned)) {
-      return { intent: 'page_navigation', target: 'benefits', confidence: 0.9 };
+      return { intent: 'navigate', target: 'benefits', confidence: 0.9 };
     }
     if (/(suggestions|feedback|public|comment)/i.test(cleaned)) {
-      return { intent: 'page_navigation', target: 'suggestions', confidence: 0.9 };
+      return { intent: 'navigate', target: 'suggestions', confidence: 0.9 };
     }
     if (/(creator|login|register|apply)/i.test(cleaned)) {
-      return { intent: 'page_navigation', target: 'creator', confidence: 0.85 };
+      return { intent: 'navigate', target: 'creator', confidence: 0.85 };
     }
     if (/(government|official|admin|ministry)/i.test(cleaned)) {
-      return { intent: 'page_navigation', target: 'government', confidence: 0.85 };
+      return { intent: 'navigate', target: 'government', confidence: 0.85 };
+    }
+    if (/(create|new|submit)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'create', confidence: 0.85 };
+    }
+    if (/(view|public|see)/i.test(cleaned)) {
+      return { intent: 'navigate', target: 'view', confidence: 0.85 };
     }
     
-    // Sector-specific queries
-    if (/(agriculture|farmer|kisan|farming|crop)/i.test(cleaned)) {
-      return { intent: 'sector_query', sector: 'Agriculture', confidence: 0.9 };
-    }
-    if (/(education|school|student|teacher|learning)/i.test(cleaned)) {
-      return { intent: 'sector_query', sector: 'Education', confidence: 0.9 };
-    }
-    if (/(health|medical|hospital|doctor|medicine)/i.test(cleaned)) {
-      return { intent: 'sector_query', sector: 'Health', confidence: 0.9 };
-    }
-    if (/(infrastructure|road|bridge|construction)/i.test(cleaned)) {
-      return { intent: 'sector_query', sector: 'Infrastructure', confidence: 0.9 };
-    }
-    if (/(environment|clean|green|eco)/i.test(cleaned)) {
-      return { intent: 'sector_query', sector: 'Environment', confidence: 0.9 };
-    }
-    if (/(technology|digital|internet|computer)/i.test(cleaned)) {
-      return { intent: 'sector_query', sector: 'Technology', confidence: 0.9 };
-    }
-    if (/(women|child|family|icds)/i.test(cleaned)) {
-      return { intent: 'sector_query', sector: 'Women & Child', confidence: 0.9 };
+    // Quick action patterns
+    if (/(show me|navigate|go to|take me)/i.test(cleaned)) {
+      return { intent: 'show_actions', confidence: 0.8 };
     }
     
-    // Greetings - expanded patterns
+    // Greetings
     if (/^(hello|hi|hey|greetings|good [morning|afternoon|evening]|howdy|yo|hey there|what's up|hi there)/i.test(cleaned)) {
       return { intent: 'greeting', confidence: 0.95 };
     }
     
-    // Grants/funding related - expanded patterns
-    if (/(grant|funding|scholarship|financial aid|bursary|subsidy|loan|financial assistance|money for|fund|finance)/i.test(cleaned)) {
-      return { intent: 'grant_info', confidence: 0.85 };
-    }
-    
-    // Eligibility - expanded patterns
-    if (/(eligible|qualify|requirement|criteria|qualification|who can apply|am i eligible|can i get|requirements for)/i.test(cleaned)) {
-      return { intent: 'eligibility', confidence: 0.9 };
-    }
-    
-    // Deadlines - expanded patterns
-    if (/(deadline|due date|when|application period|when is|date for|last day|cutoff|closing date)/i.test(cleaned)) {
-      return { intent: 'deadline', confidence: 0.85 };
-    }
-    
-    // Help/support - expanded patterns
+    // Help
     if (/(help|support|assistance|trouble|issue|problem|how to|guide|walk me through|explain|need help)/i.test(cleaned)) {
       return { intent: 'help', confidence: 0.8 };
     }
     
-    // Thank you - expanded patterns
+    // Thank you
     if (/(thank|thanks|appreciate|great help|thank you|thanks a lot|much appreciated|you're helpful)/i.test(cleaned)) {
       return { intent: 'gratitude', confidence: 0.95 };
     }
@@ -279,75 +144,450 @@ const ChatBot = ({
       return { intent: 'clear', confidence: 0.9 };
     }
     
-    // Specific grant queries
-    if (/(how much|amount|money|budget|cost)/i.test(cleaned)) {
-      return { intent: 'amount', confidence: 0.7 };
-    }
-    
-    // Complex multi-step queries
-    if (/(step by step|walk me through|process for|how do i|guide me|what are the steps|procedure for)/i.test(cleaned)) {
-      return { intent: 'multi_step_guide', confidence: 0.9 };
-    }
-    
-    // Comparison queries
-    if (/(compare|difference between|which is better|vs|versus|compare .* and .*)/i.test(cleaned)) {
-      return { intent: 'comparison', confidence: 0.85 };
-    }
-    
-    // Detailed information requests
-    if (/(details about|more information on|tell me about|explain|describe|what is)/i.test(cleaned)) {
-      return { intent: 'detailed_info', confidence: 0.8 };
-    }
-    
-    // Search queries
-    if (/(search|find|look for|browse|filter)/i.test(cleaned)) {
-      return { intent: 'search', confidence: 0.8 };
-    }
-    
-    // Website features
-    if (/(feature|capability|what can you do|what does this do)/i.test(cleaned)) {
-      return { intent: 'website_features', confidence: 0.85 };
-    }
-    
-    // Transparency and verification
-    if (/(transparency|verify|verified|blockchain|audit)/i.test(cleaned)) {
-      return { intent: 'transparency_info', confidence: 0.8 };
-    }
-    
     return { intent: 'unknown', confidence: 0.1 };
   }, []);
 
-  // Continue with the rest of the component implementation...
-  // (The file is quite long, so I'll focus on the key enhancements)
-  // This is a comprehensive enhancement that covers all the requested features
+  // Direct navigation handler
+  const handleDirectNavigation = useCallback((target) => {
+    const pathInfo = websitePaths[target];
+    if (pathInfo) {
+      navigate(pathInfo.path);
+      
+      // Add confirmation message
+      const navMessage = {
+        text: `Navigating to ${pathInfo.label}...`,
+        sender: 'bot',
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, navMessage]);
+      
+      // Close chat after navigation
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 1500);
+      
+      return true;
+    }
+    return false;
+  }, [navigate, websitePaths]);
+
+  // Generate response based on intent
+  const generateResponse = useCallback(async (message, intent) => {
+    setIsLoading(true);
+    setIsTyping(true);
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+      
+      let response = '';
+      
+      switch (intent.intent) {
+        case 'navigate':
+          const navigationSuccess = handleDirectNavigation(intent.target);
+          if (navigationSuccess) {
+            response = `Taking you to ${websitePaths[intent.target].label}!`;
+          } else {
+            response = 'I couldn\'t find that section. Let me show you what\'s available.';
+          }
+          break;
+          
+        case 'show_actions':
+          response = getQuickActionsResponse();
+          setShowQuickActions(true);
+          break;
+          
+        case 'greeting':
+          response = getGreetingResponse(language);
+          break;
+          
+        case 'help':
+          response = getHelpResponse(language);
+          break;
+          
+        case 'gratitude':
+          response = getGratitudeResponse(language);
+          break;
+          
+        case 'clear':
+          setMessages([]);
+          localStorage.removeItem(`chatbot_history_${sessionId}`);
+          response = 'Conversation cleared! How can I help you navigate?';
+          break;
+          
+        default:
+          response = getFallbackResponse(language);
+      }
+      
+      return {
+        text: response,
+        sender: 'bot',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          intent: intent.intent,
+          confidence: intent.confidence
+        }
+      };
+    } catch (err) {
+      console.error('Error generating response:', err);
+      return {
+        text: getErrorResponse(language),
+        sender: 'bot',
+        timestamp: new Date().toISOString(),
+        isError: true
+      };
+    } finally {
+      setIsLoading(false);
+      setIsTyping(false);
+    }
+  }, [language, sessionId, handleDirectNavigation]);
+
+  // Response generators
+  const getQuickActionsResponse = () => {
+    return `Here's what you can navigate to directly:\n\n${Object.values(websitePaths).map(path => 
+      `${path.icon} **${path.label}**`
+    ).join('\n\n')}\n\nJust tell me where you'd like to go!`;
+  };
+
+  const getGreetingResponse = (lang) => {
+    const greetings = {
+      en: 'Hello! 👋 I can help you navigate directly to any section of GrantTracker. Where would you like to go?',
+      es: '¡Hola! 👋 Puedo ayudarte a navegar directamente a cualquier sección de GrantTracker. ¿A dónde te gustaría ir?',
+      fr: 'Bonjour ! 👋 Je peux vous aider à naviguer directement vers n\'importe quelle section de GrantTracker. Où aimeriez-vous aller ?',
+      de: 'Hallo! 👋 Ich kann Ihnen helfen, direkt zu jedem Bereich von GrantTracker zu navigieren. Wohin möchten Sie gehen?',
+      hi: 'नमस्ते! 👋 मैं आपको GrantTracker के किसी भी अनुभाग पर सीधे नेविगेट करने में मदद कर सकता हूँ। आप कहाँ जाना चाहेंगे?'
+    };
+    return greetings[lang] || greetings.en;
+  };
+
+  const getHelpResponse = (lang) => {
+    const responses = {
+      en: 'I\'m your direct navigation assistant! Tell me where you want to go:\n\n🏠 **Home** - Main page\n📊 **Dashboard** - Analytics\n🏛️ **Benefits** - Government schemes\n💬 **Suggestions** - Public feedback\n✍️ **Creator** - Apply for grants\n🏛️ **Government** - Official portal\n\nJust say "show me" to see all options!',
+      es: '¡Soy tu asistente de navegación directa! Dime a dónde quieres ir:\n\n🏠 **Inicio** - Página principal\n📊 **Panel** - Análisis\n🏛️ **Beneficios** - Esquemas gubernamentales\n💬 **Sugerencias** - Comentarios públicos\n✍️ **Creador** - Solicitar subvenciones\n🏛️ **Gobierno** - Portal oficial\n\n¡Solo di "muéstrame" para ver todas las opciones!'
+    };
+    return responses[lang] || responses.en;
+  };
+
+  const getGratitudeResponse = (lang) => {
+    const responses = {
+      en: 'You\'re welcome! 😊 Feel free to ask me to navigate anywhere on the site.',
+      es: '¡De nada! 😊 No dudes en pedirme que navegue a cualquier lugar del sitio.',
+      fr: 'Avec plaisir ! 😊 N\'hésitez pas à me demander de naviguer n\'importe où sur le site.',
+      de: 'Gern geschehen! 😊 Fühlen Sie sich frei, mich zu bitten, irgendwo auf der Website zu navigieren.',
+      hi: 'स्वागत है! 😊 बेझिझक साइट पर कहीं भी नेविगेट करने के लिए मुझसे कहें।'
+    };
+    return responses[lang] || responses.en;
+  };
+
+  const getFallbackResponse = (lang) => {
+    const responses = {
+      en: 'I didn\'t quite catch that. I can help you navigate to any section of GrantTracker. Try saying "show me" to see all available sections!',
+      es: 'No entendí bien eso. Puedo ayudarte a navegar a cualquier sección de GrantTracker. ¡Intenta decir "muéstrame" para ver todas las secciones disponibles!',
+      fr: 'Je n\'ai pas bien compris cela. Je peux vous aider à naviguer vers n\'importe quelle section de GrantTracker. Essayez de dire "montrez-moi" pour voir toutes les sections disponibles!',
+      de: 'Das habe ich nicht ganz verstanden. Ich kann Ihnen helfen, zu jedem Bereich von GrantTracker zu navigieren. Versuchen Sie "zeigen Sie mir" zu sagen, um alle verfügbaren Bereiche zu sehen!',
+      hi: 'मुझे वो बात समझ नहीं आई। मैं आपको GrantTracker के किसी भी सेक्शन पर नेविगेट करने में मदद कर सकता हूँ। सभी उपलब्ध सेक्शन देखने के लिए "दिखाओ" कहने की कोशिश करें!'
+    };
+    return responses[lang] || responses.en;
+  };
+
+  const getErrorResponse = (lang) => {
+    const responses = {
+      en: 'Sorry, I encountered an error. Please try again.',
+      es: 'Lo siento, ocurrió un error. Por favor, inténtalo de nuevo.',
+      fr: 'Désolé, une erreur s\'est produite. Veuillez réessayer.',
+      de: 'Entschuldigung, ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
+      hi: 'माफ कीजिए, एक त्रुटि हुई। कृपया पुन: प्रयास करें।'
+    };
+    return responses[lang] || responses.en;
+  };
+
+  // Handle user message
+  const handleSendMessage = useCallback(async () => {
+    if (!inputValue.trim() || isLoading) return;
+    
+    const userMessage = {
+      text: inputValue.trim(),
+      sender: 'user',
+      timestamp: new Date().toISOString()
+    };
+    
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    setInputValue('');
+    setError(null);
+    
+    // Analyze intent and generate response
+    const intent = analyzeIntent(userMessage.text);
+    const botResponse = await generateResponse(userMessage.text, intent);
+    
+    setMessages(prev => [...prev, botResponse]);
+    
+    // Store in localStorage
+    try {
+      localStorage.setItem(`chatbot_history_${sessionId}`, JSON.stringify([...updatedMessages, botResponse]));
+    } catch (e) {
+      console.error('Storage error:', e);
+    }
+  }, [inputValue, messages, isLoading, sessionId, analyzeIntent, generateResponse]);
+
+  // Handle language change
+  const handleLanguageChange = useCallback((lang) => {
+    setLanguage(lang);
+    localStorage.setItem('chatbot_session', JSON.stringify({
+      sessionId,
+      language: lang,
+      createdAt: Date.now()
+    }));
+  }, [sessionId]);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        setIsOpen(!isOpen);
+      }
+      
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Scroll to bottom
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: accessibilityMode ? 'auto' : 'smooth' });
+    }
+  }, [messages, isLoading, isTyping, accessibilityMode]);
+
+  // Handle quick action clicks
+  const handleQuickAction = useCallback((target) => {
+    handleDirectNavigation(target);
+    setShowQuickActions(false);
+  }, [handleDirectNavigation]);
+
+  // Render message content
+  const renderMessageContent = (message) => {
+    if (message.isError) {
+      return (
+        <div className="chatbot-message-error">
+          <span className="chatbot-icon">⚠️</span>
+          <span>{message.text}</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="chatbot-message-content">
+        {message.text.split('\n').map((line, i) => {
+          // Handle bold text formatting
+          if (line.includes('**')) {
+            const parts = line.split('**');
+            return (
+              <p key={i}>
+                {parts.map((part, j) => 
+                  j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+                )}
+              </p>
+            );
+          }
+          return <p key={i}>{line}</p>;
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className={`chatbot-container ${isOpen ? 'chatbot-open' : ''} ${accessibilityMode ? 'accessibility-mode' : ''}`}>
-      {/* Chat toggle button with accessibility improvements */}
+      {/* Enhanced Chat Toggle Button with Santa Icon */}
       <button
         className="chatbot-toggle"
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? 'Close chat' : 'Open chat'}
         aria-expanded={isOpen}
-        aria-describedby="chatbot-description"
         role="button"
       >
-        <span className="chatbot-icon" aria-hidden="true">💬</span>
-        {isOpen ? 'Close' : 'Chat'}
-        <div id="chatbot-description" className="sr-only">
-          Chat with GrantTracker Assistant for help with grants and website navigation
-        </div>
+        <img 
+          src={santaIcon} 
+          alt="Chat Assistant" 
+          className="chatbot-santa-icon"
+          width="20" 
+          height="20"
+        />
+        <span className="chatbot-toggle-text">{isOpen ? 'Close' : 'Assistant'}</span>
       </button>
 
-      {/* Rest of the component implementation would continue here... */}
-      {/* This includes all the enhanced features like:
-          - Dynamic content rendering for grant data
-          - Proactive support suggestions
-          - Enhanced accessibility
-          - Multi-step conversation flows
-          - Website-specific intent recognition
-          - And much more...
-      */}
+      {/* Enhanced Chat Window */}
+      <div className="chatbot-window" ref={chatContainerRef}>
+        {/* Header */}
+        <div className="chatbot-header">
+          <div className="chatbot-header-content">
+            <img 
+              src={santaIcon} 
+              alt="GrantTracker Assistant" 
+              className="chatbot-header-icon"
+              width="24" 
+              height="24"
+            />
+            <h3>GrantTracker Assistant</h3>
+          </div>
+          <div className="chatbot-header-controls">
+            <select
+              value={language}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="chatbot-language-selector"
+              aria-label="Select language"
+            >
+              {languages.map(lang => (
+                <option key={lang} value={lang}>{getLanguageName(lang)}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="chatbot-close"
+              aria-label="Close chat"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        {/* Messages Container */}
+        <div className="chatbot-messages">
+          {messages.length === 0 && !isLoading && (
+            <div className="chatbot-empty-state">
+              <img 
+                src={santaIcon} 
+                alt="Welcome" 
+                className="chatbot-empty-icon"
+                width="48" 
+                height="48"
+              />
+              <h4>Welcome to GrantTracker Assistant</h4>
+              <p>I'm here to help you navigate directly to any section!</p>
+              <div className="chatbot-quick-actions">
+                <button
+                  className="chatbot-quick-action-btn"
+                  onClick={() => handleQuickAction('home')}
+                >
+                  🏠 Home
+                </button>
+                <button
+                  className="chatbot-quick-action-btn"
+                  onClick={() => handleQuickAction('dashboard')}
+                >
+                  📊 Dashboard
+                </button>
+                <button
+                  className="chatbot-quick-action-btn"
+                  onClick={() => handleQuickAction('benefits')}
+                >
+                  🏛️ Benefits
+                </button>
+              </div>
+            </div>
+          )}
+
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`chatbot-message ${message.sender}`}
+              data-sender={message.sender}
+            >
+              <div className="chatbot-avatar">
+                {message.sender === 'user' ? '👤' : <img src={santaIcon} alt="Bot" width="20" height="20" />}
+              </div>
+              <div className="chatbot-message-bubble">
+                {renderMessageContent(message)}
+              </div>
+              <div className="chatbot-message-time">
+                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            </div>
+          ))}
+
+          {(isLoading || isTyping) && (
+            <div className="chatbot-message bot">
+              <div className="chatbot-avatar">
+                <img src={santaIcon} alt="Typing" width="20" height="20" />
+              </div>
+              <div className="chatbot-message-bubble">
+                <div className="chatbot-typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Actions Panel */}
+        {showQuickActions && (
+          <div className="chatbot-quick-actions-panel">
+            <div className="chatbot-quick-actions-header">
+              <span>Quick Navigation</span>
+              <button 
+                onClick={() => setShowQuickActions(false)}
+                className="chatbot-close-quick"
+              >
+                ×
+              </button>
+            </div>
+            <div className="chatbot-quick-actions-grid">
+              {Object.entries(websitePaths).map(([key, path]) => (
+                <button
+                  key={key}
+                  className="chatbot-quick-action-grid-item"
+                  onClick={() => handleQuickAction(key)}
+                >
+                  <span className="chatbot-quick-action-icon">{path.icon}</span>
+                  <span className="chatbot-quick-action-label">{path.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Input Area */}
+        <div className="chatbot-input-area">
+          {error && (
+            <div className="chatbot-error-message" role="alert">
+              {error}
+              <button onClick={() => setError(null)} className="chatbot-error-close" aria-label="Close error">×</button>
+            </div>
+          )}
+
+          <div className="chatbot-input-wrapper">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Where would you like to go? (e.g., 'show me dashboard')"
+              disabled={isLoading}
+              aria-label="Chat input"
+              className="chatbot-input"
+              maxLength={500}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isLoading}
+              className="chatbot-send-button"
+              aria-label="Send message"
+            >
+              {isLoading ? '...' : 'Go'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
