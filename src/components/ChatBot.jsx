@@ -3,6 +3,1226 @@ import { useNavigate } from 'react-router-dom';
 import santaIcon from '../assets/santa.svg';
 import './ChatBot.css';
 
+// Advanced AI System Components
+class ConversationMemory {
+  constructor() {
+    this.history = [];
+    this.maxHistorySize = 50;
+    this.contextWindow = 10;
+    this.sessionStart = new Date();
+    this.userPreferences = this.loadUserPreferences();
+  }
+
+  addMessage(message, sentiment = 'neutral', entities = []) {
+    const messageWithContext = {
+      ...message,
+      timestamp: new Date(),
+      sentiment,
+      entities,
+      context: this.buildContext()
+    };
+    
+    this.history.push(messageWithContext);
+    if (this.history.length > this.maxHistorySize) {
+      this.history.shift();
+    }
+    
+    this.saveToStorage();
+  }
+
+  buildContext() {
+    const recentMessages = this.history.slice(-this.contextWindow);
+    const context = {
+      topics: this.extractTopics(recentMessages),
+      entities: this.consolidateEntities(recentMessages),
+      patterns: this.analyzePatterns(recentMessages),
+      sessionLength: this.history.length,
+      timeInSession: Date.now() - this.sessionStart.getTime()
+    };
+    return context;
+  }
+
+  extractTopics(messages) {
+    const topics = new Map();
+    messages.forEach(msg => {
+      if (msg.entities) {
+        msg.entities.forEach(entity => {
+          const topic = entity.type;
+          topics.set(topic, (topics.get(topic) || 0) + 1);
+        });
+      }
+    });
+    return Array.from(topics.entries()).sort((a, b) => b[1] - a[1]);
+  }
+
+  consolidateEntities(messages) {
+    const entities = new Map();
+    messages.forEach(msg => {
+      if (msg.entities) {
+        msg.entities.forEach(entity => {
+          const key = `${entity.type}:${entity.value}`;
+          if (!entities.has(key)) {
+            entities.set(key, { ...entity, frequency: 0 });
+          }
+          entities.get(key).frequency++;
+        });
+      }
+    });
+    return Array.from(entities.values());
+  }
+
+  analyzePatterns(messages) {
+    const patterns = {
+      questionFrequency: messages.filter(m => m.text.includes('?')).length,
+      navigationCount: messages.filter(m => m.sender === 'user' && 
+        /navigate|go to|take me|show me/i.test(m.text)).length,
+      helpSeeking: messages.filter(m => m.text.includes('help')).length,
+      positiveSentiment: messages.filter(m => m.sentiment === 'positive').length,
+      negativeSentiment: messages.filter(m => m.sentiment === 'negative').length
+    };
+    return patterns;
+  }
+
+  getRelevantContext(query) {
+    const relevant = this.history
+      .filter(msg => this.isRelevant(msg, query))
+      .slice(-5);
+    return relevant;
+  }
+
+  isRelevant(message, query) {
+    const queryWords = query.toLowerCase().split(/\s+/);
+    const messageText = message.text.toLowerCase();
+    return queryWords.some(word => messageText.includes(word)) ||
+           message.entities?.some(entity => 
+             queryWords.includes(entity.value.toLowerCase()));
+  }
+
+  loadUserPreferences() {
+    try {
+      return JSON.parse(localStorage.getItem('chatbot_preferences')) || {
+        communicationStyle: 'friendly',
+        preferredTopics: [],
+        interactionFrequency: 0,
+        lastSession: null,
+        personalityTraits: {
+          formality: 0.5,
+          enthusiasm: 0.7,
+          helpfulness: 0.9
+        }
+      };
+    } catch {
+      return {
+        communicationStyle: 'friendly',
+        preferredTopics: [],
+        interactionFrequency: 0,
+        lastSession: null,
+        personalityTraits: {
+          formality: 0.5,
+          enthusiasm: 0.7,
+          helpfulness: 0.9
+        }
+      };
+    }
+  }
+
+  saveToStorage() {
+    try {
+      localStorage.setItem('chatbot_conversation', JSON.stringify({
+        history: this.history,
+        preferences: this.userPreferences,
+        sessionStart: this.sessionStart
+      }));
+    } catch (error) {
+      console.warn('Failed to save conversation to storage:', error);
+    }
+  }
+}
+
+class EntityExtractor {
+  constructor() {
+    this.patterns = {
+      dates: /\b(?:today|yesterday|tomorrow|next\s+\w+|this\s+\w+|last\s+\w+|\d{1,2}\/\d{1,2}\/\d{2,4}|\w+\s+\d{1,2},?\s+\d{4})\b/gi,
+      amounts: /\$?\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d+)?\s*(?:thousand|million|billion|k|m|b)\b/gi,
+      emails: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+      phones: /(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/g,
+      urls: /https?:\/\/[^\s]+/g,
+      names: /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g,
+      organizations: /\b(?:Inc|LLC|Corp|Corporation|Company|Co\.|University|College|Institute|Foundation|Ministry|Department|Agency|Bank|Trust|Limited|Ltd)\b/gi,
+      amounts_text: /\b(\d+(?:\.\d+)?)\s*(?:dollars?|usd|thousand|k|million|m|billion|b)\b/gi,
+      percentages: /\d+(?:\.\d+)?%/g
+    };
+  }
+
+  extract(text) {
+    const entities = [];
+    const processed = new Set();
+
+    Object.entries(this.patterns).forEach(([type, pattern]) => {
+      const matches = text.match(pattern) || [];
+      matches.forEach(match => {
+        const normalized = this.normalizeEntity(match, type);
+        if (!processed.has(normalized.value.toLowerCase())) {
+          entities.push({
+            type,
+            value: normalized.value,
+            confidence: normalized.confidence,
+            startIndex: text.indexOf(match),
+            endIndex: text.indexOf(match) + match.length
+          });
+          processed.add(normalized.value.toLowerCase());
+        }
+      });
+    });
+
+    return entities.sort((a, b) => b.confidence - a.confidence);
+  }
+
+  normalizeEntity(value, type) {
+    const normalized = { value: value.trim(), confidence: 0.9 };
+
+    switch (type) {
+      case 'amounts_text':
+        const number = value.match(/\d+(?:\.\d+)?/);
+        if (number) {
+          const multiplier = value.includes('million') ? 1000000 : 
+                           value.includes('billion') ? 1000000000 :
+                           value.includes('thousand') || value.includes('k') ? 1000 : 1;
+          normalized.value = (parseFloat(number[0]) * multiplier).toString();
+          normalized.confidence = 0.85;
+        }
+        break;
+      case 'dates':
+        if (value.includes('today')) {
+          normalized.value = new Date().toISOString().split('T')[0];
+          normalized.confidence = 0.95;
+        } else if (value.includes('yesterday')) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          normalized.value = yesterday.toISOString().split('T')[0];
+          normalized.confidence = 0.95;
+        } else if (value.includes('tomorrow')) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          normalized.value = tomorrow.toISOString().split('T')[0];
+          normalized.confidence = 0.95;
+        }
+        break;
+      case 'amounts':
+        normalized.value = value.replace(/[,$\s]/g, '');
+        normalized.confidence = 0.9;
+        break;
+    }
+
+    return normalized;
+  }
+}
+
+class SentimentAnalyzer {
+  constructor() {
+    this.positiveWords = [
+      'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'awesome',
+      'helpful', 'thanks', 'thank you', 'perfect', 'love', 'like',
+      'good', 'nice', 'cool', 'brilliant', 'outstanding', 'superb'
+    ];
+    
+    this.negativeWords = [
+      'bad', 'terrible', 'awful', 'horrible', 'hate', 'dislike',
+      'problem', 'issue', 'error', 'wrong', 'broken', 'frustrated',
+      'annoying', 'disappointed', 'upset', 'angry', 'mad'
+    ];
+    
+    this.intensifiers = ['very', 'extremely', 'really', 'totally', 'absolutely', 'completely'];
+    this.negations = ['not', 'no', 'never', 'nothing', 'nobody', 'nowhere'];
+  }
+
+  analyze(text) {
+    const words = text.toLowerCase().split(/\s+/);
+    let score = 0;
+    let confidence = 0.5;
+    
+    // Check for intensifiers and negations
+    let intensifier = 1;
+    let negation = 1;
+    
+    words.forEach((word, index) => {
+      if (this.intensifiers.includes(word)) {
+        intensifier = 1.5;
+      }
+      if (this.negations.includes(word)) {
+        negation = -1;
+      }
+      
+      if (this.positiveWords.includes(word)) {
+        score += intensifier * negation;
+        confidence += 0.1;
+      }
+      if (this.negativeWords.includes(word)) {
+        score -= intensifier * negation;
+        confidence += 0.1;
+      }
+    });
+    
+    // Normalize score
+    score = Math.max(-1, Math.min(1, score / words.length * 5));
+    confidence = Math.min(1, confidence);
+    
+    let sentiment = 'neutral';
+    if (score > 0.2) sentiment = 'positive';
+    else if (score < -0.2) sentiment = 'negative';
+    
+    return {
+      sentiment,
+      score,
+      confidence: Math.min(1, confidence),
+      emotions: this.extractEmotions(text),
+      intensity: Math.abs(score)
+    };
+  }
+  
+  extractEmotions(text) {
+    const emotions = {
+      joy: 0,
+      anger: 0,
+      fear: 0,
+      sadness: 0,
+      surprise: 0
+    };
+    
+    const emotionWords = {
+      joy: ['happy', 'excited', 'glad', 'pleased', 'delighted', 'cheerful'],
+      anger: ['angry', 'mad', 'frustrated', 'annoyed', 'irritated', 'furious'],
+      fear: ['worried', 'anxious', 'concerned', 'nervous', 'scared', 'afraid'],
+      sadness: ['sad', 'disappointed', 'upset', 'depressed', 'unhappy', 'miserable'],
+      surprise: ['surprised', 'shocked', 'amazed', 'astonished', 'stunned', 'incredible']
+    };
+    
+    const words = text.toLowerCase().split(/\s+/);
+    words.forEach(word => {
+      Object.entries(emotionWords).forEach(([emotion, emotionWordList]) => {
+        if (emotionWordList.includes(word)) {
+          emotions[emotion] += 1;
+        }
+      });
+    });
+    
+    return emotions;
+  }
+}
+
+class UserBehaviorTracker {
+  constructor() {
+    this.behaviorData = {
+      navigationPatterns: new Map(),
+      interactionHistory: [],
+      preferences: new Map(),
+      sessionMetrics: {
+        startTime: Date.now(),
+        messageCount: 0,
+        navigationCount: 0,
+        helpRequests: 0,
+        positiveInteractions: 0,
+        negativeInteractions: 0
+      }
+    };
+  }
+
+  trackInteraction(type, data = {}) {
+    const interaction = {
+      type,
+      data,
+      timestamp: Date.now(),
+      context: this.getCurrentContext()
+    };
+    
+    this.behaviorData.interactionHistory.push(interaction);
+    this.updateMetrics(type);
+    this.analyzePatterns();
+  }
+
+  updateMetrics(type) {
+    this.behaviorData.sessionMetrics.messageCount++;
+    
+    switch (type) {
+      case 'navigation':
+        this.behaviorData.sessionMetrics.navigationCount++;
+        break;
+      case 'help_request':
+        this.behaviorData.sessionMetrics.helpRequests++;
+        break;
+      case 'positive_feedback':
+        this.behaviorData.sessionMetrics.positiveInteractions++;
+        break;
+      case 'negative_feedback':
+        this.behaviorData.sessionMetrics.negativeInteractions++;
+        break;
+    }
+  }
+
+  analyzePatterns() {
+    const recent = this.behaviorData.interactionHistory.slice(-20);
+    
+    // Analyze navigation preferences
+    const navPatterns = recent.filter(i => i.type === 'navigation');
+    navPatterns.forEach(nav => {
+      const target = nav.data.target;
+      this.behaviorData.navigationPatterns.set(
+        target, 
+        (this.behaviorData.navigationPatterns.get(target) || 0) + 1
+      );
+    });
+    
+    // Analyze interaction patterns
+    const patterns = {
+      frequentNavigation: this.getMostVisitedSections(),
+      interactionStyle: this.analyzeInteractionStyle(recent),
+      learningProgress: this.assessLearningProgress(),
+      engagement: this.calculateEngagementScore()
+    };
+    
+    return patterns;
+  }
+
+  getMostVisitedSections() {
+    return Array.from(this.behaviorData.navigationPatterns.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([section, count]) => ({ section, count }));
+  }
+
+  analyzeInteractionStyle(interactions) {
+    const helpRequests = interactions.filter(i => i.type === 'help_request').length;
+    const navigationRequests = interactions.filter(i => i.type === 'navigation').length;
+    const feedbackCount = interactions.filter(i => 
+      i.type.includes('feedback')).length;
+    
+    return {
+      helpSeeking: helpRequests > 2,
+      navigationFocused: navigationRequests > helpRequests,
+      feedbackActive: feedbackCount > 0,
+      overallStyle: helpRequests > navigationRequests ? 'seeker' : 'navigator'
+    };
+  }
+
+  assessLearningProgress() {
+    const metrics = this.behaviorData.sessionMetrics;
+    const sessionLength = Date.now() - metrics.startTime;
+    const minutesActive = sessionLength / (1000 * 60);
+    
+    return {
+      activityLevel: metrics.messageCount / Math.max(1, minutesActive),
+      helpDependency: metrics.helpRequests / Math.max(1, metrics.messageCount),
+      navigationEfficiency: metrics.navigationCount / Math.max(1, metrics.messageCount)
+    };
+  }
+
+  calculateEngagementScore() {
+    const metrics = this.behaviorData.sessionMetrics;
+    const totalInteractions = metrics.messageCount;
+    
+    if (totalInteractions === 0) return 0;
+    
+    const positiveRatio = metrics.positiveInteractions / totalInteractions;
+    const helpRatio = metrics.helpRequests / totalInteractions;
+    const navigationRatio = metrics.navigationCount / totalInteractions;
+    
+    // Higher engagement for positive interactions and moderate help-seeking
+    return Math.min(1, (positiveRatio * 0.4 + (1 - Math.abs(helpRatio - 0.3)) * 0.3 + navigationRatio * 0.3));
+  }
+
+  getCurrentContext() {
+    return {
+      sessionDuration: Date.now() - this.behaviorData.sessionMetrics.startTime,
+      currentHour: new Date().getHours(),
+      dayOfWeek: new Date().getDay(),
+      deviceType: this.detectDeviceType(),
+      browserInfo: this.getBrowserInfo()
+    };
+  }
+
+  detectDeviceType() {
+    return /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop';
+  }
+
+  getBrowserInfo() {
+    const userAgent = navigator.userAgent;
+    if (userAgent.includes('Chrome')) return 'Chrome';
+    if (userAgent.includes('Firefox')) return 'Firefox';
+    if (userAgent.includes('Safari')) return 'Safari';
+    if (userAgent.includes('Edge')) return 'Edge';
+    return 'Unknown';
+  }
+
+  getInsights() {
+    return {
+      patterns: this.analyzePatterns(),
+      recommendations: this.generateRecommendations(),
+      userType: this.classifyUserType(),
+      nextBestActions: this.predictNextActions()
+    };
+  }
+
+  classifyUserType() {
+    const patterns = this.analyzePatterns();
+    const learningProgress = patterns.learningProgress;
+    
+    if (learningProgress.helpDependency > 0.5) return 'beginner';
+    if (learningProgress.navigationEfficiency > 0.6) return 'efficient';
+    if (patterns.learningProgress.activityLevel > 2) return 'power_user';
+    return 'moderate_user';
+  }
+
+  generateRecommendations() {
+    const patterns = this.analyzePatterns();
+    const recommendations = [];
+    
+    if (patterns.learningProgress.helpDependency > 0.6) {
+      recommendations.push('Consider providing more proactive help suggestions');
+    }
+    
+    if (patterns.learningProgress.navigationEfficiency < 0.3) {
+      recommendations.push('User might benefit from more navigation guidance');
+    }
+    
+    const mostVisited = patterns.frequentNavigation[0];
+    if (mostVisited) {
+      recommendations.push(`User frequently visits ${mostVisited.section} - consider highlighting related features`);
+    }
+    
+    return recommendations;
+  }
+
+  predictNextActions() {
+    const patterns = this.analyzePatterns();
+    const recent = this.behaviorData.interactionHistory.slice(-5);
+    
+    const predictions = [];
+    
+    // Based on recent navigation patterns
+    const lastNav = recent.find(i => i.type === 'navigation');
+    if (lastNav) {
+      predictions.push({
+        action: 'related_navigation',
+        target: this.predictRelatedSection(lastNav.data.target),
+        confidence: 0.7
+      });
+    }
+    
+    // Based on help-seeking patterns
+    const helpRequests = recent.filter(i => i.type === 'help_request').length;
+    if (helpRequests > 2) {
+      predictions.push({
+        action: 'proactive_help',
+        target: 'general_guidance',
+        confidence: 0.8
+      });
+    }
+    
+    return predictions;
+  }
+
+  predictRelatedSection(currentSection) {
+    const relationships = {
+      'home': ['dashboard', 'view'],
+      'dashboard': ['analytics', 'create'],
+      'create': ['creator', 'benefits'],
+      'benefits': ['government', 'suggestions'],
+      'creator': ['login', 'create'],
+      'government': ['benefits', 'login']
+    };
+    
+    return relationships[currentSection]?.[0] || 'home';
+  }
+}
+
+class PersonalizationEngine {
+  constructor(memory, behaviorTracker) {
+    this.memory = memory;
+    this.behaviorTracker = behaviorTracker;
+    this.userProfile = this.loadUserProfile();
+  }
+
+  loadUserProfile() {
+    try {
+      return JSON.parse(localStorage.getItem('chatbot_user_profile')) || {
+        communicationStyle: 'friendly',
+        personalityTraits: {
+          formality: 0.5,
+          enthusiasm: 0.7,
+          technicalLevel: 0.5,
+          patience: 0.8
+        },
+        preferences: {
+          preferredResponseLength: 'medium',
+          detailLevel: 'moderate',
+          interactionStyle: 'collaborative'
+        },
+        learningHistory: [],
+        satisfactionMetrics: {
+          overall: 0.8,
+          responseRelevance: 0.8,
+          helpfulness: 0.8
+        }
+      };
+    } catch {
+      return {
+        communicationStyle: 'friendly',
+        personalityTraits: {
+          formality: 0.5,
+          enthusiasm: 0.7,
+          technicalLevel: 0.5,
+          patience: 0.8
+        },
+        preferences: {
+          preferredResponseLength: 'medium',
+          detailLevel: 'moderate',
+          interactionStyle: 'collaborative'
+        },
+        learningHistory: [],
+        satisfactionMetrics: {
+          overall: 0.8,
+          responseRelevance: 0.8,
+          helpfulness: 0.8
+        }
+      };
+    }
+  }
+
+  personalizeResponse(baseResponse, context) {
+    const profile = this.userProfile;
+    let personalizedResponse = { ...baseResponse };
+    
+    // Adjust tone based on personality traits
+    personalizedResponse = this.adjustTone(personalizedResponse, profile.personalityTraits);
+    
+    // Adjust length based on preferences
+    personalizedResponse = this.adjustLength(personalizedResponse, profile.preferences.preferredResponseLength);
+    
+    // Add personalized elements
+    personalizedResponse = this.addPersonalizedElements(personalizedResponse, context);
+    
+    // Adapt communication style
+    personalizedResponse = this.adaptCommunicationStyle(personalizedResponse, profile.communicationStyle);
+    
+    return personalizedResponse;
+  }
+
+  adjustTone(response, traits) {
+    const { formality, enthusiasm, technicalLevel } = traits;
+    
+    // Adjust formality
+    if (formality > 0.7) {
+      response.text = response.text.replace(/hey|hi there|hello/gi, 'greetings');
+    } else if (formality < 0.3) {
+      response.text = response.text.replace(/greetings|hello/gi, 'hey');
+    }
+    
+    // Adjust enthusiasm
+    if (enthusiasm > 0.8) {
+      response.text = response.text.replace(/\.$/, '! 🎉');
+    }
+    
+    // Adjust technical level
+    if (technicalLevel < 0.4) {
+      response.text = response.text.replace(/\bimplement|deploy|configure|optimize\b/gi, 'set up');
+    }
+    
+    return response;
+  }
+
+  adjustLength(response, preferredLength) {
+    const currentLength = response.text.length;
+    
+    switch (preferredLength) {
+      case 'short':
+        if (currentLength > 200) {
+          response.text = response.text.split('\n')[0] + '\n\nWould you like more details?';
+        }
+        break;
+      case 'long':
+        if (currentLength < 300) {
+          response.text += '\n\nIs there anything specific you\'d like me to elaborate on?';
+        }
+        break;
+    }
+    
+    return response;
+  }
+
+  addPersonalizedElements(response, context) {
+    const insights = this.behaviorTracker.getInsights();
+    const userType = insights.userType;
+    
+    // Add contextual suggestions based on user type
+    if (userType === 'beginner') {
+      response.suggestions = response.suggestions || [];
+      response.suggestions.unshift('Need step-by-step guidance? Just ask!');
+    }
+    
+    if (userType === 'power_user') {
+      response.advanced = response.advanced || [];
+      response.advanced.push('Want to explore advanced features?');
+    }
+    
+    // Reference conversation history if relevant
+    const relevantContext = this.memory.getRelevantContext(response.originalQuery || '');
+    if (relevantContext.length > 0 && Math.random() < 0.3) {
+      response.text = `Based on our previous conversation: ${response.text}`;
+    }
+    
+    return response;
+  }
+
+  adaptCommunicationStyle(response, style) {
+    switch (style) {
+      case 'formal':
+        response.text = response.text.replace(/!\?/g, '?').replace(/🎉/g, '');
+        break;
+      case 'casual':
+        response.text = response.text.replace(/\bI can\b/g, 'I\'ll').replace(/\bwould you like\b/g, 'want to');
+        break;
+      case 'enthusiastic':
+        response.text += ' 😊';
+        break;
+    }
+    
+    return response;
+  }
+
+  updateProfile(interactionData) {
+    // Update satisfaction metrics
+    if (interactionData.feedback) {
+      this.userProfile.satisfactionMetrics.overall = 
+        (this.userProfile.satisfactionMetrics.overall + interactionData.feedback.rating) / 2;
+    }
+    
+    // Update personality traits based on behavior
+    if (interactionData.responseTime) {
+      const patience = interactionData.responseTime > 5000 ? 0.9 : 0.7;
+      this.userProfile.personalityTraits.patience = patience;
+    }
+    
+    // Learn from successful interactions
+    if (interactionData.successful) {
+      this.userProfile.learningHistory.push({
+        timestamp: Date.now(),
+        interaction: interactionData.type,
+        success: true
+      });
+      
+      // Keep only recent history
+      if (this.userProfile.learningHistory.length > 100) {
+        this.userProfile.learningHistory.shift();
+      }
+    }
+    
+    this.saveProfile();
+  }
+
+  saveProfile() {
+    try {
+      localStorage.setItem('chatbot_user_profile', JSON.stringify(this.userProfile));
+    } catch (error) {
+      console.warn('Failed to save user profile:', error);
+    }
+  }
+}
+
+class ProactiveSuggestionEngine {
+  constructor(memory, behaviorTracker) {
+    this.suggestionRules = this.initializeSuggestionRules();
+    this.cooldowns = new Map();
+  }
+
+  initializeSuggestionRules() {
+    return {
+      navigation: {
+        trigger: (context) => context.sessionLength > 5 && !context.hasNavigated,
+        suggestion: (context) => ({
+          type: 'navigation_help',
+          text: 'Would you like me to show you around the platform?',
+          actions: ['show_tour', 'maybe_later']
+        })
+      },
+      help: {
+        trigger: (context) => context.helpSeeking > 2 && context.timeInSession > 60000,
+        suggestion: (context) => ({
+          type: 'proactive_assistance',
+          text: 'I notice you\'ve been looking for help. Let me provide some guided assistance!',
+          actions: ['start_guidance', 'continue_alone']
+        })
+      },
+      exploration: {
+        trigger: (context) => context.sessionLength > 10 && context.topics.length > 3,
+        suggestion: (context) => ({
+          type: 'feature_discovery',
+          text: 'You seem interested in multiple features! Here are some advanced capabilities you might enjoy:',
+          actions: ['explore_features', 'not_now']
+        })
+      },
+      optimization: {
+        trigger: (context) => context.negativeSentiment > 0 && context.positiveSentiment < context.negativeSentiment,
+        suggestion: (context) => ({
+          type: 'improvement_offer',
+          text: 'I want to make sure I\'m being as helpful as possible. How can I improve our interaction?',
+          actions: ['give_feedback', 'it\'s_fine']
+        })
+      }
+    };
+  }
+
+  generateSuggestions(context) {
+    const suggestions = [];
+    
+    Object.entries(this.suggestionRules).forEach(([type, rule]) => {
+      if (rule.trigger(context) && !this.isOnCooldown(type)) {
+        const suggestion = rule.suggestion(context);
+        suggestions.push({
+          ...suggestion,
+          id: `suggestion_${type}_${Date.now()}`,
+          generatedAt: Date.now(),
+          priority: this.calculatePriority(type, context)
+        });
+        
+        this.setCooldown(type);
+      }
+    });
+    
+    return suggestions.sort((a, b) => b.priority - a.priority).slice(0, 3);
+  }
+
+  calculatePriority(type, context) {
+    const basePriorities = {
+      navigation: 0.8,
+      help: 0.9,
+      exploration: 0.6,
+      optimization: 0.7
+    };
+    
+    let priority = basePriorities[type] || 0.5;
+    
+    // Adjust based on session metrics
+    if (context.timeInSession > 300000) priority += 0.1; // 5+ minutes
+    if (context.negativeSentiment > context.positiveSentiment) priority += 0.2;
+    if (context.helpSeeking > 3) priority += 0.1;
+    
+    return Math.min(1, priority);
+  }
+
+  isOnCooldown(type) {
+    const cooldown = this.cooldowns.get(type);
+    if (!cooldown) return false;
+    
+    const now = Date.now();
+    const cooldownDuration = 60000; // 1 minute
+    
+    return now - cooldown < cooldownDuration;
+  }
+
+  setCooldown(type) {
+    this.cooldowns.set(type, Date.now());
+  }
+
+  handleSuggestionResponse(suggestionId, action) {
+    const [type] = suggestionId.split('_').slice(1);
+    
+    // Learn from user response
+    if (action === 'accepted') {
+      this.recordSuccessfulSuggestion(type);
+    } else if (action === 'dismissed') {
+      this.recordDismissedSuggestion(type);
+    }
+  }
+
+  recordSuccessfulSuggestion(type) {
+    const rule = this.suggestionRules[type];
+    if (rule && rule.suggestion) {
+      // Could implement learning here - adjust trigger conditions
+      // For now, just log the success
+      console.log(`Successful suggestion: ${type}`);
+    }
+  }
+
+  recordDismissedSuggestion(type) {
+    // Could implement learning to reduce frequency of certain suggestions
+    console.log(`Dismissed suggestion: ${type}`);
+  }
+}
+
+class KnowledgeBaseIntegration {
+  constructor() {
+    this.knowledgeIndex = this.buildKnowledgeIndex();
+    this.searchCache = new Map();
+  }
+
+  buildKnowledgeIndex() {
+    return {
+      grants: {
+        keywords: ['grant', 'funding', 'money', 'application', 'submit', 'deadline'],
+        content: {
+          application: 'To apply for grants, visit the Creator Portal, create an account, browse available grants, and complete the application form with required documentation.',
+          deadlines: 'Grant deadlines vary by program. Check individual grant listings for specific dates and requirements.',
+          eligibility: 'Eligibility criteria differ for each grant. Review the specific requirements for each opportunity.',
+          amount: 'Grant amounts range from small seed funding to multi-million dollar programs. Amounts depend on the type and scope of the project.'
+        }
+      },
+      navigation: {
+        keywords: ['navigate', 'find', 'search', 'browse', 'where', 'how to'],
+        content: {
+          dashboard: 'The Analytics Dashboard provides visual insights into grant data, trends, and statistics.',
+          benefits: 'Government Benefits section contains searchable databases of official welfare schemes and programs.',
+          suggestions: 'Public Suggestions allows users to submit feedback and view community-driven ideas.',
+          creator: 'Creator Portal is for grant seekers to apply for funding and track applications.',
+          government: 'Government Dashboard provides official access for government agencies and officials.'
+        }
+      },
+      technical: {
+        keywords: ['error', 'problem', 'issue', 'not working', 'broken', 'technical'],
+        content: {
+          login: 'Login issues can often be resolved by checking credentials, clearing browser cache, or using password reset.',
+          upload: 'Document uploads require PDF, DOC, or DOCX files under 10MB. Ensure stable internet connection.',
+          browser: 'Use modern browsers like Chrome, Firefox, Safari, or Edge. Enable JavaScript and cookies.',
+          performance: 'Clear browser cache, close unused tabs, and ensure stable internet connection for optimal performance.'
+        }
+      },
+      policies: {
+        keywords: ['policy', 'privacy', 'terms', 'security', 'data'],
+        content: {
+          privacy: 'We protect your personal information and never share it with third parties without consent.',
+          security: 'All data is encrypted and stored securely. We follow industry best practices for data protection.',
+          terms: 'By using GrantTracker, you agree to our terms of service and acceptable use policy.'
+        }
+      }
+    };
+  }
+
+  search(query, intent) {
+    const cacheKey = `${query}_${intent}`;
+    
+    if (this.searchCache.has(cacheKey)) {
+      return this.searchCache.get(cacheKey);
+    }
+    
+    const queryWords = query.toLowerCase().split(/\s+/);
+    const results = [];
+    
+    Object.entries(this.knowledgeIndex).forEach(([category, data]) => {
+      const relevanceScore = this.calculateRelevance(queryWords, data.keywords);
+      
+      if (relevanceScore > 0.1) {
+        Object.entries(data.content).forEach(([topic, content]) => {
+          const topicRelevance = this.calculateRelevance(queryWords, [topic]);
+          const combinedScore = (relevanceScore + topicRelevance) / 2;
+          
+          if (combinedScore > 0.2) {
+            results.push({
+              category,
+              topic,
+              content,
+              relevance: combinedScore,
+              source: 'knowledge_base'
+            });
+          }
+        });
+      }
+    });
+    
+    const sortedResults = results.sort((a, b) => b.relevance - a.relevance).slice(0, 3);
+    
+    this.searchCache.set(cacheKey, sortedResults);
+    return sortedResults;
+  }
+
+  calculateRelevance(queryWords, keywords) {
+    const keywordMatches = keywords.filter(keyword => 
+      queryWords.some(word => keyword.toLowerCase().includes(word) || word.includes(keyword.toLowerCase()))
+    );
+    
+    return keywordMatches.length / keywords.length;
+  }
+
+  getRelatedContent(entityType, entityValue) {
+    const category = this.findCategoryForEntity(entityType);
+    if (!category) return [];
+    
+    const categoryData = this.knowledgeIndex[category];
+    if (!categoryData) return [];
+    
+    return Object.entries(categoryData.content)
+      .filter(([topic]) => this.calculateRelevance([entityValue], [topic]) > 0.3)
+      .map(([topic, content]) => ({
+        topic,
+        content,
+        relevance: this.calculateRelevance([entityValue], [topic]),
+        source: 'knowledge_base'
+      }));
+  }
+
+  findCategoryForEntity(entityType) {
+    const typeMapping = {
+      'organization': 'grants',
+      'dates': 'policies',
+      'amounts': 'grants',
+      'emails': 'technical',
+      'urls': 'technical'
+    };
+    
+    return typeMapping[entityType];
+  }
+}
+
+class AdaptiveConversationFlow {
+  constructor(memory, sentimentAnalyzer) {
+    this.memory = memory;
+    this.sentimentAnalyzer = sentimentAnalyzer;
+    this.conversationState = {
+      currentTopic: null,
+      topicHistory: [],
+      escalationLevel: 0,
+      followUpPrompts: [],
+      interruptionHandler: null
+    };
+  }
+
+  adaptFlow(userMessage, intent, sentiment) {
+    const state = this.conversationState;
+    let adaptedResponse = { ...userMessage };
+    
+    // Handle topic transitions
+    if (this.shouldTransitionTopic(userMessage, intent)) {
+      adaptedResponse = this.handleTopicTransition(adaptedResponse, intent);
+    }
+    
+    // Handle emotional states
+    adaptedResponse = this.handleEmotionalContext(adaptedResponse, sentiment);
+    
+    // Manage conversation flow
+    adaptedResponse = this.manageFlow(adaptedResponse, intent);
+    
+    // Handle interruptions
+    adaptedResponse = this.handleInterruption(adaptedResponse, userMessage);
+    
+    // Update conversation state
+    this.updateConversationState(userMessage, intent, sentiment);
+    
+    return adaptedResponse;
+  }
+
+  shouldTransitionTopic(userMessage, intent) {
+    const currentTopic = this.conversationState.currentTopic;
+    const newTopic = this.identifyTopic(userMessage, intent);
+    
+    // Transition if topic has changed significantly
+    if (currentTopic && newTopic && currentTopic !== newTopic) {
+      // Check if transition is warranted
+      const sessionLength = this.memory.history.length;
+      const topicEngagement = this.conversationState.topicHistory
+        .filter(t => t.topic === currentTopic).length;
+      
+      return topicEngagement >= 3 || sessionLength >= 10;
+    }
+    
+    return false;
+  }
+
+  identifyTopic(message, intent) {
+    const topicMapping = {
+      'navigate': 'navigation',
+      'feature_info': 'information_seeking',
+      'how_to': 'learning',
+      'troubleshoot': 'problem_solving',
+      'content_discovery': 'exploration',
+      'technical_support': 'technical_help',
+      'greeting': 'social',
+      'help': 'assistance'
+    };
+    
+    return topicMapping[intent.intent] || 'general';
+  }
+
+  handleTopicTransition(response, intent) {
+    const newTopic = this.identifyTopic(response, intent);
+    
+    // Add transition acknowledgment
+    const transitions = {
+      'navigation': 'Now let\'s help you get around the platform!',
+      'information_seeking': 'Great question! Let me share some detailed information.',
+      'learning': 'Perfect! Let me walk you through this step by step.',
+      'problem_solving': 'Let\'s solve this together!',
+      'exploration': 'Excellent! Let\'s discover what\'s available.',
+      'technical_help': 'I\'ll help resolve this technical issue.',
+      'social': 'Hello! How can I assist you today?',
+      'assistance': 'I\'m here to help with whatever you need!'
+    };
+    
+    const transitionText = transitions[newTopic] || 'Let me help you with that.';
+    
+    response.text = `${transitionText}\n\n${response.text}`;
+    this.conversationState.currentTopic = newTopic;
+    
+    return response;
+  }
+
+  handleEmotionalContext(response, sentiment) {
+    const { emotions, sentiment: emotionType } = sentiment;
+    
+    // Handle negative emotions
+    if (emotionType === 'negative') {
+      if (emotions.anger > 0) {
+        response.text = `I understand your frustration. ${response.text}`;
+        response.empathetic = true;
+      } else if (emotions.sadness > 0) {
+        response.text = `I'm here to help. ${response.text}`;
+        response.supportive = true;
+      } else if (emotions.fear > 0) {
+        response.text = `No worries, let's take this step by step. ${response.text}`;
+        response.reassuring = true;
+      }
+    }
+    
+    // Handle positive emotions
+    if (emotionType === 'positive') {
+      if (emotions.joy > 0) {
+        response.text = `${response.text}\n\nI'm glad I could help! 😊`;
+        response.enthusiastic = true;
+      }
+    }
+    
+    return response;
+  }
+
+  manageFlow(response, intent) {
+    const state = this.conversationState;
+    
+    // Add follow-up prompts based on conversation context
+    const shouldAddPrompt = this.shouldAddFollowUpPrompt(intent);
+    
+    if (shouldAddPrompt) {
+      const prompt = this.generateFollowUpPrompt(intent, state);
+      if (prompt) {
+        response.text += `\n\n${prompt}`;
+        response.followUpAvailable = true;
+      }
+    }
+    
+    // Handle escalation
+    if (this.shouldEscalate(intent)) {
+      response.escalationLevel = this.conversationState.escalationLevel + 1;
+      response.text = this.addEscalationContext(response.text, intent);
+    }
+    
+    return response;
+  }
+
+  shouldAddFollowUpPrompt(intent) {
+    const sessionLength = this.memory.history.length;
+    
+    // Add prompts for helpful interactions
+    return (intent.intent === 'help' || intent.intent === 'troubleshoot') && 
+           sessionLength % 3 === 0;
+  }
+
+  generateFollowUpPrompt(intent, state) {
+    const prompts = {
+      'help': 'Is there anything specific you\'d like me to clarify?',
+      'troubleshoot': 'Did this resolve your issue, or do you need additional help?',
+      'feature_info': 'Would you like me to explain any other features?',
+      'navigation': 'Do you need help finding anything else?',
+      'how_to': 'Do you have questions about any of these steps?'
+    };
+    
+    return prompts[intent.intent] || 'How else can I assist you?';
+  }
+
+  shouldEscalate(intent) {
+    // Escalate for complex technical issues or repeated help requests
+    return intent.intent === 'technical_support' || 
+           (intent.intent === 'troubleshoot' && this.conversationState.escalationLevel > 0);
+  }
+
+  addEscalationContext(text, intent) {
+    const escalationPhrases = {
+      'technical_support': 'Given the technical complexity, ',
+      'troubleshoot': 'Since we\'re having some challenges, '
+    };
+    
+    const phrase = escalationPhrases[intent.intent] || '';
+    return `${phrase}${text}`;
+  }
+
+  handleInterruption(response, userMessage) {
+    // Detect if user is asking something completely different
+    const currentTopic = this.conversationState.currentTopic;
+    const newTopic = this.identifyTopic(userMessage, this.memory.history.slice(-1)[0]?.intent || {});
+    
+    if (currentTopic && newTopic && currentTopic !== newTopic && 
+        this.memory.history.length > 5) {
+      response.text = `I see you're interested in something different. ${response.text}`;
+      response.topicTransition = true;
+    }
+    
+    return response;
+  }
+
+  updateConversationState(userMessage, intent, sentiment) {
+    const topic = this.identifyTopic(userMessage, intent);
+    
+    // Update topic history
+    this.conversationState.topicHistory.push({
+      topic,
+      timestamp: Date.now(),
+      sentiment: sentiment.sentiment
+    });
+    
+    // Keep only recent history
+    if (this.conversationState.topicHistory.length > 20) {
+      this.conversationState.topicHistory.shift();
+    }
+    
+    // Update current topic if it's been stable
+    if (this.conversationState.topicHistory.slice(-3).every(t => t.topic === topic)) {
+      this.conversationState.currentTopic = topic;
+    }
+  }
+
+  getConversationState() {
+    return {
+      ...this.conversationState,
+      topicDistribution: this.calculateTopicDistribution(),
+      emotionalTrend: this.calculateEmotionalTrend(),
+      engagementLevel: this.calculateEngagementLevel()
+    };
+  }
+
+  calculateTopicDistribution() {
+    const distribution = {};
+    this.conversationState.topicHistory.forEach(entry => {
+      distribution[entry.topic] = (distribution[entry.topic] || 0) + 1;
+    });
+    return distribution;
+  }
+
+  calculateEmotionalTrend() {
+    const recent = this.conversationState.topicHistory.slice(-10);
+    const emotions = recent.map(e => e.sentiment);
+    
+    const positive = emotions.filter(e => e === 'positive').length;
+    const negative = emotions.filter(e => e === 'negative').length;
+    
+    return {
+      trend: positive > negative ? 'improving' : negative > positive ? 'declining' : 'stable',
+      ratio: emotions.length > 0 ? positive / emotions.length : 0.5
+    };
+  }
+
+  calculateEngagementLevel() {
+    const sessionLength = this.memory.history.length;
+    const recentActivity = this.conversationState.topicHistory.slice(-5).length;
+    
+    return Math.min(1, (sessionLength + recentActivity) / 20);
+  }
+}
+
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -11,6 +1231,24 @@ const ChatBot = () => {
   const [language, setLanguage] = useState('en');
   const [isTyping, setIsTyping] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [proactiveSuggestions, setProactiveSuggestions] = useState([]);
+  const [conversationState, setConversationState] = useState({});
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    responseTime: 0,
+    accuracy: 0.8,
+    userSatisfaction: 0.8
+  });
+
+  // Advanced AI System Initialization
+  const conversationMemory = useRef(new ConversationMemory()).current;
+  const entityExtractor = useRef(new EntityExtractor()).current;
+  const sentimentAnalyzer = useRef(new SentimentAnalyzer()).current;
+  const behaviorTracker = useRef(new UserBehaviorTracker()).current;
+  const personalizationEngine = useRef(new PersonalizationEngine(conversationMemory, behaviorTracker)).current;
+  const proactiveSuggestionEngine = useRef(new ProactiveSuggestionEngine(conversationMemory, behaviorTracker)).current;
+  const knowledgeBase = useRef(new KnowledgeBaseIntegration()).current;
+  const adaptiveFlow = useRef(new AdaptiveConversationFlow(conversationMemory, sentimentAnalyzer)).current;
+
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -96,15 +1334,42 @@ const ChatBot = () => {
       id: 1,
       text: getGreetingResponse('en'),
       sender: 'bot',
-      timestamp: new Date()
+      timestamp: new Date(),
+      personalized: true
     };
     setMessages([welcomeMessage]);
+    
+    // Load conversation history if available
+    loadConversationHistory();
   }, []);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Load conversation history from storage
+  const loadConversationHistory = () => {
+    try {
+      const saved = localStorage.getItem('chatbot_conversation');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.history && data.history.length > 0) {
+          // Add a context reminder message
+          const contextMessage = {
+            id: Date.now(),
+            text: "Welcome back! I remember our previous conversation. How can I continue helping you?",
+            sender: 'bot',
+            timestamp: new Date(),
+            isContextReminder: true
+          };
+          setMessages(prev => [contextMessage, ...prev]);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load conversation history:', error);
+    }
+  };
 
   // Enhanced Natural Language Processing with Advanced Intent Recognition
   const analyzeIntent = useCallback((text) => {
@@ -277,6 +1542,9 @@ const ChatBot = () => {
   const handleDirectNavigation = useCallback((target) => {
     const pathInfo = websitePaths[target];
     if (pathInfo) {
+      // Track navigation behavior
+      behaviorTracker.trackInteraction('navigation', { target });
+      
       navigate(pathInfo.path);
       
       // Add confirmation message
@@ -284,7 +1552,9 @@ const ChatBot = () => {
         id: Date.now(),
         text: `Navigating to ${pathInfo.label}...`,
         sender: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
+        navigation: true,
+        target: target
       };
       
       setMessages(prev => [...prev, navMessage]);
@@ -297,19 +1567,39 @@ const ChatBot = () => {
       return true;
     }
     return false;
-  }, [navigate]);
+  }, [navigate, behaviorTracker]);
 
-  // Generate comprehensive response based on intent
+  // Generate comprehensive response based on intent with AI enhancement
   const generateResponse = useCallback(async (message, intent) => {
+    const startTime = Date.now();
     setIsLoading(true);
     setIsTyping(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+      // Extract entities and analyze sentiment
+      const entities = entityExtractor.extract(message);
+      const sentiment = sentimentAnalyzer.analyze(message);
+      
+      // Track user behavior
+      behaviorTracker.trackInteraction('message', {
+        text: message,
+        intent: intent.intent,
+        confidence: intent.confidence,
+        entities,
+        sentiment
+      });
+      
+      // Get knowledge base information
+      const knowledgeResults = knowledgeBase.search(message, intent);
+      
+      // Simulate API call delay with adaptive timing
+      const baseDelay = 200 + Math.random() * 300;
+      const adaptiveDelay = sentiment.emotions.anger > 0 ? baseDelay * 0.5 : baseDelay;
+      await new Promise(resolve => setTimeout(resolve, adaptiveDelay));
       
       let response = '';
       
+      // Generate base response
       switch (intent.intent) {
         case 'navigate':
           const navigationSuccess = handleDirectNavigation(intent.target);
@@ -370,32 +1660,100 @@ const ChatBot = () => {
           response = getFallbackResponse(language);
       }
       
-      return {
+      // Enhance response with knowledge base information
+      if (knowledgeResults.length > 0) {
+        const relevantInfo = knowledgeResults[0].content;
+        response += `\n\n💡 **Additional Information:** ${relevantInfo}`;
+      }
+      
+      // Create response object
+      let botResponse = {
         id: Date.now(),
         text: response,
         sender: 'bot',
         timestamp: new Date(),
         metadata: {
           intent: intent.intent,
-          confidence: intent.confidence
-        }
+          confidence: intent.confidence,
+          entities,
+          sentiment,
+          knowledgeResults,
+          responseTime: Date.now() - startTime
+        },
+        personalized: true,
+        originalQuery: message
       };
+      
+      // Apply adaptive conversation flow
+      botResponse = adaptiveFlow.adaptFlow(botResponse, intent, sentiment);
+      
+      // Personalize response
+      const personalizedResponse = personalizationEngine.personalizeResponse(botResponse, {
+        intent,
+        sentiment,
+        entities,
+        context: conversationMemory.buildContext()
+      });
+      
+      // Update performance metrics
+      const responseTime = Date.now() - startTime;
+      updatePerformanceMetrics(responseTime, intent.confidence);
+      
+      // Store in conversation memory
+      conversationMemory.addMessage(personalizedResponse, sentiment.sentiment, entities);
+      
+      // Generate proactive suggestions
+      const suggestions = proactiveSuggestionEngine.generateSuggestions(
+        conversationMemory.buildContext()
+      );
+      if (suggestions.length > 0) {
+        setProactiveSuggestions(suggestions);
+      }
+      
+      return personalizedResponse;
+      
     } catch (err) {
       console.error('Error generating response:', err);
-      return {
+      
+      // Enhanced error handling
+      const errorResponse = {
         id: Date.now(),
         text: getErrorResponse(language),
         sender: 'bot',
         timestamp: new Date(),
-        isError: true
+        isError: true,
+        errorType: 'generation_failed',
+        recoverySuggestions: getRecoverySuggestions(intent)
       };
+      
+      return errorResponse;
     } finally {
       setIsLoading(false);
       setIsTyping(false);
     }
-  }, [language, handleDirectNavigation]);
+  }, [
+    language, 
+    handleDirectNavigation, 
+    entityExtractor, 
+    sentimentAnalyzer, 
+    behaviorTracker, 
+    knowledgeBase, 
+    adaptiveFlow, 
+    personalizationEngine,
+    proactiveSuggestionEngine,
+    conversationMemory
+  ]);
 
-  // Response generators
+  // Update performance metrics
+  const updatePerformanceMetrics = (responseTime, accuracy) => {
+    setPerformanceMetrics(prev => ({
+      responseTime: (prev.responseTime + responseTime) / 2,
+      accuracy: (prev.accuracy + accuracy) / 2,
+      userSatisfaction: prev.userSatisfaction // This would be updated based on user feedback
+    }));
+  };
+
+  // Enhanced response generators with AI improvements
   const getQuickActionsResponse = () => {
     return `Here's what you can navigate to directly:\n\n${Object.values(websitePaths).map(path => 
       `${path.icon} **${path.label}**`
@@ -553,7 +1911,22 @@ const ChatBot = () => {
     return responses[lang] || responses.en;
   };
 
-  // Handle user message
+  const getRecoverySuggestions = (intent) => {
+    const suggestions = [
+      'Try rephrasing your question',
+      'Use simpler terms',
+      'Ask about specific features',
+      'Request navigation help'
+    ];
+    
+    if (intent.intent === 'unknown') {
+      suggestions.unshift('Check if you\'re asking about GrantTracker features');
+    }
+    
+    return suggestions;
+  };
+
+  // Handle user message with enhanced AI processing
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isLoading) return;
     
@@ -573,13 +1946,33 @@ const ChatBot = () => {
     const botResponse = await generateResponse(userMessage.text, intent);
     
     setMessages(prev => [...prev, botResponse]);
-  }, [inputValue, messages, isLoading, analyzeIntent, generateResponse]);
+    
+    // Track user behavior for completed interaction
+    behaviorTracker.trackInteraction('message_completed', {
+      intent: intent.intent,
+      confidence: intent.confidence,
+      responseGenerated: true
+    });
+  }, [inputValue, messages, isLoading, analyzeIntent, generateResponse, behaviorTracker]);
 
   // Handle quick action clicks
   const handleQuickAction = useCallback((target) => {
     handleDirectNavigation(target);
     setShowQuickActions(false);
   }, [handleDirectNavigation]);
+
+  // Handle proactive suggestion responses
+  const handleProactiveSuggestion = useCallback((suggestionId, action) => {
+    proactiveSuggestionEngine.handleSuggestionResponse(suggestionId, action);
+    setProactiveSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+    
+    // Track user response
+    behaviorTracker.trackInteraction('proactive_response', {
+      suggestionId,
+      action,
+      accepted: action === 'accepted'
+    });
+  }, [proactiveSuggestionEngine, behaviorTracker]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -598,13 +1991,35 @@ const ChatBot = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Render message content with basic formatting
+  // Performance monitoring
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Update conversation state periodically
+      setConversationState(adaptiveFlow.getConversationState());
+    }, 30000); // Every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [adaptiveFlow]);
+
+  // Render message content with enhanced formatting
   const renderMessageContent = (message) => {
     if (message.isError) {
       return (
         <div className="chatbot-message-error">
           <span className="chatbot-icon">⚠️</span>
-          <span>{message.text}</span>
+          <div>
+            <span>{message.text}</span>
+            {message.recoverySuggestions && (
+              <div className="chatbot-recovery-suggestions">
+                <small>Try these alternatives:</small>
+                <ul>
+                  {message.recoverySuggestions.map((suggestion, index) => (
+                    <li key={index}>{suggestion}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -625,6 +2040,17 @@ const ChatBot = () => {
           }
           return <p key={i}>{line}</p>;
         })}
+        
+        {/* Show metadata for debugging/learning */}
+        {process.env.NODE_ENV === 'development' && message.metadata && (
+          <div className="chatbot-metadata">
+            <small>
+              Intent: {message.metadata.intent} | 
+              Confidence: {Math.round(message.metadata.confidence * 100)}% |
+              Entities: {message.metadata.entities?.length || 0}
+            </small>
+          </div>
+        )}
       </div>
     );
   };
@@ -654,6 +2080,13 @@ const ChatBot = () => {
           </div>
         </div>
         <span className="chatbot-toggle-text">{isOpen ? 'Close' : 'Chat'}</span>
+        {/* AI Status Indicator */}
+        {performanceMetrics.responseTime > 0 && (
+          <div className="ai-status-indicator">
+            <span className="status-dot"></span>
+            <span className="status-text">AI</span>
+          </div>
+        )}
       </button>
 
       {/* Chat Window */}
@@ -676,7 +2109,19 @@ const ChatBot = () => {
                   <span className="light light-3">🎁</span>
                 </div>
               </div>
-              <h3>🎅 GrantTracker Assistant</h3>
+              <div className="chatbot-header-info">
+                <h3>🎅 GrantTracker AI Assistant</h3>
+                <div className="chatbot-status-indicators">
+                  <span className="status-item">
+                    <span className="status-indicator active"></span>
+                    AI Powered
+                  </span>
+                  <span className="status-item">
+                    <span className="status-indicator learning"></span>
+                    Learning
+                  </span>
+                </div>
+              </div>
             </div>
             <div className="chatbot-header-controls">
               <select
@@ -727,10 +2172,24 @@ const ChatBot = () => {
                   width="56" 
                   height="56"
                 />
-                <h4>🎄 Welcome to GrantTracker Assistant</h4>
-                <p>Ho ho ho! I'm your comprehensive website assistant!</p>
+                <h4>🎄 Welcome to GrantTracker AI Assistant</h4>
+                <p>Ho ho ho! I'm your intelligent website assistant with advanced AI capabilities!</p>
                 <div className="chatbot-empty-message">
-                  Ask me anything! Try "What features does GrantTracker have?" or "How do I apply for grants?"
+                  I can understand context, remember our conversation, and provide personalized assistance. Try asking me anything!
+                </div>
+                <div className="chatbot-ai-features">
+                  <div className="ai-feature">
+                    <span className="ai-feature-icon">🧠</span>
+                    <span className="ai-feature-text">Context Aware</span>
+                  </div>
+                  <div className="ai-feature">
+                    <span className="ai-feature-icon">💭</span>
+                    <span className="ai-feature-text">Sentiment Analysis</span>
+                  </div>
+                  <div className="ai-feature">
+                    <span className="ai-feature-icon">🎯</span>
+                    <span className="ai-feature-text">Personalized</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -740,6 +2199,7 @@ const ChatBot = () => {
                 key={message.id || index}
                 className={`chatbot-message ${message.sender}`}
                 data-sender={message.sender}
+                data-enhanced={message.personalized ? 'true' : 'false'}
               >
                 <div className="chatbot-avatar">
                   {message.sender === 'user' ? (
@@ -748,14 +2208,31 @@ const ChatBot = () => {
                     <div className="santa-avatar">
                       <img src={santaIcon} alt="Santa Bot" width="24" height="24" />
                       <div className="santa-hat">🎅</div>
+                      {message.personalized && (
+                        <div className="ai-badge">AI</div>
+                      )}
                     </div>
                   )}
                 </div>
                 <div className="chatbot-message-bubble">
                   {renderMessageContent(message)}
+                  {message.empathetic && (
+                    <div className="emotion-indicator empathetic">🤝</div>
+                  )}
+                  {message.enthusiastic && (
+                    <div className="emotion-indicator enthusiastic">😊</div>
+                  )}
+                  {message.supportive && (
+                    <div className="emotion-indicator supportive">💙</div>
+                  )}
                 </div>
                 <div className="chatbot-message-time">
                   {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {message.metadata?.responseTime && (
+                    <span className="response-time">
+                      {message.metadata.responseTime}ms
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -766,6 +2243,7 @@ const ChatBot = () => {
                   <div className="santa-avatar">
                     <img src={santaIcon} alt="Santa typing" width="24" height="24" />
                     <div className="santa-hat">🎅</div>
+                    <div className="ai-badge processing">AI</div>
                   </div>
                 </div>
                 <div className="chatbot-message-bubble">
@@ -774,12 +2252,49 @@ const ChatBot = () => {
                     <span className="typing-dot"></span>
                     <span className="typing-dot"></span>
                   </div>
+                  <div className="typing-text">AI is thinking...</div>
                 </div>
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Proactive Suggestions Panel */}
+          {proactiveSuggestions.length > 0 && (
+            <div className="chatbot-proactive-suggestions">
+              <div className="chatbot-proactive-header">
+                <span>💡 Proactive Suggestions</span>
+                <button 
+                  onClick={() => setProactiveSuggestions([])}
+                  className="chatbot-close-suggestions"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="chatbot-suggestions-list">
+                {proactiveSuggestions.map((suggestion) => (
+                  <div key={suggestion.id} className="chatbot-suggestion-item">
+                    <div className="chatbot-suggestion-text">{suggestion.text}</div>
+                    <div className="chatbot-suggestion-actions">
+                      <button 
+                        onClick={() => handleProactiveSuggestion(suggestion.id, 'accepted')}
+                        className="chatbot-suggestion-accept"
+                      >
+                        Yes
+                      </button>
+                      <button 
+                        onClick={() => handleProactiveSuggestion(suggestion.id, 'dismissed')}
+                        className="chatbot-suggestion-dismiss"
+                      >
+                        Later
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions Panel */}
           {showQuickActions && (
@@ -808,6 +2323,24 @@ const ChatBot = () => {
             </div>
           )}
 
+          {/* Performance Metrics (Development Only) */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="chatbot-performance-metrics">
+              <div className="metric-item">
+                <span className="metric-label">Response Time:</span>
+                <span className="metric-value">{Math.round(performanceMetrics.responseTime)}ms</span>
+              </div>
+              <div className="metric-item">
+                <span className="metric-label">Accuracy:</span>
+                <span className="metric-value">{Math.round(performanceMetrics.accuracy * 100)}%</span>
+              </div>
+              <div className="metric-item">
+                <span className="metric-label">Messages:</span>
+                <span className="metric-value">{messages.length}</span>
+              </div>
+            </div>
+          )}
+
           {/* Input Area */}
           <div className="chatbot-input-area">
             <div className="chatbot-input-wrapper">
@@ -816,7 +2349,7 @@ const ChatBot = () => {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Where would you like to go? (e.g., 'show me dashboard')"
+                placeholder="Ask me anything about GrantTracker! I'm AI-powered and context-aware."
                 disabled={isLoading}
                 aria-label="Chat input"
                 className="chatbot-input"
