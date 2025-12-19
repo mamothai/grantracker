@@ -42,18 +42,11 @@ div[class*="chatbot-container"],
   pointer-events: auto !important;
 }
 
-/* Ensure toggle button is always clickable */
+/* Ensure toggle button is always clickable with proper animations */
 .chatbot-toggle {
   pointer-events: auto !important;
   z-index: 1001 !important;
   position: relative !important;
-}
-
-
-/* Enhanced Christmas Toggle Button with Improved Santa Icon */
-.chatbot-toggle {
-  position: relative;
-  z-index: 1001;
   background: linear-gradient(135deg, var(--christmas-red), var(--christmas-green));
   backdrop-filter: blur(10px);
   border: 2px solid var(--christmas-gold);
@@ -73,6 +66,19 @@ div[class*="chatbot-container"],
   font-size: 15px;
   overflow: hidden;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  will-change: transform;
+  animation: buttonEntrance 0.6s ease-out;
+}
+
+@keyframes buttonEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 
