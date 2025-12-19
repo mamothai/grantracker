@@ -409,8 +409,8 @@ const ChatBot = ({
       className={`chatbot-container ${isOpen ? 'chatbot-open' : ''} ${accessibilityMode ? 'accessibility-mode' : ''}`}
       style={{
         position: 'fixed',
-        bottom: '20px',
-        right: '20px',
+        bottom: '0',
+        right: '0',
         zIndex: 1000
       }}
     >

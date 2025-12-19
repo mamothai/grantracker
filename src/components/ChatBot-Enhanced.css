@@ -33,8 +33,8 @@ div[class*="chatbot-container"],
 
 .chatbot-container {
   position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
+  bottom: 0 !important;
+  right: 0 !important;
   z-index: 1000 !important;
   display: flex;
   flex-direction: column;
@@ -1168,8 +1168,8 @@ div[class*="chatbot-container"],
 /* Mobile (below 576px) - Touch-Friendly Christmas Optimizations */
 @media (max-width: 575px) {
   .chatbot-container {
-    bottom: 15px !important;
-    right: 15px !important;
+    bottom: 0 !important;
+    right: 0 !important;
   }
   
   .chatbot-window {
