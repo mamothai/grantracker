@@ -14,11 +14,10 @@ import PublicView from "./PublicView.jsx";
 import SectorDetails from "./pages/SectorDetails.jsx";
 import BenefitsScheme from "./pages/BenefitsScheme.jsx";
 
-import ChatBot from "./components/ChatBot-Enhanced.jsx";
+import ChatBot from "./components/ChatBot.jsx";
 
 import "./App.css";
 import "./scrollAnimations.css";
-import "./components/ChatBot-Enhanced.css";
 
 // Initialize scroll animations using Intersection Observer
 function initScrollAnimations() {
