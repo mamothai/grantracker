@@ -14,8 +14,7 @@ import PublicView from "./PublicView.jsx";
 import SectorDetails from "./pages/SectorDetails.jsx";
 import BenefitsScheme from "./pages/BenefitsScheme.jsx";
 
-import AdvancedGrantChatBot from "./components/AdvancedGrantChatBot.jsx";
-import "./components/AdvancedGrantChatBot.css";
+import ChatBot from "./components/ChatBot.jsx";
 
 import "./App.css";
 import "./scrollAnimations.css";
@@ -151,7 +150,7 @@ export default function App() {
         <Route path="/benefits" element={<BenefitsScheme />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <AdvancedGrantChatBot />
+      <ChatBot />
     </div>
   );
 }
