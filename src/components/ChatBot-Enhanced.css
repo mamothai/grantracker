@@ -1,14 +1,4 @@
-/* Enhanced ChatBot CSS - Navigation-Focused Design with Santa Icon */
-
-/* Force chatbot to bottom right with maximum specificity */
-div[class*="chatbot-container"],
-.chatbot-container,
-[class*="chatbot"][class*="container"] {
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  z-index: 1000 !important;
-}
+/* Enhanced ChatBot CSS - Clean Navigation-Focused Design with Santa Icon */
 
 /* Christmas-themed CSS Variables */
 :root {
@@ -29,24 +19,23 @@ div[class*="chatbot-container"],
   --snow-white: #fefefe;
 }
 
-
-
+/* Chatbot Container - Clean positioning */
 .chatbot-container {
-  position: fixed !important;
-  bottom: 0 !important;
-  right: 0 !important;
-  z-index: 1000 !important;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 /* Ensure toggle button is always clickable with proper animations */
 .chatbot-toggle {
-  pointer-events: auto !important;
-  z-index: 1001 !important;
-  position: relative !important;
+  pointer-events: auto;
+  z-index: 1001;
+  position: relative;
   background: linear-gradient(135deg, var(--christmas-red), var(--christmas-green));
   backdrop-filter: blur(10px);
   border: 2px solid var(--christmas-gold);
@@ -80,7 +69,6 @@ div[class*="chatbot-container"],
     transform: translateY(0) scale(1);
   }
 }
-
 
 .chatbot-toggle:hover {
   transform: translateY(-3px);
@@ -187,9 +175,6 @@ div[class*="chatbot-container"],
   text-transform: uppercase;
 }
 
-
-
-
 /* Enhanced Christmas Chat Window with Twinkling Lights */
 .chatbot-window {
   position: absolute;
@@ -236,7 +221,6 @@ div[class*="chatbot-container"],
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-
 
 .chatbot-container.chatbot-open .chatbot-window {
   opacity: 1;
@@ -290,7 +274,6 @@ div[class*="chatbot-container"],
 .snowflake-7 { left: 70%; animation-duration: 3.6s; animation-delay: 1.2s; }
 .snowflake-8 { left: 80%; animation-duration: 4.8s; animation-delay: 0.3s; }
 .snowflake-9 { left: 90%; animation-duration: 3.3s; animation-delay: 1.8s; }
-
 
 /* Enhanced Christmas Header */
 .chatbot-header {
@@ -403,7 +386,6 @@ div[class*="chatbot-container"],
   gap: 12px;
 }
 
-
 .chatbot-language-selector {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.3);
@@ -494,7 +476,6 @@ div[class*="chatbot-container"],
 .chatbot-messages::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
-
 
 /* Enhanced Christmas Empty State */
 .chatbot-empty-state {
@@ -715,7 +696,6 @@ div[class*="chatbot-container"],
   line-height: 1.3;
 }
 
-
 /* Enhanced Christmas Message Styling */
 .chatbot-message {
   display: flex;
@@ -808,7 +788,6 @@ div[class*="chatbot-container"],
   }
 }
 
-
 .chatbot-message-bubble {
   max-width: 280px;
   padding: 16px 20px;
@@ -873,7 +852,6 @@ div[class*="chatbot-container"],
 .chatbot-message.bot .chatbot-message-time {
   text-align: left;
 }
-
 
 /* Enhanced Christmas Typing Indicator */
 .chatbot-typing-indicator {
@@ -1071,7 +1049,7 @@ div[class*="chatbot-container"],
   border: 0;
 }
 
-/* Enhanced Responsive Design */
+/* Responsive Design */
 
 /* Large Desktop (1440px+) */
 @media (min-width: 1440px) {
@@ -1162,16 +1140,8 @@ div[class*="chatbot-container"],
   }
 }
 
-
-
-
-/* Mobile (below 576px) - Touch-Friendly Christmas Optimizations */
+/* Mobile (below 576px) */
 @media (max-width: 575px) {
-  .chatbot-container {
-    bottom: 0 !important;
-    right: 0 !important;
-  }
-  
   .chatbot-window {
     width: calc(100vw - 30px);
     max-height: 75vh;
