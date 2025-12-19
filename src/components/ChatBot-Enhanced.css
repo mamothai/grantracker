@@ -19,23 +19,31 @@
   --snow-white: #fefefe;
 }
 
-/* Chatbot Container - Clean positioning */
+/* Chatbot Container - Clean positioning - LOCKED TO BOTTOM */
 .chatbot-container {
   position: fixed !important;
   bottom: 0 !important;
   right: 0 !important;
+  left: auto !important;
+  top: auto !important;
   z-index: 1200 !important;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  pointer-events: auto;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
 }
 
-/* Ensure toggle button is always clickable with proper animations */
+/* Ensure toggle button is always clickable and STAYS LOCKED */
 .chatbot-toggle {
-  pointer-events: auto;
-  z-index: 1201;
-  position: relative;
+  pointer-events: auto !important;
+  z-index: 1201 !important;
+  position: relative !important;
   background: linear-gradient(135deg, var(--christmas-red), var(--christmas-green));
   backdrop-filter: blur(10px);
   border: 2px solid var(--christmas-gold);
@@ -46,8 +54,8 @@
   cursor: pointer;
   transition: var(--chatbot-transition);
   box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4), 0 0 20px rgba(245, 158, 11, 0.3);
-  display: flex;
-  align-items: center;
+  display: flex !important;
+  align-items: center !important;
   gap: 12px;
   min-height: 52px;
   min-width: 120px;
@@ -55,8 +63,10 @@
   font-size: 15px;
   overflow: hidden;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  will-change: transform;
+  will-change: auto;
   animation: buttonEntrance 0.6s ease-out;
+  transform: none !important;
+  margin: 0 !important;
 }
 
 @keyframes buttonEntrance {
@@ -71,13 +81,13 @@
 }
 
 .chatbot-toggle:hover {
-  transform: translateY(-3px);
+  /* Removed transform to keep button locked in place */
   box-shadow: 0 8px 30px rgba(220, 38, 38, 0.3), 0 0 15px rgba(245, 158, 11, 0.2);
   border-color: #fbbf24;
 }
 
 .chatbot-toggle:active {
-  transform: translateY(-1px);
+  /* Removed transform to keep button locked */
   box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
 }
 
@@ -589,13 +599,13 @@
 }
 
 .chatbot-quick-action-btn:hover {
-  transform: translateY(-2px);
+  /* Removed transform to prevent movement */
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
   background: linear-gradient(135deg, #7c8cf8, #8a5bc8);
 }
 
 .chatbot-quick-action-btn:active {
-  transform: translateY(0);
+  /* Removed transform */
   box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
 }
 
@@ -682,7 +692,7 @@
 .chatbot-quick-action-grid-item:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: var(--chatbot-primary-color);
-  transform: translateY(-2px);
+  /* Removed transform to prevent movement */
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
@@ -1005,13 +1015,13 @@
 }
 
 .chatbot-send-button:hover:not(:disabled) {
-  transform: translateY(-2px);
+  /* Removed transform to keep button locked */
   box-shadow: 0 6px 20px rgba(81, 207, 102, 0.4);
   background: linear-gradient(135deg, #6de083, #51d173);
 }
 
 .chatbot-send-button:active:not(:disabled) {
-  transform: translateY(0);
+  /* Removed transform */
   box-shadow: 0 3px 10px rgba(81, 207, 102, 0.3);
 }
 
@@ -1422,5 +1432,25 @@
   .chatbot-input-area {
     background: rgba(0, 0, 0, 0.2);
     border-top-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* ABSOLUTE LOCK - Ensure chatbot NEVER moves from bottom during scroll */
+.chatbot-container,
+.chatbot-container *,
+.chatbot-toggle,
+.chatbot-toggle * {
+  transform: none !important;
+  translate: none !important;
+  scroll-margin: 0 !important;
+}
+
+/* Override any potential scroll-related positioning */
+@media (scroll-behavior: smooth), (scroll-behavior: auto) {
+  .chatbot-container {
+    position: fixed !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    transform: none !important;
   }
 }
