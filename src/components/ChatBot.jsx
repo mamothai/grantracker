@@ -106,84 +106,138 @@ const ChatBot = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Enhanced Natural Language Processing for Comprehensive Website Assistance
+  // Enhanced Natural Language Processing with Advanced Intent Recognition
   const analyzeIntent = useCallback((text) => {
     const normalized = text.toLowerCase().trim();
     const cleaned = normalized.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '');
     
-    // Direct navigation patterns
-    if (/(home|landing|main page|start here|go home)/i.test(cleaned)) {
+    // Advanced direct navigation patterns with context awareness
+    if (/(home|landing|main page|start here|go home|back to start)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'home', confidence: 0.95 };
     }
-    if (/(about|team|company|who are you|what is granttracker)/i.test(cleaned)) {
+    if (/(about|team|company|who are you|what is granttracker|learn more|tell me about)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'about', confidence: 0.95 };
     }
-    if (/(dashboard|analytics|chart|statistics|reports)/i.test(cleaned)) {
+    if (/(dashboard|analytics|chart|statistics|reports|data insights|visualization)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'dashboard', confidence: 0.9 };
     }
-    if (/(benefits|schemes|government schemes|welfare|government benefits)/i.test(cleaned)) {
+    if (/(benefits|schemes|government schemes|welfare|government benefits|social programs)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'benefits', confidence: 0.9 };
     }
-    if (/(suggestions|feedback|public|comment)/i.test(cleaned)) {
+    if (/(suggestions|feedback|public|comment|community ideas|user feedback)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'suggestions', confidence: 0.9 };
     }
-    if (/(creator|login|register|apply|grant application)/i.test(cleaned)) {
+    if (/(creator|login|register|apply|grant application|applicant portal|seek funding)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'creator', confidence: 0.85 };
     }
-    if (/(government|official|admin|ministry|government portal)/i.test(cleaned)) {
+    if (/(government|official|admin|ministry|government portal|official access)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'government', confidence: 0.85 };
     }
-    if (/(create|new|submit|make a grant|grant creation)/i.test(cleaned)) {
+    if (/(create|new|submit|make a grant|grant creation|post a grant|offer funding)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'create', confidence: 0.85 };
     }
-    if (/(view|public|see|browse grants)/i.test(cleaned)) {
+    if (/(view|public|see|browse grants|explore grants|search grants|funding opportunities)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'view', confidence: 0.85 };
     }
     
-    // Feature explanations
-    if (/(what is|explain|tell me about|how does|features|functionality|capabilities)/i.test(cleaned)) {
-      if (/(dashboard|analytics|chart)/i.test(cleaned)) {
+    // Advanced feature explanations with contextual understanding
+    if (/(what is|explain|tell me about|how does|features|functionality|capabilities|what does)/i.test(cleaned)) {
+      if (/(dashboard|analytics|chart|data|statistics|insights|visualization|reports)/i.test(cleaned)) {
         return { intent: 'feature_info', target: 'dashboard', confidence: 0.9 };
       }
-      if (/(benefits|schemes|welfare)/i.test(cleaned)) {
+      if (/(benefits|schemes|welfare|government programs|social security)/i.test(cleaned)) {
         return { intent: 'feature_info', target: 'benefits', confidence: 0.9 };
       }
-      if (/(suggestions|feedback)/i.test(cleaned)) {
+      if (/(suggestions|feedback|community|public input|user ideas)/i.test(cleaned)) {
         return { intent: 'feature_info', target: 'suggestions', confidence: 0.9 };
       }
-      if (/(grant|creation|create)/i.test(cleaned)) {
+      if (/(grant|creation|create|make|new funding|offer)/i.test(cleaned)) {
         return { intent: 'feature_info', target: 'create', confidence: 0.9 };
+      }
+      if (/(application|apply|submit|creator portal|applicant)/i.test(cleaned)) {
+        return { intent: 'feature_info', target: 'creator', confidence: 0.9 };
+      }
+      if (/(government|official|admin|ministry)/i.test(cleaned)) {
+        return { intent: 'feature_info', target: 'government', confidence: 0.9 };
       }
       return { intent: 'feature_info', target: 'general', confidence: 0.7 };
     }
     
-    // How-to questions
-    if (/(how to|how do i|guide me|walk me through|steps|instructions)/i.test(cleaned)) {
-      if (/(apply|application|submit)/i.test(cleaned)) {
+    // Advanced how-to questions with contextual understanding
+    if (/(how to|how do i|guide me|walk me through|steps|instructions|can you help me|what are the steps)/i.test(cleaned)) {
+      if (/(apply|application|submit|getting started|sign up|register)/i.test(cleaned)) {
         return { intent: 'how_to', target: 'application', confidence: 0.9 };
       }
-      if (/(create|make|new grant)/i.test(cleaned)) {
+      if (/(create|make|new grant|posting|publish)/i.test(cleaned)) {
         return { intent: 'how_to', target: 'create_grant', confidence: 0.9 };
       }
-      if (/(find|search|discover|browse)/i.test(cleaned)) {
+      if (/(find|search|discover|browse|look for|locate)/i.test(cleaned)) {
         return { intent: 'how_to', target: 'find_grants', confidence: 0.9 };
+      }
+      if (/(login|sign in|access|get into)/i.test(cleaned)) {
+        return { intent: 'how_to', target: 'login', confidence: 0.9 };
+      }
+      if (/(navigate|move around|get around|use the site)/i.test(cleaned)) {
+        return { intent: 'how_to', target: 'navigation', confidence: 0.9 };
+      }
+      if (/(upload|documents|files|attach)/i.test(cleaned)) {
+        return { intent: 'how_to', target: 'upload', confidence: 0.9 };
       }
       return { intent: 'how_to', target: 'general', confidence: 0.7 };
     }
     
-    // Troubleshooting
-    if (/(troubleshoot|error|problem|issue|not working|broken|fix|debug)/i.test(cleaned)) {
-      return { intent: 'troubleshoot', confidence: 0.85 };
+    // Advanced troubleshooting with specific problem detection
+    if (/(troubleshoot|error|problem|issue|not working|broken|fix|debug|something wrong|won't work|failing|glitch)/i.test(cleaned)) {
+      if (/(login|sign in|password|authentication|can't log in)/i.test(cleaned)) {
+        return { intent: 'troubleshoot', target: 'login', confidence: 0.9 };
+      }
+      if (/(form|submit|application|won't submit|submit button)/i.test(cleaned)) {
+        return { intent: 'troubleshoot', target: 'form', confidence: 0.9 };
+      }
+      if (/(page|load|loading|slow|crash|refresh)/i.test(cleaned)) {
+        return { intent: 'troubleshoot', target: 'page', confidence: 0.9 };
+      }
+      if (/(upload|file|document|attachment)/i.test(cleaned)) {
+        return { intent: 'troubleshoot', target: 'upload', confidence: 0.9 };
+      }
+      if (/(browser|compatibility|javascript|cookies)/i.test(cleaned)) {
+        return { intent: 'troubleshoot', target: 'browser', confidence: 0.9 };
+      }
+      return { intent: 'troubleshoot', target: 'general', confidence: 0.85 };
     }
     
-    // Content discovery
-    if (/(find|search|discover|show me|browse|look for|what grants)/i.test(cleaned)) {
-      return { intent: 'content_discovery', confidence: 0.8 };
+    // Advanced content discovery with specific search intents
+    if (/(find|search|discover|show me|browse|look for|what grants|seeking funding|funding opportunities)/i.test(cleaned)) {
+      if (/(small|business|startup|entrepreneur)/i.test(cleaned)) {
+        return { intent: 'content_discovery', target: 'small_business', confidence: 0.9 };
+      }
+      if (/(research|academic|university|student)/i.test(cleaned)) {
+        return { intent: 'content_discovery', target: 'research', confidence: 0.9 };
+      }
+      if (/(nonprofit|ngo|charity|community)/i.test(cleaned)) {
+        return { intent: 'content_discovery', target: 'nonprofit', confidence: 0.9 };
+      }
+      if (/(government|federal|state|local)/i.test(cleaned)) {
+        return { intent: 'content_discovery', target: 'government', confidence: 0.9 };
+      }
+      return { intent: 'content_discovery', target: 'general', confidence: 0.8 };
     }
     
-    // Technical support
-    if (/(technical|support|help|contact|assistance|customer service)/i.test(cleaned)) {
-      return { intent: 'technical_support', confidence: 0.8 };
+    // Enhanced technical support with specific issue categories
+    if (/(technical|support|help|contact|assistance|customer service|it help|computer issues)/i.test(cleaned)) {
+      if (/(mobile|phone|tablet|responsive|screen size)/i.test(cleaned)) {
+        return { intent: 'technical_support', target: 'mobile', confidence: 0.9 };
+      }
+      if (/(performance|speed|slow|optimization)/i.test(cleaned)) {
+        return { intent: 'technical_support', target: 'performance', confidence: 0.9 };
+      }
+      if (/(security|privacy|safe|secure)/i.test(cleaned)) {
+        return { intent: 'technical_support', target: 'security', confidence: 0.9 };
+      }
+      if (/(accessibility|disability|screen reader|keyboard)/i.test(cleaned)) {
+        return { intent: 'technical_support', target: 'accessibility', confidence: 0.9 };
+      }
+      return { intent: 'technical_support', target: 'general', confidence: 0.8 };
     }
     
     // Website information
@@ -275,15 +329,15 @@ const ChatBot = () => {
           break;
           
         case 'troubleshoot':
-          response = getTroubleshootResponse();
+          response = getTroubleshootResponse(intent.target);
           break;
           
         case 'content_discovery':
-          response = getContentDiscoveryResponse();
+          response = getContentDiscoveryResponse(intent.target);
           break;
           
         case 'technical_support':
-          response = getTechnicalSupportResponse();
+          response = getTechnicalSupportResponse(intent.target);
           break;
           
         case 'website_info':
@@ -372,21 +426,78 @@ const ChatBot = () => {
       case 'find_grants':
         return `Here's how to find grants that match your needs:\n\n1. **Browse Public View** - Check the Public View section\n2. **Use Search** - Search by keywords, category, or sector\n3. **Filter Results** - Narrow down by funding amount, deadline, etc.\n4. **View Details** - Click on grants for complete information\n5. **Check Eligibility** - Review requirements before applying\n6. **Save Favorites** - Bookmark interesting opportunities\n\nYou can also check the Benefits section for government schemes!`;
       
+      case 'login':
+        return `Here's how to log in to GrantTracker:\n\n1. **Choose Your Portal** - Select Creator or Government login\n2. **Enter Credentials** - Use your registered email and password\n3. **Check Caps Lock** - Ensure caps lock is off\n4. **Clear Browser Cache** - If login fails, clear cache and cookies\n5. **Try Password Reset** - Use "Forgot Password" if needed\n6. **Contact Support** - Reach out if you continue having issues\n\nWhich portal do you need help accessing?`;
+      
+      case 'navigation':
+        return `Here's how to navigate GrantTracker effectively:\n\n🧭 **Main Navigation**\n• Use the top navigation bar for main sections\n• Click the GrantTracker logo to return home\n• Use the chat assistant for quick navigation\n\n🔍 **Finding Content**\n• Use the search functionality on relevant pages\n• Browse by category or sector\n• Check the dashboard for analytics\n\n💡 **Pro Tips**\n• Bookmark frequently visited pages\n• Use browser back/forward buttons\n• The chat assistant can take you anywhere instantly\n\nWhere would you like to go?`;
+      
+      case 'upload':
+        return `Here's how to upload documents successfully:\n\n📄 **Supported Formats**\n• PDF, DOC, DOCX files\n• Maximum file size: 10MB per document\n• Multiple files can be uploaded\n\n📋 **Upload Steps**\n1. **Click Upload Button** - Usually marked with paperclip icon\n2. **Select Files** - Choose from your device\n3. **Verify Upload** - Check that files appear in list\n4. **Submit Form** - Complete the application process\n\n⚠️ **Troubleshooting**\n• Check file format and size\n• Ensure stable internet connection\n• Try refreshing the page if upload fails\n\nNeed help with a specific upload issue?`;
+      
       default:
-        return `I'm here to help guide you through any process! What specific task would you like assistance with? I can help with:\n\n• Grant applications\n• Creating new grants\n• Finding grant opportunities\n• Using the dashboard\n• Navigating the platform\n\nJust let me know what you need help with!`;
+        return `I'm here to help guide you through any process! What specific task would you like assistance with? I can help with:\n\n• Grant applications\n• Creating new grants\n• Finding grant opportunities\n• Using the dashboard\n• Logging in and navigation\n• Document uploads\n\nJust let me know what you need help with!`;
     }
   };
 
-  const getTroubleshootResponse = () => {
-    return `I'm here to help troubleshoot any issues you're experiencing! Here are solutions to common problems:\n\n🔧 **Login Issues**\n• Check your username and password\n• Try clearing browser cache\n• Ensure you're using the correct portal (Creator vs Government)\n\n📄 **Form Submission Problems**\n• Check required fields are filled\n• Ensure documents are in supported formats\n• Verify internet connection is stable\n\n📊 **Dashboard Not Loading**\n• Refresh the page\n• Check your internet connection\n• Try a different browser\n\n🔍 **Search Issues**\n• Try different keywords\n• Clear search filters\n• Check spelling\n\nStill having trouble? Describe your specific issue and I'll provide targeted help!`;
+  const getTroubleshootResponse = (target) => {
+    switch (target) {
+      case 'login':
+        return `Let's troubleshoot your login issues:\n\n🔑 **Login Solutions**\n• **Check Credentials** - Verify email and password\n• **Portal Selection** - Ensure you're using the correct portal (Creator/Government)\n• **Caps Lock** - Make sure caps lock is off\n• **Browser Cache** - Clear cache and cookies\n• **Password Reset** - Use "Forgot Password" link\n• **Account Status** - Check if account is activated\n\n💡 **Pro Tips**\n• Try logging out and back in\n• Use an incognito/private browser window\n• Disable browser extensions temporarily\n\nStill can't login? I can guide you through account recovery!`;
+      
+      case 'form':
+        return `Let's fix your form submission issues:\n\n📋 **Form Solutions**\n• **Required Fields** - Fill all mandatory fields (marked with *)\n• **File Uploads** - Check file formats (PDF, DOC, DOCX)\n• **File Size** - Ensure files are under 10MB\n• **Internet Connection** - Stable connection required\n• **Browser Compatibility** - Use updated Chrome, Firefox, or Safari\n\n🔧 **Quick Fixes**\n• Refresh the page and try again\n• Disable browser auto-fill temporarily\n• Try a different browser\n• Clear browser cache\n\nWhat specific error message are you seeing?`;
+      
+      case 'page':
+        return `Let's resolve your page loading issues:\n\n🔄 **Page Solutions**\n• **Refresh Page** - Press F5 or click refresh button\n• **Check Internet** - Verify stable connection\n• **Browser Update** - Ensure you're using latest browser version\n• **Disable Extensions** - Turn off ad blockers temporarily\n• **Clear Cache** - Clear browser cache and cookies\n\n🌐 **Network Issues**\n• Try a different internet connection\n• Check if other websites load properly\n• Restart your router/modem\n• Contact your ISP if issues persist\n\nWhich page is having trouble loading?`;
+      
+      case 'upload':
+        return `Let's fix your document upload issues:\n\n📁 **Upload Solutions**\n• **File Format** - Use PDF, DOC, or DOCX only\n• **File Size** - Keep files under 10MB each\n• **Multiple Files** - Upload one at a time if needed\n• **Internet Speed** - Ensure stable, fast connection\n• **Browser Support** - Use modern browser (Chrome, Firefox, Safari)\n\n🔧 **Troubleshooting Steps**\n• Refresh the page and try again\n• Try uploading from a different browser\n• Check that files aren't corrupted\n• Disable browser extensions\n\nWhat type of file are you trying to upload?`;
+      
+      case 'browser':
+        return `Let's resolve your browser compatibility issues:\n\n🌐 **Browser Solutions**\n• **Update Browser** - Install latest version\n• **Enable JavaScript** - Ensure JS is enabled\n• **Enable Cookies** - Allow cookies for this site\n• **Disable Extensions** - Turn off ad blockers temporarily\n• **Clear Cache** - Clear browser cache completely\n\n✅ **Recommended Browsers**\n• Google Chrome (most compatible)\n• Mozilla Firefox\n• Microsoft Edge\n• Safari (Mac/iOS)\n\n📱 **Mobile Browsers**\n• Chrome Mobile\n• Safari Mobile\n• Firefox Mobile\n\nWhich browser are you currently using?`;
+      
+      default:
+        return `I'm here to help troubleshoot any issues you're experiencing! Here are solutions to common problems:\n\n🔧 **Login Issues**\n• Check your username and password\n• Try clearing browser cache\n• Ensure you're using the correct portal (Creator vs Government)\n\n📄 **Form Submission Problems**\n• Check required fields are filled\n• Ensure documents are in supported formats\n• Verify internet connection is stable\n\n📊 **Dashboard Not Loading**\n• Refresh the page\n• Check your internet connection\n• Try a different browser\n\n🔍 **Search Issues**\n• Try different keywords\n• Clear search filters\n• Check spelling\n\nStill having trouble? Describe your specific issue and I'll provide targeted help!`;
+    }
   };
 
-  const getContentDiscoveryResponse = () => {
-    return `I can help you discover content across GrantTracker! Here's how to find what you're looking for:\n\n🔍 **Search Methods:**\n• Use the search bar on relevant pages\n• Browse by category or sector\n• Filter by funding amount, deadline, or location\n\n📋 **Content Types Available:**\n• **Grants** - Various funding opportunities\n• **Government Benefits** - Official welfare schemes\n• **Public Suggestions** - Community ideas and feedback\n• **Analytics Data** - Charts and statistics\n\n💡 **Discovery Tips:**\n• Try broad terms first, then narrow down\n• Use multiple search terms\n• Check different sections of the site\n\nWhat type of content are you looking for? I can guide you to the right section!`;
+  const getContentDiscoveryResponse = (userType) => {
+    switch (userType) {
+      case 'small_business':
+        return `Perfect! Here's what GrantTracker offers for small businesses:\n\n🏢 **Small Business Grants**\n• **SBIR/STTR** - Innovation research funding\n• **Economic Development** - Business growth support\n• **Technology Transfer** - Commercialization help\n• **Export Programs** - International expansion\n• **Workforce Development** - Employee training funds\n• **SBA Programs** - Small Business Administration grants\n\n💡 **Key Benefits**\n• Up to $1.5M available for R&D\n• No matching funds required for Phase I\n• Exclusive access to federal contracts\n\n🎯 **Best Match** - Small Business Innovation Research\nReady to explore opportunities that fit your business?`;
+      
+      case 'research':
+        return `Excellent! Here's what GrantTracker offers for researchers:\n\n🔬 **Research Funding**\n• **NSF Grants** - National Science Foundation\n• **NIH Funding** - Health and biomedical research\n• **DOE Programs** - Energy research initiatives\n• **NASA Grants** - Space and aeronautics\n• **USDA Grants** - Agricultural research\n• **DOD Funding** - Defense research\n\n💰 **Funding Ranges**\n• **Exploratory** - $50K-$250K\n• **Standard** - $250K-$500K\n• **Large** - $500K-$2M+\n• **Center** - $5M-$20M\n\n🎯 **Best Match** - NSF Research Grants\nWhat research field are you in?`;
+      
+      case 'nonprofit':
+        return `Great choice! Here's what GrantTracker offers for nonprofits:\n\n🏛️ **Nonprofit Funding**\n• **Foundation Grants** - Private foundation support\n• **Community Development** - Local impact funding\n• **Social Services** - Program support grants\n• **Capacity Building** - Organizational development\n• **Program Grants** - Specific initiative funding\n• **Capital Campaigns** - Infrastructure support\n\n📊 **Focus Areas**\n• Education and youth programs\n• Health and social services\n• Arts and culture initiatives\n• Environmental conservation\n• Human services\n\n🎯 **Best Match** - Community Development Block Grants\nWhat's your nonprofit's mission focus?`;
+      
+      case 'government':
+        return `Perfect! Here's what GrantTracker offers for government entities:\n\n🏛️ **Government Programs**\n• **Federal Grants** - Direct federal funding\n• **State Programs** - State-level initiatives\n• **Local Funding** - Municipal support\n• **Infrastructure** - Building and improvement\n• **Public Safety** - Emergency services\n• **Education** - School district funding\n\n💼 **Agency Support**\n• **HUD** - Housing and urban development\n• **DOT** - Transportation infrastructure\n• **DHS** - Homeland security\n• **USDA Rural** - Rural development\n• **EPA** - Environmental protection\n\n🎯 **Best Match** - Federal Community Development Grants\nWhat level of government are you representing?`;
+      
+      default:
+        return `I can help you discover content across GrantTracker! Here's how to find what you're looking for:\n\n🔍 **Search Methods:**\n• Use the search bar on relevant pages\n• Browse by category or sector\n• Filter by funding amount, deadline, or location\n\n📋 **Content Types Available:**\n• **Grants** - Various funding opportunities\n• **Government Benefits** - Official welfare schemes\n• **Public Suggestions** - Community ideas and feedback\n• **Analytics Data** - Charts and statistics\n\n💡 **Discovery Tips:**\n• Try broad terms first, then narrow down\n• Use multiple search terms\n• Check different sections of the site\n\nWhat type of content are you looking for? I can guide you to the right section!`;
+    }
   };
 
-  const getTechnicalSupportResponse = () => {
-    return `I'm your technical support assistant! Here's how I can help:\n\n🛠️ **Common Technical Issues:**\n• Page loading problems\n• Form submission errors\n• Login difficulties\n• Browser compatibility\n• Mobile responsiveness\n\n📱 **Device-Specific Help:**\n• Desktop optimization\n• Mobile navigation\n• Tablet compatibility\n\n🌐 **Browser Support:**\n• Chrome (recommended)\n• Firefox\n• Safari\n• Edge\n\n💡 **General Tips:**\n• Keep browser updated\n• Clear cache regularly\n• Check internet connection\n• Disable browser extensions if needed\n\nDescribe your specific technical issue and I'll provide detailed assistance!`;
+  const getTechnicalSupportResponse = (target) => {
+    switch (target) {
+      case 'mobile':
+        return `Here's mobile-specific support:\n\n📱 **Mobile Optimization**\n• **Responsive Design** - Automatic mobile layout\n• **Touch-Friendly** - Large buttons and touch targets\n• **Fast Loading** - Optimized for mobile networks\n• **Offline Support** - Basic functionality works offline\n\n🔧 **Mobile Solutions**\n• **Portrait Mode** - Best viewed in portrait orientation\n• **Zoom** - Pinch-to-zoom supported\n• **Scrolling** - Smooth scrolling with momentum\n• **Forms** - Mobile-friendly input fields\n\n💡 **Mobile Tips**\n• Use landscape mode for better form filling\n• Clear mobile cache regularly\n• Update mobile browser frequently\n\nAre you experiencing specific mobile issues?`;
+      
+      case 'performance':
+        return `Let's optimize your performance:\n\n⚡ **Performance Solutions**\n• **Clear Cache** - Clear browser cache and cookies\n• **Update Browser** - Use latest browser version\n• **Disable Extensions** - Turn off unnecessary extensions\n• **Close Tabs** - Close unused browser tabs\n\n🌐 **Network Optimization**\n• **Stable Connection** - Ensure reliable internet\n• **WiFi vs Mobile** - WiFi generally faster\n• **Browser Speed** - Try different browsers\n\n💻 **System Resources**\n• **RAM** - Close other applications\n• **Storage** - Ensure adequate disk space\n• **Updates** - Keep operating system updated\n\nWhich performance issue are you experiencing?`;
+      
+      case 'security':
+        return `Here's security support:\n\n🔒 **Security Measures**\n• **HTTPS** - All connections encrypted\n• **Data Protection** - Your information is secure\n• **Privacy** - We don't share personal data\n• **Authentication** - Secure login process\n\n🛡️ **Best Practices**\n• **Strong Passwords** - Use unique, complex passwords\n• **Two-Factor** - Enable 2FA when available\n• **Logout** - Always log out from shared devices\n• **Updates** - Keep software updated\n\n⚠️ **Security Tips**\n• Never share login credentials\n• Report suspicious activity\n• Use secure networks only\n\nDo you have specific security concerns?`;
+      
+      case 'accessibility':
+        return `Accessibility support information:\n\n♿ **Accessibility Features**\n• **Keyboard Navigation** - Full keyboard support\n• **Screen Reader** - Compatible with screen readers\n• **High Contrast** - High contrast mode available\n• **Font Size** - Adjustable text size\n\n🎯 **Accessibility Tools**\n• **ARIA Labels** - Screen reader announcements\n• **Focus Indicators** - Clear focus indicators\n• **Alt Text** - Images have descriptive alt text\n• **Semantic HTML** - Proper heading structure\n\n💡 **Accessibility Tips**\n• Use Ctrl + +/- to zoom\n• Enable high contrast mode\n• Use keyboard shortcuts\n• Enable screen reader if needed\n\nWhat accessibility feature do you need help with?`;
+      
+      default:
+        return `I'm your technical support assistant! Here's how I can help:\n\n🛠️ **Common Technical Issues:**\n• Page loading problems\n• Form submission errors\n• Login difficulties\n• Browser compatibility\n• Mobile responsiveness\n\n📱 **Device-Specific Help:**\n• Desktop optimization\n• Mobile navigation\n• Tablet compatibility\n\n🌐 **Browser Support:**\n• Chrome (recommended)\n• Firefox\n• Safari\n• Edge\n\n💡 **General Tips:**\n• Keep browser updated\n• Clear cache regularly\n• Check internet connection\n• Disable browser extensions if needed\n\nDescribe your specific technical issue and I'll provide detailed assistance!`;
+    }
   };
 
   const getWebsiteInfoResponse = () => {
