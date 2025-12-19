@@ -11,6 +11,7 @@ class ConversationMemory {
     this.contextWindow = 10;
     this.sessionStart = new Date();
     this.userPreferences = this.loadUserPreferences();
+    this.grantContext = this.initializeGrantContext();
   }
 
   addMessage(message, sentiment = 'neutral', entities = []) {
@@ -27,6 +28,8 @@ class ConversationMemory {
       this.history.shift();
     }
     
+    // Update grant-specific context
+    this.updateGrantContext(messageWithContext);
     this.saveToStorage();
   }
 
@@ -37,9 +40,62 @@ class ConversationMemory {
       entities: this.consolidateEntities(recentMessages),
       patterns: this.analyzePatterns(recentMessages),
       sessionLength: this.history.length,
-      timeInSession: Date.now() - this.sessionStart.getTime()
+      timeInSession: Date.now() - this.sessionStart.getTime(),
+      grantInterests: this.grantContext.interests,
+      userProfile: this.grantContext.profile
     };
     return context;
+  }
+
+  initializeGrantContext() {
+    return {
+      interests: new Set(),
+      profile: {
+        occupation: null,
+        organizationType: null,
+        projectScope: null,
+        fundingAmount: null,
+        timeline: null,
+        targetDemographic: null,
+        geographicLocation: null,
+        grantHistory: [],
+        successRate: 0.8
+      },
+      preferences: {
+        preferredAmount: null,
+        preferredTimeline: null,
+        preferredSector: null,
+        previousApplications: []
+      }
+    };
+  }
+
+  updateGrantContext(message) {
+    // Extract and update grant-specific information
+    if (message.entities) {
+      message.entities.forEach(entity => {
+        switch (entity.type) {
+          case 'occupation':
+            this.grantContext.profile.occupation = entity.value;
+            this.grantContext.interests.add('professional');
+            break;
+          case 'organization_type':
+            this.grantContext.profile.organizationType = entity.value;
+            break;
+          case 'funding_amount':
+            this.grantContext.profile.fundingAmount = entity.value;
+            this.grantContext.preferences.preferredAmount = entity.value;
+            break;
+          case 'timeline':
+            this.grantContext.profile.timeline = entity.value;
+            this.grantContext.preferences.preferredTimeline = entity.value;
+            break;
+          case 'geographic':
+            this.grantContext.profile.geographicLocation = entity.value;
+            break;
+        }
+      });
+    }
   }
 
   extractTopics(messages) {
@@ -78,7 +134,9 @@ class ConversationMemory {
         /navigate|go to|take me|show me/i.test(m.text)).length,
       helpSeeking: messages.filter(m => m.text.includes('help')).length,
       positiveSentiment: messages.filter(m => m.sentiment === 'positive').length,
-      negativeSentiment: messages.filter(m => m.sentiment === 'negative').length
+      negativeSentiment: messages.filter(m => m.sentiment === 'negative').length,
+      grantQueries: messages.filter(m => 
+        /grant|funding|application|deadline|amount|eligibility/i.test(m.text)).length
     };
     return patterns;
   }
@@ -131,11 +189,53 @@ class ConversationMemory {
       localStorage.setItem('chatbot_conversation', JSON.stringify({
         history: this.history,
         preferences: this.userPreferences,
-        sessionStart: this.sessionStart
+        sessionStart: this.sessionStart,
+        grantContext: this.grantContext
       }));
     } catch (error) {
       console.warn('Failed to save conversation to storage:', error);
     }
+  }
+
+  getGrantRecommendations() {
+    const profile = this.grantContext.profile;
+    const recommendations = [];
+    
+    // Generate recommendations based on user profile
+    if (profile.occupation) {
+      recommendations.push({
+        category: 'professional_development',
+        description: `Grants specifically for ${profile.occupation}s`,
+        relevance: 0.9
+      });
+    }
+    
+    if (profile.organizationType) {
+      recommendations.push({
+        category: 'organization_specific',
+        description: `Funding opportunities for ${profile.organizationType}`,
+        relevance: 0.85
+      });
+    }
+    
+    if (profile.fundingAmount) {
+      const amount = parseInt(profile.fundingAmount.replace(/[^\d]/g, ''));
+      if (amount < 50000) {
+        recommendations.push({
+          category: 'seed_funding',
+          description: 'Small grants and seed funding opportunities',
+          relevance: 0.8
+        });
+      } else if (amount > 500000) {
+        recommendations.push({
+          category: 'major_funding',
+          description: 'Large-scale funding and major grants',
+          relevance: 0.8
+        });
+      }
+    }
+    
+    return recommendations;
   }
 }
 
@@ -150,7 +250,16 @@ class EntityExtractor {
       names: /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g,
       organizations: /\b(?:Inc|LLC|Corp|Corporation|Company|Co\.|University|College|Institute|Foundation|Ministry|Department|Agency|Bank|Trust|Limited|Ltd)\b/gi,
       amounts_text: /\b(\d+(?:\.\d+)?)\s*(?:dollars?|usd|thousand|k|million|m|billion|b)\b/gi,
-      percentages: /\d+(?:\.\d+)?%/g
+      percentages: /\d+(?:\.\d+)?%/g,
+      
+      // Grant-specific patterns
+      occupations: /\b(?:teacher|professor|researcher|scientist|engineer|doctor|nurse|artist|musician|writer|entrepreneur|student|nonprofit|small business|startup|community organization|federal agency|state government|local government|municipality)\b/gi,
+      organization_types: /\b(?:nonprofit|501\(c\)|foundation|university|college|school district|hospital|clinic|research institute|small business|corporation|government agency|municipality|community organization|faith-based organization)\b/gi,
+      grant_types: /\b(?:research grant|seed funding|development grant|capacity building|infrastructure|equipment|travel|conference|training|workshop|seminar|scholarship|fellowship|contract|cooperative agreement|subgrant|pass-through)\b/gi,
+      funding_amounts: /\b(?:up to\s+\$?\d+(?:,\d{3})*(?:\.\d{2})?|\$?\d+(?:,\d{3})*(?:\.\d{2})?\s*(?:to|-\s*)\$?\d+(?:,\d{3})*(?:\.\d{2})?|minimum\s+\$?\d+(?:,\d{3})*(?:\.\d{2})?)\b/gi,
+      deadlines: /\b(?:due\s+by|deadline|applications\s+close|submit\s+by|no\s+later\s+than)\s+([^.]+?)(?:\.|$)/gi,
+      geographic: /\b(?:national|federal|state|local|regional|international|global|county|city|district)\b/gi,
+      eligibility: /\b(?:eligible|qualify|requirements|criteria|must\s+be| applicants\s+must)\b/gi
     };
   }
 
@@ -223,17 +332,23 @@ class SentimentAnalyzer {
     this.positiveWords = [
       'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'awesome',
       'helpful', 'thanks', 'thank you', 'perfect', 'love', 'like',
-      'good', 'nice', 'cool', 'brilliant', 'outstanding', 'superb'
+      'good', 'nice', 'cool', 'brilliant', 'outstanding', 'superb',
+      'excited', 'interested', 'eager', 'enthusiastic'
     ];
     
     this.negativeWords = [
       'bad', 'terrible', 'awful', 'horrible', 'hate', 'dislike',
       'problem', 'issue', 'error', 'wrong', 'broken', 'frustrated',
-      'annoying', 'disappointed', 'upset', 'angry', 'mad'
+      'annoying', 'disappointed', 'upset', 'angry', 'mad',
+      'confused', 'lost', 'stuck', 'difficult', 'hard'
     ];
     
     this.intensifiers = ['very', 'extremely', 'really', 'totally', 'absolutely', 'completely'];
     this.negations = ['not', 'no', 'never', 'nothing', 'nobody', 'nowhere'];
+    
+    // Grant-specific sentiment indicators
+    this.urgencyWords = ['urgent', 'asap', 'quickly', 'soon', 'desperate', 'need'];
+    this.hopefulWords = ['hope', 'optimistic', 'bright', 'promising', 'potential'];
   }
 
   analyze(text) {
@@ -276,7 +391,9 @@ class SentimentAnalyzer {
       score,
       confidence: Math.min(1, confidence),
       emotions: this.extractEmotions(text),
-      intensity: Math.abs(score)
+      intensity: Math.abs(score),
+      urgency: this.detectUrgency(text),
+      hopefulness: this.detectHopefulness(text)
     };
   }
   
@@ -308,6 +425,16 @@ class SentimentAnalyzer {
     
     return emotions;
   }
+
+  detectUrgency(text) {
+    const words = text.toLowerCase();
+    return this.urgencyWords.some(word => words.includes(word)) ? 0.8 : 0.2;
+  }
+
+  detectHopefulness(text) {
+    const words = text.toLowerCase();
+    return this.hopefulWords.some(word => words.includes(word)) ? 0.7 : 0.3;
+  }
 }
 
 class UserBehaviorTracker {
@@ -322,7 +449,9 @@ class UserBehaviorTracker {
         navigationCount: 0,
         helpRequests: 0,
         positiveInteractions: 0,
-        negativeInteractions: 0
+        negativeInteractions: 0,
+        grantQueries: 0,
+        successfulRecommendations: 0
       }
     };
   }
@@ -356,6 +485,12 @@ class UserBehaviorTracker {
       case 'negative_feedback':
         this.behaviorData.sessionMetrics.negativeInteractions++;
         break;
+      case 'grant_query':
+        this.behaviorData.sessionMetrics.grantQueries++;
+        break;
+      case 'successful_recommendation':
+        this.behaviorData.sessionMetrics.successfulRecommendations++;
+        break;
     }
   }
 
@@ -377,10 +512,31 @@ class UserBehaviorTracker {
       frequentNavigation: this.getMostVisitedSections(),
       interactionStyle: this.analyzeInteractionStyle(recent),
       learningProgress: this.assessLearningProgress(),
-      engagement: this.calculateEngagementScore()
+      engagement: this.calculateEngagementScore(),
+      grantInterest: this.assessGrantInterest()
     };
     
     return patterns;
+  }
+
+  assessGrantInterest() {
+    const metrics = this.behaviorData.sessionMetrics;
+    const totalQueries = metrics.messageCount;
+    
+    if (totalQueries === 0) return { level: 'low', score: 0 };
+    
+    const grantRatio = metrics.grantQueries / totalQueries;
+    const successfulRatio = metrics.successfulRecommendations / Math.max(1, metrics.grantQueries);
+    
+    let level = 'low';
+    if (grantRatio > 0.7 && successfulRatio > 0.6) level = 'high';
+    else if (grantRatio > 0.4) level = 'medium';
+    
+    return {
+      level,
+      score: grantRatio,
+      successRate: successfulRatio
+    };
   }
 
   getMostVisitedSections() {
@@ -393,14 +549,17 @@ class UserBehaviorTracker {
   analyzeInteractionStyle(interactions) {
     const helpRequests = interactions.filter(i => i.type === 'help_request').length;
     const navigationRequests = interactions.filter(i => i.type === 'navigation').length;
+    const grantQueries = interactions.filter(i => i.type === 'grant_query').length;
     const feedbackCount = interactions.filter(i => 
       i.type.includes('feedback')).length;
     
     return {
       helpSeeking: helpRequests > 2,
       navigationFocused: navigationRequests > helpRequests,
+      grantFocused: grantQueries > helpRequests,
       feedbackActive: feedbackCount > 0,
-      overallStyle: helpRequests > navigationRequests ? 'seeker' : 'navigator'
+      overallStyle: grantQueries > navigationRequests ? 'grant_seeker' : 
+                   helpRequests > navigationRequests ? 'seeker' : 'navigator'
     };
   }
 
@@ -412,7 +571,8 @@ class UserBehaviorTracker {
     return {
       activityLevel: metrics.messageCount / Math.max(1, minutesActive),
       helpDependency: metrics.helpRequests / Math.max(1, metrics.messageCount),
-      navigationEfficiency: metrics.navigationCount / Math.max(1, metrics.messageCount)
+      navigationEfficiency: metrics.navigationCount / Math.max(1, metrics.messageCount),
+      grantEngagement: metrics.grantQueries / Math.max(1, metrics.messageCount)
     };
   }
 
@@ -425,9 +585,11 @@ class UserBehaviorTracker {
     const positiveRatio = metrics.positiveInteractions / totalInteractions;
     const helpRatio = metrics.helpRequests / totalInteractions;
     const navigationRatio = metrics.navigationCount / totalInteractions;
+    const grantRatio = metrics.grantQueries / totalInteractions;
     
-    // Higher engagement for positive interactions and moderate help-seeking
-    return Math.min(1, (positiveRatio * 0.4 + (1 - Math.abs(helpRatio - 0.3)) * 0.3 + navigationRatio * 0.3));
+    // Higher engagement for positive interactions, grant interest, and moderate help-seeking
+    return Math.min(1, (positiveRatio * 0.3 + (1 - Math.abs(helpRatio - 0.3)) * 0.2 + 
+                        navigationRatio * 0.2 + grantRatio * 0.3));
   }
 
   getCurrentContext() {
@@ -464,10 +626,11 @@ class UserBehaviorTracker {
 
   classifyUserType() {
     const patterns = this.analyzePatterns();
-    const learningProgress = patterns.learningProgress;
+    const grantInterest = patterns.grantInterest;
     
-    if (learningProgress.helpDependency > 0.5) return 'beginner';
-    if (learningProgress.navigationEfficiency > 0.6) return 'efficient';
+    if (grantInterest.level === 'high') return 'grant_expert';
+    if (patterns.learningProgress.helpDependency > 0.6) return 'beginner';
+    if (patterns.learningProgress.navigationEfficiency > 0.6) return 'efficient';
     if (patterns.learningProgress.activityLevel > 2) return 'power_user';
     return 'moderate_user';
   }
@@ -476,8 +639,12 @@ class UserBehaviorTracker {
     const patterns = this.analyzePatterns();
     const recommendations = [];
     
+    if (patterns.grantInterest.level === 'high') {
+      recommendations.push('User shows strong grant interest - provide detailed funding opportunities');
+    }
+    
     if (patterns.learningProgress.helpDependency > 0.6) {
-      recommendations.push('Consider providing more proactive help suggestions');
+      recommendations.push('Consider providing more proactive grant guidance');
     }
     
     if (patterns.learningProgress.navigationEfficiency < 0.3) {
@@ -486,7 +653,7 @@ class UserBehaviorTracker {
     
     const mostVisited = patterns.frequentNavigation[0];
     if (mostVisited) {
-      recommendations.push(`User frequently visits ${mostVisited.section} - consider highlighting related features`);
+      recommendations.push(`User frequently visits ${mostVisited.section} - consider highlighting related grant opportunities`);
     }
     
     return recommendations;
@@ -498,13 +665,13 @@ class UserBehaviorTracker {
     
     const predictions = [];
     
-    // Based on recent navigation patterns
-    const lastNav = recent.find(i => i.type === 'navigation');
-    if (lastNav) {
+    // Based on recent grant queries
+    const lastGrantQuery = recent.find(i => i.type === 'grant_query');
+    if (lastGrantQuery) {
       predictions.push({
-        action: 'related_navigation',
-        target: this.predictRelatedSection(lastNav.data.target),
-        confidence: 0.7
+        action: 'related_grants',
+        target: this.predictRelatedGrants(lastGrantQuery.data),
+        confidence: 0.8
       });
     }
     
@@ -513,25 +680,27 @@ class UserBehaviorTracker {
     if (helpRequests > 2) {
       predictions.push({
         action: 'proactive_help',
-        target: 'general_guidance',
-        confidence: 0.8
+        target: 'grant_guidance',
+        confidence: 0.7
       });
     }
     
     return predictions;
   }
 
-  predictRelatedSection(currentSection) {
-    const relationships = {
-      'home': ['dashboard', 'view'],
-      'dashboard': ['analytics', 'create'],
-      'create': ['creator', 'benefits'],
-      'benefits': ['government', 'suggestions'],
-      'creator': ['login', 'create'],
-      'government': ['benefits', 'login']
-    };
+  predictRelatedGrants(queryData) {
+    // Simple prediction logic based on query content
+    const text = queryData.text || '';
     
-    return relationships[currentSection]?.[0] || 'home';
+    if (text.includes('education') || text.includes('teacher')) {
+      return 'educational_grants';
+    } else if (text.includes('research') || text.includes('science')) {
+      return 'research_grants';
+    } else if (text.includes('small business')) {
+      return 'business_grants';
+    }
+    
+    return 'general_grants';
   }
 }
 
@@ -550,18 +719,22 @@ class PersonalizationEngine {
           formality: 0.5,
           enthusiasm: 0.7,
           technicalLevel: 0.5,
-          patience: 0.8
+          patience: 0.8,
+          grantExpertise: 0.5
         },
         preferences: {
           preferredResponseLength: 'medium',
           detailLevel: 'moderate',
-          interactionStyle: 'collaborative'
+          interactionStyle: 'collaborative',
+          grantTypes: [],
+          fundingRanges: []
         },
         learningHistory: [],
         satisfactionMetrics: {
           overall: 0.8,
           responseRelevance: 0.8,
-          helpfulness: 0.8
+          helpfulness: 0.8,
+          grantRelevance: 0.8
         }
       };
     } catch {
@@ -571,18 +744,22 @@ class PersonalizationEngine {
           formality: 0.5,
           enthusiasm: 0.7,
           technicalLevel: 0.5,
-          patience: 0.8
+          patience: 0.8,
+          grantExpertise: 0.5
         },
         preferences: {
           preferredResponseLength: 'medium',
           detailLevel: 'moderate',
-          interactionStyle: 'collaborative'
+          interactionStyle: 'collaborative',
+          grantTypes: [],
+          fundingRanges: []
         },
         learningHistory: [],
         satisfactionMetrics: {
           overall: 0.8,
           responseRelevance: 0.8,
-          helpfulness: 0.8
+          helpfulness: 0.8,
+          grantRelevance: 0.8
         }
       };
     }
@@ -608,7 +785,7 @@ class PersonalizationEngine {
   }
 
   adjustTone(response, traits) {
-    const { formality, enthusiasm, technicalLevel } = traits;
+    const { formality, enthusiasm, technicalLevel, grantExpertise } = traits;
     
     // Adjust formality
     if (formality > 0.7) {
@@ -627,6 +804,11 @@ class PersonalizationEngine {
       response.text = response.text.replace(/\bimplement|deploy|configure|optimize\b/gi, 'set up');
     }
     
+    // Adjust for grant expertise
+    if (grantExpertise < 0.5) {
+      response.text = response.text.replace(/\bRFA|RFP|solicitation|subaward\b/gi, 'grant announcement');
+    }
+    
     return response;
   }
 
@@ -636,12 +818,12 @@ class PersonalizationEngine {
     switch (preferredLength) {
       case 'short':
         if (currentLength > 200) {
-          response.text = response.text.split('\n')[0] + '\n\nWould you like more details?';
+          response.text = response.text.split('\n')[0] + '\n\nWould you like more details about these grants?';
         }
         break;
       case 'long':
         if (currentLength < 300) {
-          response.text += '\n\nIs there anything specific you\'d like me to elaborate on?';
+          response.text += '\n\nWould you like me to elaborate on any of these funding opportunities?';
         }
         break;
     }
@@ -656,18 +838,18 @@ class PersonalizationEngine {
     // Add contextual suggestions based on user type
     if (userType === 'beginner') {
       response.suggestions = response.suggestions || [];
-      response.suggestions.unshift('Need step-by-step guidance? Just ask!');
+      response.suggestions.unshift('Need help understanding grant eligibility? Just ask!');
     }
     
-    if (userType === 'power_user') {
+    if (userType === 'grant_expert') {
       response.advanced = response.advanced || [];
-      response.advanced.push('Want to explore advanced features?');
+      response.advanced.push('Interested in advanced grant strategies or partnership opportunities?');
     }
     
     // Reference conversation history if relevant
     const relevantContext = this.memory.getRelevantContext(response.originalQuery || '');
     if (relevantContext.length > 0 && Math.random() < 0.3) {
-      response.text = `Based on our previous conversation: ${response.text}`;
+      response.text = `Based on our previous conversation about grants: ${response.text}`;
     }
     
     return response;
@@ -694,6 +876,11 @@ class PersonalizationEngine {
     if (interactionData.feedback) {
       this.userProfile.satisfactionMetrics.overall = 
         (this.userProfile.satisfactionMetrics.overall + interactionData.feedback.rating) / 2;
+      
+      if (interactionData.grantRelated) {
+        this.userProfile.satisfactionMetrics.grantRelevance =
+          (this.userProfile.satisfactionMetrics.grantRelevance + interactionData.feedback.rating) / 2;
+      }
     }
     
     // Update personality traits based on behavior
@@ -707,7 +894,8 @@ class PersonalizationEngine {
       this.userProfile.learningHistory.push({
         timestamp: Date.now(),
         interaction: interactionData.type,
-        success: true
+        success: true,
+        grantRelated: interactionData.grantRelated || false
       });
       
       // Keep only recent history
@@ -736,36 +924,36 @@ class ProactiveSuggestionEngine {
 
   initializeSuggestionRules() {
     return {
-      navigation: {
-        trigger: (context) => context.sessionLength > 5 && !context.hasNavigated,
+      grant_exploration: {
+        trigger: (context) => context.sessionLength > 3 && context.grantInterests.size === 0,
         suggestion: (context) => ({
-          type: 'navigation_help',
-          text: 'Would you like me to show you around the platform?',
-          actions: ['show_tour', 'maybe_later']
+          type: 'grant_exploration',
+          text: 'I notice you\'re exploring grants. Would you like me to help you discover funding opportunities tailored to your situation?',
+          actions: ['explore_grants', 'maybe_later']
         })
       },
-      help: {
+      deadline_alert: {
+        trigger: (context) => context.timeInSession > 300000 && context.topics.some(t => t[0].includes('deadline')),
+        suggestion: (context) => ({
+          type: 'deadline_reminder',
+          text: 'I see you\'re interested in grants with upcoming deadlines. Should I set up deadline reminders for you?',
+          actions: ['setup_reminders', 'not_needed']
+        })
+      },
+      similar_opportunities: {
+        trigger: (context) => context.sessionLength > 5 && context.topics.length > 2,
+        suggestion: (context) => ({
+          type: 'similar_opportunities',
+          text: 'Based on your interests, you might also find these related funding opportunities interesting:',
+          actions: ['show_more', 'not_now']
+        })
+      },
+      application_help: {
         trigger: (context) => context.helpSeeking > 2 && context.timeInSession > 60000,
         suggestion: (context) => ({
-          type: 'proactive_assistance',
-          text: 'I notice you\'ve been looking for help. Let me provide some guided assistance!',
-          actions: ['start_guidance', 'continue_alone']
-        })
-      },
-      exploration: {
-        trigger: (context) => context.sessionLength > 10 && context.topics.length > 3,
-        suggestion: (context) => ({
-          type: 'feature_discovery',
-          text: 'You seem interested in multiple features! Here are some advanced capabilities you might enjoy:',
-          actions: ['explore_features', 'not_now']
-        })
-      },
-      optimization: {
-        trigger: (context) => context.negativeSentiment > 0 && context.positiveSentiment < context.negativeSentiment,
-        suggestion: (context) => ({
-          type: 'improvement_offer',
-          text: 'I want to make sure I\'m being as helpful as possible. How can I improve our interaction?',
-          actions: ['give_feedback', 'it\'s_fine']
+          type: 'application_assistance',
+          text: 'I notice you\'ve been asking about grants. Need help with the application process or understanding requirements?',
+          actions: ['application_help', 'continue_alone']
         })
       }
     };
@@ -793,18 +981,18 @@ class ProactiveSuggestionEngine {
 
   calculatePriority(type, context) {
     const basePriorities = {
-      navigation: 0.8,
-      help: 0.9,
-      exploration: 0.6,
-      optimization: 0.7
+      grant_exploration: 0.9,
+      deadline_alert: 0.95,
+      similar_opportunities: 0.7,
+      application_help: 0.85
     };
     
     let priority = basePriorities[type] || 0.5;
     
     // Adjust based on session metrics
     if (context.timeInSession > 300000) priority += 0.1; // 5+ minutes
-    if (context.negativeSentiment > context.positiveSentiment) priority += 0.2;
     if (context.helpSeeking > 3) priority += 0.1;
+    if (context.grantInterests.size > 0) priority += 0.2;
     
     return Math.min(1, priority);
   }
@@ -814,7 +1002,7 @@ class ProactiveSuggestionEngine {
     if (!cooldown) return false;
     
     const now = Date.now();
-    const cooldownDuration = 60000; // 1 minute
+    const cooldownDuration = 120000; // 2 minutes for grant-specific suggestions
     
     return now - cooldown < cooldownDuration;
   }
@@ -835,17 +1023,11 @@ class ProactiveSuggestionEngine {
   }
 
   recordSuccessfulSuggestion(type) {
-    const rule = this.suggestionRules[type];
-    if (rule && rule.suggestion) {
-      // Could implement learning here - adjust trigger conditions
-      // For now, just log the success
-      console.log(`Successful suggestion: ${type}`);
-    }
+    console.log(`Successful grant suggestion: ${type}`);
   }
 
   recordDismissedSuggestion(type) {
-    // Could implement learning to reduce frequency of certain suggestions
-    console.log(`Dismissed suggestion: ${type}`);
+    console.log(`Dismissed grant suggestion: ${type}`);
   }
 }
 
@@ -858,26 +1040,58 @@ class KnowledgeBaseIntegration {
   buildKnowledgeIndex() {
     return {
       grants: {
-        keywords: ['grant', 'funding', 'money', 'application', 'submit', 'deadline'],
+        keywords: ['grant', 'funding', 'money', 'application', 'submit', 'deadline', 'eligibility', 'award', 'amount', 'criteria'],
         content: {
           application: 'To apply for grants, visit the Creator Portal, create an account, browse available grants, and complete the application form with required documentation.',
           deadlines: 'Grant deadlines vary by program. Check individual grant listings for specific dates and requirements.',
           eligibility: 'Eligibility criteria differ for each grant. Review the specific requirements for each opportunity.',
-          amount: 'Grant amounts range from small seed funding to multi-million dollar programs. Amounts depend on the type and scope of the project.'
+          amount: 'Grant amounts range from small seed funding to multi-million dollar programs. Amounts depend on the type and scope of the project.',
+          types: 'Common grant types include research grants, seed funding, capacity building, equipment grants, travel grants, and fellowship programs.',
+          process: 'The typical grant process involves: identifying opportunities, reviewing eligibility, preparing application, submitting before deadline, and potentially interviewing.'
         }
       },
-      navigation: {
-        keywords: ['navigate', 'find', 'search', 'browse', 'where', 'how to'],
+      educational_grants: {
+        keywords: ['teacher', 'education', 'school', 'classroom', 'student', 'curriculum', 'educational', 'pedagogy'],
         content: {
-          dashboard: 'The Analytics Dashboard provides visual insights into grant data, trends, and statistics.',
-          benefits: 'Government Benefits section contains searchable databases of official welfare schemes and programs.',
-          suggestions: 'Public Suggestions allows users to submit feedback and view community-driven ideas.',
-          creator: 'Creator Portal is for grant seekers to apply for funding and track applications.',
-          government: 'Government Dashboard provides official access for government agencies and officials.'
+          professional_development: 'Professional development grants help teachers attend conferences, workshops, and training programs to enhance their skills.',
+          classroom_supplies: 'Classroom supply grants provide funding for educational materials, technology, and resources for teachers and schools.',
+          technology_integration: 'Technology grants support the integration of digital tools and platforms in educational settings.',
+          research_grants: 'Educational research grants fund studies on teaching methods, student outcomes, and educational innovations.',
+          student_programs: 'Student-focused grants support educational programs, scholarships, and academic initiatives.'
+        }
+      },
+      research_grants: {
+        keywords: ['research', 'science', 'laboratory', 'experiment', 'study', 'academic', 'university', 'scientific'],
+        content: {
+          federal_research: 'Federal research agencies like NSF, NIH, and DOE provide substantial funding for scientific research across disciplines.',
+          private_foundation: 'Private foundations such as Gates, Ford, and Rockefeller support innovative research projects with societal impact.',
+          international: 'International research collaborations often have access to additional funding sources and global partnerships.',
+          equipment: 'Equipment grants specifically fund the purchase of research instruments, computers, and laboratory equipment.',
+          travel: 'Travel grants support researchers attending conferences, presenting findings, and building international collaborations.'
+        }
+      },
+      business_grants: {
+        keywords: ['business', 'startup', 'entrepreneur', 'small business', 'innovation', 'commercialization', 'economic'],
+        content: {
+          sbir: 'Small Business Innovation Research (SBIR) grants provide up to $1.5M for R&D with no matching funds required.',
+          economic_development: 'Economic development grants support business growth, job creation, and community economic impact.',
+          technology_transfer: 'Technology transfer grants help move innovations from research to commercial applications.',
+          export_programs: 'Export grants support international business expansion and global market entry.',
+          workforce: 'Workforce development grants fund employee training and skills enhancement programs.'
+        }
+      },
+      nonprofit_grants: {
+        keywords: ['nonprofit', 'charity', 'community', 'social', 'foundation', 'ngo', 'organization'],
+        content: {
+          capacity_building: 'Capacity building grants help nonprofits strengthen their infrastructure, systems, and organizational capabilities.',
+          program_grants: 'Program-specific grants fund particular initiatives or services offered by nonprofit organizations.',
+          community_development: 'Community development grants support local initiatives that improve community conditions and quality of life.',
+          social_services: 'Social services grants fund programs addressing poverty, health, education, and social justice issues.',
+          infrastructure: 'Infrastructure grants help nonprofits acquire or improve facilities, technology, and operational systems.'
         }
       },
       technical: {
-        keywords: ['error', 'problem', 'issue', 'not working', 'broken', 'technical'],
+        keywords: ['error', 'problem', 'issue', 'not working', 'broken', 'technical', 'login', 'upload'],
         content: {
           login: 'Login issues can often be resolved by checking credentials, clearing browser cache, or using password reset.',
           upload: 'Document uploads require PDF, DOC, or DOCX files under 10MB. Ensure stable internet connection.',
@@ -886,11 +1100,12 @@ class KnowledgeBaseIntegration {
         }
       },
       policies: {
-        keywords: ['policy', 'privacy', 'terms', 'security', 'data'],
+        keywords: ['policy', 'privacy', 'terms', 'security', 'data', 'compliance', 'requirements'],
         content: {
           privacy: 'We protect your personal information and never share it with third parties without consent.',
           security: 'All data is encrypted and stored securely. We follow industry best practices for data protection.',
-          terms: 'By using GrantTracker, you agree to our terms of service and acceptable use policy.'
+          terms: 'By using GrantTracker, you agree to our terms of service and acceptable use policy.',
+          compliance: 'Grant applications must comply with all applicable federal, state, and local regulations and requirements.'
         }
       }
     };
@@ -960,14 +1175,107 @@ class KnowledgeBaseIntegration {
 
   findCategoryForEntity(entityType) {
     const typeMapping = {
-      'organization': 'grants',
-      'dates': 'policies',
-      'amounts': 'grants',
+      'occupations': 'educational_grants',
+      'organization_types': 'nonprofit_grants',
+      'grant_types': 'grants',
+      'funding_amounts': 'grants',
+      'geographic': 'grants',
       'emails': 'technical',
-      'urls': 'technical'
+      'urls': 'technical',
+      'deadlines': 'grants'
     };
     
     return typeMapping[entityType];
+  }
+
+  getGrantRecommendations(userProfile) {
+    const recommendations = [];
+    
+    // Educational grants
+    if (userProfile.occupation && /teacher|professor|educator|academic/.test(userProfile.occupation.toLowerCase())) {
+      recommendations.push({
+        category: 'Educational Grants',
+        opportunities: [
+          {
+            name: 'Teacher Professional Development Grants',
+            amount: '$1,000 - $5,000',
+            deadline: 'Rolling applications',
+            description: 'Support for teacher training, conferences, and educational innovation.'
+          },
+          {
+            name: 'Classroom Technology Grants',
+            amount: '$500 - $3,000',
+            deadline: 'Quarterly',
+            description: 'Funding for educational technology and digital learning tools.'
+          }
+        ]
+      });
+    }
+    
+    // Research grants
+    if (userProfile.organizationType && /university|college|research|institute/.test(userProfile.organizationType.toLowerCase())) {
+      recommendations.push({
+        category: 'Research Grants',
+        opportunities: [
+          {
+            name: 'Federal Research Grants',
+            amount: '$50,000 - $2,000,000',
+            deadline: 'Varies by agency',
+            description: 'NSF, NIH, DOE funding for scientific research projects.'
+          },
+          {
+            name: 'Private Foundation Research',
+            amount: '$10,000 - $500,000',
+            deadline: 'Varies by foundation',
+            description: 'Foundation funding for innovative research initiatives.'
+          }
+        ]
+      });
+    }
+    
+    // Business grants
+    if (userProfile.organizationType && /business|startup|company/.test(userProfile.organizationType.toLowerCase())) {
+      recommendations.push({
+        category: 'Business Grants',
+        opportunities: [
+          {
+            name: 'SBIR/STTR Grants',
+            amount: 'Up to $1,500,000',
+            deadline: 'Multiple phases',
+            description: 'Small Business Innovation Research and Technology Transfer programs.'
+          },
+          {
+            name: 'Economic Development Grants',
+            amount: '$25,000 - $500,000',
+            deadline: 'Annual cycles',
+            description: 'Support for business growth and economic impact projects.'
+          }
+        ]
+      });
+    }
+    
+    // Nonprofit grants
+    if (userProfile.organizationType && /nonprofit|charity|foundation|ngo/.test(userProfile.organizationType.toLowerCase())) {
+      recommendations.push({
+        category: 'Nonprofit Grants',
+        opportunities: [
+          {
+            name: 'Capacity Building Grants',
+            amount: '$5,000 - $100,000',
+            deadline: 'Quarterly',
+            description: 'Support for organizational development and infrastructure.'
+          },
+          {
+            name: 'Program Implementation Grants',
+            amount: '$10,000 - $250,000',
+            deadline: 'Annual',
+            description: 'Funding for specific nonprofit programs and services.'
+          }
+        ]
+      });
+    }
+    
+    return recommendations;
   }
 }
 
@@ -980,7 +1288,8 @@ class AdaptiveConversationFlow {
       topicHistory: [],
       escalationLevel: 0,
       followUpPrompts: [],
-      interruptionHandler: null
+      interruptionHandler: null,
+      grantContext: null
     };
   }
 
@@ -1034,7 +1343,10 @@ class AdaptiveConversationFlow {
       'content_discovery': 'exploration',
       'technical_support': 'technical_help',
       'greeting': 'social',
-      'help': 'assistance'
+      'help': 'assistance',
+      'grant_info': 'grant_discovery',
+      'grant_application': 'application_guidance',
+      'grant_eligibility': 'eligibility_assessment'
     };
     
     return topicMapping[intent.intent] || 'general';
@@ -1052,7 +1364,10 @@ class AdaptiveConversationFlow {
       'exploration': 'Excellent! Let\'s discover what\'s available.',
       'technical_help': 'I\'ll help resolve this technical issue.',
       'social': 'Hello! How can I assist you today?',
-      'assistance': 'I\'m here to help with whatever you need!'
+      'assistance': 'I\'m here to help with whatever you need!',
+      'grant_discovery': 'Let\'s find the perfect grant opportunities for you!',
+      'application_guidance': 'I\'ll guide you through the application process.',
+      'eligibility_assessment': 'Let me help you understand the requirements.'
     };
     
     const transitionText = transitions[newTopic] || 'Let me help you with that.';
@@ -1064,9 +1379,9 @@ class AdaptiveConversationFlow {
   }
 
   handleEmotionalContext(response, sentiment) {
-    const { emotions, sentiment: emotionType } = sentiment;
+    const { emotions, sentiment: emotionType, urgency, hopefulness } = sentiment;
     
-    // Handle negative emotions
+    // Handle negative emotions with empathy
     if (emotionType === 'negative') {
       if (emotions.anger > 0) {
         response.text = `I understand your frustration. ${response.text}`;
@@ -1086,6 +1401,18 @@ class AdaptiveConversationFlow {
         response.text = `${response.text}\n\nI'm glad I could help! 😊`;
         response.enthusiastic = true;
       }
+    }
+    
+    // Adjust for urgency
+    if (urgency > 0.6) {
+      response.text = `I understand this is urgent. ${response.text}`;
+      response.urgent = true;
+    }
+    
+    // Enhance hopeful responses
+    if (hopefulness > 0.5) {
+      response.text = `${response.text}\n\nI'm optimistic about finding great opportunities for you!`;
+      response.hopeful = true;
     }
     
     return response;
@@ -1118,7 +1445,8 @@ class AdaptiveConversationFlow {
     const sessionLength = this.memory.history.length;
     
     // Add prompts for helpful interactions
-    return (intent.intent === 'help' || intent.intent === 'troubleshoot') && 
+    return (intent.intent === 'help' || intent.intent === 'troubleshoot' || 
+            intent.intent === 'grant_info' || intent.intent === 'how_to') && 
            sessionLength % 3 === 0;
   }
 
@@ -1128,7 +1456,9 @@ class AdaptiveConversationFlow {
       'troubleshoot': 'Did this resolve your issue, or do you need additional help?',
       'feature_info': 'Would you like me to explain any other features?',
       'navigation': 'Do you need help finding anything else?',
-      'how_to': 'Do you have questions about any of these steps?'
+      'how_to': 'Do you have questions about any of these steps?',
+      'grant_info': 'Would you like me to help you assess your eligibility for these grants?',
+      'grant_application': 'Do you need assistance preparing your application materials?'
     };
     
     return prompts[intent.intent] || 'How else can I assist you?';
@@ -1137,13 +1467,15 @@ class AdaptiveConversationFlow {
   shouldEscalate(intent) {
     // Escalate for complex technical issues or repeated help requests
     return intent.intent === 'technical_support' || 
-           (intent.intent === 'troubleshoot' && this.conversationState.escalationLevel > 0);
+           (intent.intent === 'troubleshoot' && this.conversationState.escalationLevel > 0) ||
+           (intent.intent === 'grant_application' && this.conversationState.escalationLevel > 1);
   }
 
   addEscalationContext(text, intent) {
     const escalationPhrases = {
       'technical_support': 'Given the technical complexity, ',
-      'troubleshoot': 'Since we\'re having some challenges, '
+      'troubleshoot': 'Since we\'re having some challenges, ',
+      'grant_application': 'For complex applications, '
     };
     
     const phrase = escalationPhrases[intent.intent] || '';
@@ -1358,7 +1690,7 @@ const ChatBot = () => {
           // Add a context reminder message
           const contextMessage = {
             id: Date.now(),
-            text: "Welcome back! I remember our previous conversation. How can I continue helping you?",
+            text: "Welcome back! I remember our previous conversation about grants. How can I continue helping you find funding opportunities?",
             sender: 'bot',
             timestamp: new Date(),
             isContextReminder: true
@@ -1375,6 +1707,23 @@ const ChatBot = () => {
   const analyzeIntent = useCallback((text) => {
     const normalized = text.toLowerCase().trim();
     const cleaned = normalized.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '');
+    
+    // Grant-specific intent recognition
+    if (/(grant|funding|opportunity|award|sponsorship)/i.test(cleaned)) {
+      if (/(eligible|qualify|requirements|criteria|can i|am i)/i.test(cleaned)) {
+        return { intent: 'grant_eligibility', confidence: 0.9 };
+      }
+      if (/(apply|application|submit|how to|process|steps)/i.test(cleaned)) {
+        return { intent: 'grant_application', confidence: 0.9 };
+      }
+      if (/(deadline|due|date|when)/i.test(cleaned)) {
+        return { intent: 'grant_deadline', confidence: 0.9 };
+      }
+      if (/(amount|funding|money|budget|cost)/i.test(cleaned)) {
+        return { intent: 'grant_amount', confidence: 0.9 };
+      }
+      return { intent: 'grant_info', confidence: 0.85 };
+    }
     
     // Advanced direct navigation patterns with context awareness
     if (/(home|landing|main page|start here|go home|back to start)/i.test(cleaned)) {
@@ -1589,6 +1938,15 @@ const ChatBot = () => {
         sentiment
       });
       
+      // Track grant-specific queries
+      if (intent.intent.startsWith('grant_') || 
+          /grant|funding|opportunity|award/i.test(message)) {
+        behaviorTracker.trackInteraction('grant_query', {
+          text: message,
+          intent: intent.intent
+        });
+      }
+      
       // Get knowledge base information
       const knowledgeResults = knowledgeBase.search(message, intent);
       
@@ -1653,7 +2011,28 @@ const ChatBot = () => {
           
         case 'clear':
           setMessages([]);
-          response = 'Conversation cleared! How can I help you navigate?';
+          response = 'Conversation cleared! How can I help you navigate or find grants?';
+          break;
+          
+        // Grant-specific responses
+        case 'grant_info':
+          response = getGrantInfoResponse(entities, conversationMemory.grantContext.profile);
+          break;
+          
+        case 'grant_eligibility':
+          response = getGrantEligibilityResponse(entities, conversationMemory.grantContext.profile);
+          break;
+          
+        case 'grant_application':
+          response = getGrantApplicationResponse(entities);
+          break;
+          
+        case 'grant_deadline':
+          response = getGrantDeadlineResponse(entities);
+          break;
+          
+        case 'grant_amount':
+          response = getGrantAmountResponse(entities);
           break;
           
         default:
@@ -1751,6 +2130,49 @@ const ChatBot = () => {
       accuracy: (prev.accuracy + accuracy) / 2,
       userSatisfaction: prev.userSatisfaction // This would be updated based on user feedback
     }));
+  };
+
+  // Grant-specific response generators
+  const getGrantInfoResponse = (entities, userProfile) => {
+    const occupation = entities.find(e => e.type === 'occupations')?.value;
+    const organizationType = entities.find(e => e.type === 'organization_types')?.value;
+    
+    if (occupation) {
+      return `I can help you find grants specifically for ${occupation}s! Based on your profile, here are relevant opportunities:\n\n🎓 **Professional Development Grants**\n• Teacher professional development: $1,000 - $5,000\n• Conference and workshop funding: $500 - $3,000\n• Research and innovation grants: $2,500 - $25,000\n\n💡 **Next Steps:**\n1. Tell me about your specific project or need\n2. I can assess your eligibility for different programs\n3. Help you prepare a competitive application\n\nWhat type of funding are you most interested in?`;
+    }
+    
+    if (organizationType) {
+      const recommendations = knowledgeBase.getGrantRecommendations({ organizationType });
+      let response = `Great! For ${organizationType}s, here are the most relevant grant opportunities:\n\n`;
+      
+      recommendations.forEach(category => {
+        response += `📋 **${category.category}**\n`;
+        category.opportunities.forEach(opp => {
+          response += `• ${opp.name} - ${opp.amount}\n  Deadline: ${opp.deadline}\n  ${opp.description}\n\n`;
+        });
+      });
+      
+      response += `Would you like me to help you assess your eligibility for any of these programs?`;
+      return response;
+    }
+    
+    return `I'd be happy to help you find relevant grant opportunities! To provide the most targeted recommendations, could you tell me:\n\n• What's your occupation or role?\n• What type of organization are you affiliated with?\n• What kind of project or need do you have funding for?\n• What's your approximate funding range?\n\nWith this information, I can provide personalized grant recommendations and help you understand the application process!`;
+  };
+
+  const getGrantEligibilityResponse = (entities, userProfile) => {
+    return `Let me help you understand grant eligibility requirements. Here's what I need to assess your fit:\n\n📋 **Key Eligibility Factors:**\n• **Organization Type** - Nonprofit, educational, government, or for-profit\n• **Geographic Location** - Some grants are state/region specific\n• **Project Scope** - Research, capacity building, equipment, etc.\n• **Funding Amount** - Range typically $1,000 to $2,000,000+\n• **Timeline** - Application deadlines and project duration\n\n🎯 **Common Eligibility Requirements:**\n• 501(c)(3) status for nonprofits\n• Accredited institution for educational grants\n• Demonstrated need and impact potential\n• Matching funds (sometimes required)\n• Specific geographic or demographic focus\n\n💡 **To assess your specific eligibility:**\n1. What type of organization do you represent?\n2. What's your project or funding need?\n3. Do you have any geographic restrictions?\n4. What's your ideal funding timeline?\n\nI can then provide detailed eligibility guidance and help you identify the best-matching programs!`;
+  };
+
+  const getGrantApplicationResponse = (entities) => {
+    return `Here's how to approach grant applications successfully:\n\n📝 **Application Process:**\n1. **Research & Match** - Find programs aligned with your goals\n2. **Review Requirements** - Carefully read eligibility and guidelines\n3. **Prepare Materials** - Gather supporting documents and data\n4. **Write Proposal** - Clear project description and impact statement\n5. **Budget Development** - Detailed and justified budget\n6. **Review & Submit** - Proofread and submit before deadline\n\n📋 **Essential Application Components:**\n• **Executive Summary** - Clear, compelling overview\n• **Problem Statement** - Document the need or opportunity\n• **Project Description** - Detailed methodology and timeline\n• **Budget & Justification** - Accurate costs and rationale\n• **Evaluation Plan** - How you'll measure success\n• **Organizational Capacity** - Your ability to execute\n\n⏰ **Timeline Tips:**\n• Start 3-6 months before deadline\n• Allow time for internal reviews\n• Prepare for potential follow-up questions\n• Keep copies of all submitted materials\n\n💡 **Success Strategies:**\n• Align perfectly with funder priorities\n• Demonstrate clear impact and outcomes\n• Show strong organizational capacity\n• Include letters of support when requested\n\nDo you need help with any specific part of the application process?`;
+  };
+
+  const getGrantDeadlineResponse = (entities) => {
+    return `Here are important deadline considerations for grant applications:\n\n📅 **Common Deadline Patterns:**\n• **Annual Deadlines** - January, April, July, October\n• **Quarterly** - March 31, June 30, September 30, December 31\n• **Rolling** - Accepted year-round (often faster review)\n• **Federal Cycles** - Can be multi-phase with LOI deadlines\n\n⚠️ **Critical Deadline Tips:**\n• **Start Early** - Begin 3-6 months in advance\n• **Time Zones** - Ensure you understand the deadline timezone\n• **Submission System** - Allow extra time for technical issues\n• **Internal Reviews** - Factor in your organization's review process\n\n📧 **Deadline Management:**\n• Set calendar reminders 30, 14, and 7 days before\n• Create a submission checklist\n• Prepare all materials in advance\n• Test submission systems beforehand\n\n🔄 **If You Miss a Deadline:**\n• Check if there are rolling deadlines\n• Look for similar programs with later deadlines\n• Use the time to strengthen your next application\n• Consider reaching out to the funder about future opportunities\n\n💡 **Proactive Planning:**\n• Maintain a 12-month grant calendar\n• Track deadlines in your CRM or project management system\n• Build relationships with program officers when possible\n• Start preparing applications well in advance\n\nWhen is your ideal timeline for starting a project? I can help you identify programs with matching deadlines!`;
+  };
+
+  const getGrantAmountResponse = (entities) => {
+    return `Here's what you need to know about grant funding amounts:\n\n💰 **Typical Funding Ranges:**\n• **Seed Grants** - $1,000 - $25,000\n• **Small Grants** - $5,000 - $50,000\n• **Medium Grants** - $25,000 - $250,000\n• **Large Grants** - $100,000 - $1,000,000+\n• **Major Grants** - $500,000 - $10,000,000+\n\n🎯 **Matching Your Needs:**\n• **Research Projects** - $10,000 - $500,000\n• **Equipment/Tech** - $5,000 - $100,000\n• **Capacity Building** - $15,000 - $250,000\n• **Program Implementation** - $50,000 - $2,000,000\n• **Infrastructure** - $100,000 - $5,000,000+\n\n📊 **Budget Planning Tips:**\n• Request what you actually need - not more, not less\n• Justify every budget line item\n• Include indirect costs if allowed\n• Consider multi-year funding for larger projects\n• Plan for 10-15% budget increases for multi-year grants\n\n💡 **Amount-Specific Strategies:**\n• **Small projects** - Start with seed funding to prove concept\n• **Large projects** - Break into phases with separate applications\n• **Pilot programs** - Begin with smaller amounts to demonstrate impact\n• **Scaling** - Use initial success to secure larger follow-up grants\n\n🔍 **To determine your ideal amount:**\n• Calculate actual project costs including indirect expenses\n• Research what similar projects have received\n• Consider your organization's capacity to manage funds\n• Factor in any matching fund requirements\n\nWhat type of project are you planning? I can help you determine an appropriate funding amount and find programs that match your needs!`;
   };
 
   // Enhanced response generators with AI improvements
@@ -1864,38 +2286,38 @@ const ChatBot = () => {
 
   const getGreetingResponse = (lang) => {
     const greetings = {
-      en: 'Hello! 👋 I can help you navigate directly to any section of GrantTracker. Where would you like to go?',
-      es: '¡Hola! 👋 Puedo ayudarte a navegar directamente a cualquier sección de GrantTracker. ¿A dónde te gustaría ir?',
-      fr: 'Bonjour ! 👋 Je peux vous aider à naviguer directement vers n\'importe quelle section de GrantTracker. Où aimeriez-vous aller ?',
-      de: 'Hallo! 👋 Ich kann Ihnen helfen, direkt zu jedem Bereich von GrantTracker zu navigieren. Wohin möchten Sie gehen?',
-      hi: 'नमस्ते! 👋 मैं आपको GrantTracker के किसी भी अनुभाग पर सीधे नेविगेट करने में मदद कर सकता हूँ। आप कहाँ जाना चाहेंगे?'
+      en: 'Hello! 👋 I\'m your intelligent grant discovery assistant. I can help you find personalized funding opportunities based on your specific situation, occupation, and project goals. What kind of grant are you looking for?',
+      es: '¡Hola! 👋 Soy tu asistente inteligente para descubrimiento de subvenciones. Puedo ayudarte a encontrar oportunidades de financiamiento personalizadas según tu situación específica, ocupación y objetivos del proyecto. ¿Qué tipo de subvención buscas?',
+      fr: 'Bonjour ! 👋 Je suis votre assistant intelligent de découverte de subventions. Je peux vous aider à trouver des opportunités de financement personnalisées basées sur votre situation spécifique, votre profession et vos objectifs de projet. Quel type de subvention recherchez-vous ?',
+      de: 'Hallo! 👋 Ich bin Ihr intelligenter Zuschuss-Entdeckungsassistent. Ich kann Ihnen dabei helfen, personalisierte Finanzierungsmöglichkeiten basierend auf Ihrer spezifischen Situation, Ihrem Beruf und Ihren Projektzielen zu finden. Welche Art von Zuschuss suchen Sie?',
+      hi: 'नमस्ते! 👋 मैं आपका बुद्धिमान अनुदान खोज सहायक हूं। मैं आपकी विशिष्ट स्थिति, व्यवसाय और परियोजना लक्ष्यों के आधार पर व्यक्तिगत वित्तपोषण के अवसर खोजने में आपकी मदद कर सकता हूं। आप किस प्रकार का अनुदान खोज रहे हैं?'
     };
     return greetings[lang] || greetings.en;
   };
 
   const getHelpResponse = (lang) => {
     const responses = {
-      en: 'I\'m your comprehensive GrantTracker assistant! I can help you with:\n\n🧭 **Navigation** - "Take me to dashboard"\n🔍 **Feature Info** - "What is the benefits section?"\n📋 **How-To Guides** - "How do I apply for grants?"\n🔧 **Troubleshooting** - "I\'m having login issues"\n📖 **Content Discovery** - "Show me available grants"\n🛠️ **Technical Support** - "Page not loading properly"\nℹ️ **Website Info** - "What is GrantTracker?"\n\n💡 **Example Questions:**\n• "How do I create a new grant?"\n• "What features does the dashboard have?"\n• "I need help finding funding opportunities"\n• "The form won\'t submit, can you help?"\n\nJust ask me anything about the platform!',
-      es: '¡Soy tu asistente completo de GrantTracker! Puedo ayudarte con:\n\n🧭 **Navegación** - "Llévame al panel"\n🔍 **Información de funciones** - "¿Qué es la sección de beneficios?"\n📋 **Guías prácticas** - "¿Cómo solicito subvenciones?"\n🔧 **Solución de problemas** - "Tengo problemas de inicio de sesión"\n📖 **Descubrimiento de contenido** - "Muéstrame las subvenciones disponibles"\n🛠️ **Soporte técnico** - "La página no carga correctamente"\nℹ️ **Información del sitio web** - "¿Qué es GrantTracker?"\n\n💡 **Preguntas de ejemplo:**\n• "¿Cómo creo una nueva subvención?"\n• "¿Qué funciones tiene el panel?"\n• "Necesito ayuda para encontrar oportunidades de financiación"\n• "El formulario no se envía, ¿puedes ayudar?"\n\n¡Solo pregúntame cualquier cosa sobre la plataforma!'
+      en: 'I\'m your comprehensive GrantTracker assistant with advanced AI capabilities! I can help you with:\n\n🎯 **Grant Discovery** - "Find grants for teachers" or "What funding is available for research?"\n📋 **Application Guidance** - "How do I apply for grants?" or "What are the requirements?"\n🔍 **Eligibility Assessment** - "Am I eligible for federal grants?" or "Do I qualify for this program?"\n💰 **Funding Information** - "How much funding can I get?" or "What are typical grant amounts?"\n📅 **Deadline Management** - "When are applications due?" or "Are there rolling deadlines?"\n🧭 **Navigation** - "Take me to the dashboard" or "Show me available grants"\n🔧 **Technical Support** - "I\'m having trouble uploading documents" or "The form won\'t submit"\nℹ️ **Platform Info** - "What is GrantTracker?" or "How does this platform work?"\n\n💡 **Example Questions:**\n• "I\'m a researcher at a university, what grants should I apply for?"\n• "What small business grants are available for startups?"\n• "How do I know if I\'m eligible for foundation grants?"\n• "Can you help me understand the application process?"\n\nJust ask me anything about grants or funding opportunities!',
+      es: '¡Soy tu asistente completo de GrantTracker con capacidades de IA avanzadas! Puedo ayudarte con:\n\n🎯 **Descubrimiento de subvenciones** - "Encuentra subvenciones para maestros" o "¿Qué financiamiento está disponible para investigación?"\n📋 **Guía de aplicación** - "¿Cómo solicito subvenciones?" o "¿Cuáles son los requisitos?"\n🔍 **Evaluación de elegibilidad** - "¿Soy elegible para subvenciones federales?" o "¿Califico para este programa?"\n💰 **Información de financiamiento** - "¿Cuánto financiamiento puedo obtener?" o "¿Cuáles son las cantidades típicas de subvenciones?"\n📅 **Gestión de plazos** - "¿Cuándo vencen las aplicaciones?" o "¿Hay plazos continuos?"\n🧭 **Navegación** - "Llévame al panel" o "Muéstrame las subvenciones disponibles"\n🔧 **Soporte técnico** - "Tengo problemas para cargar documentos" o "El formulario no se envía"\nℹ️ **Información de la plataforma** - "¿Qué es GrantTracker?" o "¿Cómo funciona esta plataforma?"\n\n💡 **Preguntas de ejemplo:**\n• "Soy investigador en una universidad, ¿a qué subvenciones debo aplicar?"\n• "¿Qué subvenciones para pequeñas empresas están disponibles para startups?"\n• "¿Cómo sé si soy elegible para subvenciones de fundaciones?"\n• "¿Puedes ayudarme a entender el proceso de solicitud?"\n\n¡Solo pregúntame cualquier cosa sobre subvenciones u oportunidades de financiamiento!'
     };
     return responses[lang] || responses.en;
   };
 
   const getGratitudeResponse = (lang) => {
     const responses = {
-      en: 'You\'re welcome! 😊 Feel free to ask me to navigate anywhere on the site.',
-      es: '¡De nada! 😊 No dudes en pedirme que navegue a cualquier lugar del sitio.',
-      fr: 'Avec plaisir ! 😊 N\'hésitez pas à me demander de naviguer n\'importe où sur le site.',
-      de: 'Gern geschehen! 😊 Fühlen Sie sich frei, mich zu bitten, irgendwo auf der Website zu navigieren.',
-      hi: 'स्वागत है! 😊 बेझिझक साइट पर कहीं भी नेविगेट करने के लिए मुझसे कहें।'
+      en: 'You\'re very welcome! 😊 I\'m delighted I could help you with grant information. Feel free to ask me about any other funding opportunities or grant-related questions. Good luck with your applications!',
+      es: '¡De nada! 😊 Me alegra haber podido ayudarte con información sobre subvenciones. No dudes en preguntarme sobre cualquier otra oportunidad de financiamiento o pregunta relacionada con subvenciones. ¡Buena suerte con tus solicitudes!',
+      fr: 'Avec plaisir ! 😊 Je suis ravi d\'avoir pu vous aider avec les informations sur les subventions. N\'hésitez pas à me poser des questions sur d\'autres opportunités de financement ou questions liées aux subventions. Bonne chance avec vos demandes !',
+      de: 'Gern geschehen! 😊 Ich freue mich, dass ich Ihnen mit Zuschussinformationen helfen konnte. Fühlen Sie sich frei, mich nach anderen Finanzierungsmöglichkeiten oder Zuschuss-bezogenen Fragen zu fragen. Viel Glück mit Ihren Anträgen!',
+      hi: 'आपका बहुत स्वागत है! 😊 मैं खुश हूं कि मैं आपको अनुदान की जानकारी में मदद कर सका। अन्य वित्तपोषण के अवसरों या अनुदान संबंधी प्रश्नों के बारे में मुझसे पूछने में संकोच न करें। आपके आवेदनों के लिए शुभकामनाएं!'
     };
     return responses[lang] || responses.en;
   };
 
   const getFallbackResponse = (lang) => {
     const responses = {
-      en: 'I didn\'t quite catch that, but I\'m here to help! I can assist you with:\n\n🧭 **Navigation** - "Take me to [section]"\n🔍 **Information** - "What is [feature]?"\n📋 **Guidance** - "How do I [task]?"\n🔧 **Support** - "I have a problem with..."\n\nTry asking:\n• "What features does GrantTracker have?"\n• "How do I apply for grants?"\n• "Show me the dashboard"\n• "I need help with..."\n\nOr just say "show me all options" to see what I can do!',
-      es: 'No entendí bien eso, ¡pero estoy aquí para ayudar! Puedo asistirte con:\n\n🧭 **Navegación** - "Llévame a [sección]"\n🔍 **Información** - "¿Qué es [función]?"\n📋 **Orientación** - "¿Cómo hago [tarea]?"\n🔧 **Soporte** - "Tengo un problema con..."\n\nIntenta preguntar:\n• "¿Qué funciones tiene GrantTracker?"\n• "¿Cómo solicito subvenciones?"\n• "Muéstrame el panel"\n• "Necesito ayuda con..."\n\n¡O simplemente di "muéstrame todas las opciones" para ver qué puedo hacer!'
+      en: 'I didn\'t quite catch that, but I\'m here to help you find grants and funding! I can assist you with:\n\n🎯 **Grant Discovery** - "What grants are available for [your field]?"\n📋 **Application Help** - "How do I apply for grants?"\n🔍 **Eligibility** - "Am I eligible for federal grants?"\n💰 **Funding Info** - "How much money can I get?"\n📅 **Deadlines** - "When are applications due?"\n\nTry asking:\n• "Find grants for teachers"\n• "What funding is available for small businesses?"\n• "How do I know if I qualify for grants?"\n• "Help me understand the application process"\n\nOr just tell me about your situation and I\'ll suggest relevant opportunities!',
+      es: 'No entendí bien eso, pero estoy aquí para ayudarte a encontrar subvenciones y financiamiento. Puedo asistirte con:\n\n🎯 **Descubrimiento de subvenciones** - "¿Qué subvenciones están disponibles para [tu campo]?"\n📋 **Ayuda con aplicación** - "¿Cómo solicito subvenciones?"\n🔍 **Elegibilidad** - "¿Soy elegible para subvenciones federales?"\n💰 **Información de financiamiento** - "¿Cuánto dinero puedo obtener?"\n📅 **Fechas límite** - "¿Cuándo vencen las solicitudes?"\n\nIntenta preguntar:\n• "Encuentra subvenciones para maestros"\n• "¿Qué financiamiento está disponible para pequeñas empresas?"\n• "¿Cómo sé si califico para subvenciones?"\n• "Ayúdame a entender el proceso de solicitud"\n\n¡O simplemente cuéntame sobre tu situación y te sugeriré oportunidades relevantes!'
     };
     return responses[lang] || responses.en;
   };
@@ -1913,14 +2335,14 @@ const ChatBot = () => {
 
   const getRecoverySuggestions = (intent) => {
     const suggestions = [
-      'Try rephrasing your question',
-      'Use simpler terms',
-      'Ask about specific features',
-      'Request navigation help'
+      'Try rephrasing your question about grants',
+      'Ask about specific funding opportunities',
+      'Tell me about your occupation or project',
+      'Request help with grant applications'
     ];
     
     if (intent.intent === 'unknown') {
-      suggestions.unshift('Check if you\'re asking about GrantTracker features');
+      suggestions.unshift('Ask about grants, funding, or specific grant programs');
     }
     
     return suggestions;
@@ -1951,7 +2373,8 @@ const ChatBot = () => {
     behaviorTracker.trackInteraction('message_completed', {
       intent: intent.intent,
       confidence: intent.confidence,
-      responseGenerated: true
+      responseGenerated: true,
+      grantRelated: intent.intent.startsWith('grant_')
     });
   }, [inputValue, messages, isLoading, analyzeIntent, generateResponse, behaviorTracker]);
 
@@ -2110,15 +2533,15 @@ const ChatBot = () => {
                 </div>
               </div>
               <div className="chatbot-header-info">
-                <h3>🎅 GrantTracker AI Assistant</h3>
+                <h3>🎅 Grant Discovery AI Assistant</h3>
                 <div className="chatbot-status-indicators">
                   <span className="status-item">
                     <span className="status-indicator active"></span>
-                    AI Powered
+                    Grant Discovery
                   </span>
                   <span className="status-item">
                     <span className="status-indicator learning"></span>
-                    Learning
+                    AI Powered
                   </span>
                 </div>
               </div>
@@ -2172,23 +2595,23 @@ const ChatBot = () => {
                   width="56" 
                   height="56"
                 />
-                <h4>🎄 Welcome to GrantTracker AI Assistant</h4>
-                <p>Ho ho ho! I'm your intelligent website assistant with advanced AI capabilities!</p>
+                <h4>🎄 Welcome to Grant Discovery AI</h4>
+                <p>Ho ho ho! I'm your intelligent grant discovery assistant with advanced AI capabilities!</p>
                 <div className="chatbot-empty-message">
-                  I can understand context, remember our conversation, and provide personalized assistance. Try asking me anything!
+                  I can analyze your specific situation, occupation, and project goals to deliver personalized grant recommendations. Try asking me about funding opportunities!
                 </div>
                 <div className="chatbot-ai-features">
                   <div className="ai-feature">
-                    <span className="ai-feature-icon">🧠</span>
-                    <span className="ai-feature-text">Context Aware</span>
+                    <span className="ai-feature-icon">🎯</span>
+                    <span className="ai-feature-text">Personalized Matching</span>
                   </div>
                   <div className="ai-feature">
                     <span className="ai-feature-icon">💭</span>
-                    <span className="ai-feature-text">Sentiment Analysis</span>
+                    <span className="ai-feature-text">Context Aware</span>
                   </div>
                   <div className="ai-feature">
-                    <span className="ai-feature-icon">🎯</span>
-                    <span className="ai-feature-text">Personalized</span>
+                    <span className="ai-feature-icon">🔍</span>
+                    <span className="ai-feature-text">Smart Discovery</span>
                   </div>
                 </div>
               </div>
@@ -2225,6 +2648,9 @@ const ChatBot = () => {
                   {message.supportive && (
                     <div className="emotion-indicator supportive">💙</div>
                   )}
+                  {message.hopeful && (
+                    <div className="emotion-indicator hopeful">🌟</div>
+                  )}
                 </div>
                 <div className="chatbot-message-time">
                   {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -2252,7 +2678,7 @@ const ChatBot = () => {
                     <span className="typing-dot"></span>
                     <span className="typing-dot"></span>
                   </div>
-                  <div className="typing-text">AI is thinking...</div>
+                  <div className="typing-text">AI is analyzing grants...</div>
                 </div>
               </div>
             )}
@@ -2264,7 +2690,7 @@ const ChatBot = () => {
           {proactiveSuggestions.length > 0 && (
             <div className="chatbot-proactive-suggestions">
               <div className="chatbot-proactive-header">
-                <span>💡 Proactive Suggestions</span>
+                <span>💡 Grant Suggestions</span>
                 <button 
                   onClick={() => setProactiveSuggestions([])}
                   className="chatbot-close-suggestions"
@@ -2349,7 +2775,7 @@ const ChatBot = () => {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Ask me anything about GrantTracker! I'm AI-powered and context-aware."
+                placeholder="Ask about grants for your situation! (e.g., 'What grants are available for teachers?')"
                 disabled={isLoading}
                 aria-label="Chat input"
                 className="chatbot-input"
