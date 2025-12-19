@@ -11,6 +11,7 @@ const ChatBot = ({
   languages = ['en', 'es', 'fr', 'de', 'hi'],
   defaultLanguage = 'en'
 }) => {
+
   // State management
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -22,6 +23,7 @@ const ChatBot = ({
   const [sessionId, setSessionId] = useState(null);
   const [accessibilityMode, setAccessibilityMode] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [snowflakeCount] = useState(15); // For Christmas snowflakes
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -404,7 +406,8 @@ const ChatBot = ({
 
   return (
     <div className={`chatbot-container ${isOpen ? 'chatbot-open' : ''} ${accessibilityMode ? 'accessibility-mode' : ''}`}>
-      {/* Enhanced Chat Toggle Button with Santa Icon */}
+
+      {/* Enhanced Chat Toggle Button with Improved Santa Icon */}
       <button
         className="chatbot-toggle"
         onClick={() => setIsOpen(!isOpen)}
@@ -412,29 +415,44 @@ const ChatBot = ({
         aria-expanded={isOpen}
         role="button"
       >
-        <img 
-          src={santaIcon} 
-          alt="Chat Assistant" 
-          className="chatbot-santa-icon"
-          width="20" 
-          height="20"
-        />
-        <span className="chatbot-toggle-text">{isOpen ? 'Close' : 'Assistant'}</span>
+        <div className="chatbot-toggle-santa-container">
+          <img 
+            src={santaIcon} 
+            alt="Chat Assistant" 
+            className="chatbot-toggle-santa-icon"
+            width="24" 
+            height="24"
+          />
+          <div className="chatbot-toggle-sparkles">
+            <span className="sparkle sparkle-1">✨</span>
+            <span className="sparkle sparkle-2">⭐</span>
+            <span className="sparkle sparkle-3">✨</span>
+          </div>
+        </div>
+        <span className="chatbot-toggle-text">{isOpen ? 'Close' : 'Chat'}</span>
       </button>
 
       {/* Enhanced Chat Window */}
       <div className="chatbot-window" ref={chatContainerRef}>
-        {/* Header */}
+
+        {/* Christmas-themed Header */}
         <div className="chatbot-header">
           <div className="chatbot-header-content">
-            <img 
-              src={santaIcon} 
-              alt="GrantTracker Assistant" 
-              className="chatbot-header-icon"
-              width="24" 
-              height="24"
-            />
-            <h3>GrantTracker Assistant</h3>
+            <div className="chatbot-header-santa-container">
+              <img 
+                src={santaIcon} 
+                alt="GrantTracker Assistant" 
+                className="chatbot-header-santa-icon"
+                width="28" 
+                height="28"
+              />
+              <div className="chatbot-header-lights">
+                <span className="light light-1">🎄</span>
+                <span className="light light-2">✨</span>
+                <span className="light light-3">🎁</span>
+              </div>
+            </div>
+            <h3>🎅 GrantTracker Assistant</h3>
           </div>
           <div className="chatbot-header-controls">
             <select
@@ -457,6 +475,24 @@ const ChatBot = ({
           </div>
         </div>
 
+
+        {/* Christmas Snowflakes Animation */}
+        <div className="chatbot-snowflakes">
+          {Array.from({ length: snowflakeCount }, (_, i) => (
+            <div
+              key={i}
+              className={`snowflake snowflake-${i + 1}`}
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${3 + Math.random() * 4}s`
+              }}
+            >
+              ❄
+            </div>
+          ))}
+        </div>
+
         {/* Messages Container */}
         <div className="chatbot-messages">
           {messages.length === 0 && !isLoading && (
@@ -465,30 +501,13 @@ const ChatBot = ({
                 src={santaIcon} 
                 alt="Welcome" 
                 className="chatbot-empty-icon"
-                width="48" 
-                height="48"
+                width="56" 
+                height="56"
               />
-              <h4>Welcome to GrantTracker Assistant</h4>
-              <p>I'm here to help you navigate directly to any section!</p>
-              <div className="chatbot-quick-actions">
-                <button
-                  className="chatbot-quick-action-btn"
-                  onClick={() => handleQuickAction('home')}
-                >
-                  🏠 Home
-                </button>
-                <button
-                  className="chatbot-quick-action-btn"
-                  onClick={() => handleQuickAction('dashboard')}
-                >
-                  📊 Dashboard
-                </button>
-                <button
-                  className="chatbot-quick-action-btn"
-                  onClick={() => handleQuickAction('benefits')}
-                >
-                  🏛️ Benefits
-                </button>
+              <h4>🎄 Welcome to GrantTracker Assistant</h4>
+              <p>Ho ho ho! I'm here to help you navigate directly to any section!</p>
+              <div className="chatbot-empty-message">
+                Just type where you'd like to go, like "show me dashboard" or "take me to benefits"
               </div>
             </div>
           )}
@@ -499,8 +518,16 @@ const ChatBot = ({
               className={`chatbot-message ${message.sender}`}
               data-sender={message.sender}
             >
+
               <div className="chatbot-avatar">
-                {message.sender === 'user' ? '👤' : <img src={santaIcon} alt="Bot" width="20" height="20" />}
+                {message.sender === 'user' ? (
+                  <div className="user-avatar">👤</div>
+                ) : (
+                  <div className="santa-avatar">
+                    <img src={santaIcon} alt="Santa Bot" width="24" height="24" />
+                    <div className="santa-hat">🎅</div>
+                  </div>
+                )}
               </div>
               <div className="chatbot-message-bubble">
                 {renderMessageContent(message)}
@@ -511,16 +538,20 @@ const ChatBot = ({
             </div>
           ))}
 
+
           {(isLoading || isTyping) && (
             <div className="chatbot-message bot">
               <div className="chatbot-avatar">
-                <img src={santaIcon} alt="Typing" width="20" height="20" />
+                <div className="santa-avatar">
+                  <img src={santaIcon} alt="Santa typing" width="24" height="24" />
+                  <div className="santa-hat">🎅</div>
+                </div>
               </div>
               <div className="chatbot-message-bubble">
                 <div className="chatbot-typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
                 </div>
               </div>
             </div>

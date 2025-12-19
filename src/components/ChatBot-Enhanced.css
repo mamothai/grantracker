@@ -1,18 +1,23 @@
 /* Enhanced ChatBot CSS - Navigation-Focused Design with Santa Icon */
 
-/* Import Santa icon as a CSS variable for reuse */
+
+/* Christmas-themed CSS Variables */
 :root {
-  --chatbot-primary-color: #667eea;
-  --chatbot-secondary-color: #764ba2;
-  --chatbot-accent-color: #ff6b6b;
-  --chatbot-success-color: #51cf66;
-  --chatbot-warning-color: #ffd43b;
-  --chatbot-error-color: #ff6b6b;
+  --chatbot-primary-color: #dc2626; /* Christmas Red */
+  --chatbot-secondary-color: #059669; /* Christmas Green */
+  --chatbot-accent-color: #f59e0b; /* Christmas Gold */
+  --chatbot-success-color: #10b981;
+  --chatbot-warning-color: #fbbf24; /* Warm Gold */
+  --chatbot-error-color: #ef4444;
   --chatbot-glass-bg: rgba(255, 255, 255, 0.1);
   --chatbot-glass-border: rgba(255, 255, 255, 0.3);
-  --chatbot-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  --chatbot-shadow: 0 10px 40px rgba(220, 38, 38, 0.3);
   --chatbot-border-radius: 20px;
   --chatbot-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --christmas-red: #dc2626;
+  --christmas-green: #059669;
+  --christmas-gold: #f59e0b;
+  --snow-white: #fefefe;
 }
 
 .chatbot-container {
@@ -26,51 +31,62 @@
   pointer-events: auto;
 }
 
-/* Enhanced Toggle Button with Santa Icon */
+
+/* Enhanced Christmas Toggle Button with Improved Santa Icon */
 .chatbot-toggle {
   position: relative;
   z-index: 1001;
-  background: linear-gradient(135deg, var(--chatbot-primary-color), var(--chatbot-secondary-color));
+  background: linear-gradient(135deg, var(--christmas-red), var(--christmas-green));
   backdrop-filter: blur(10px);
-  border: none;
+  border: 2px solid var(--christmas-gold);
   border-radius: 50px;
   padding: 12px 20px;
   color: white;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: var(--chatbot-transition);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4), 0 0 20px rgba(245, 158, 11, 0.3);
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  min-width: 110px;
+  gap: 12px;
+  min-height: 52px;
+  min-width: 120px;
   text-align: center;
-  font-size: 14px;
+  font-size: 15px;
   overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .chatbot-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(220, 38, 38, 0.5), 0 0 30px rgba(245, 158, 11, 0.4);
+  border-color: #fbbf24;
 }
 
 .chatbot-toggle:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
 }
 
 .chatbot-toggle:focus-visible {
-  outline: 3px solid rgba(102, 126, 234, 0.6);
+  outline: 3px solid rgba(245, 158, 11, 0.8);
   outline-offset: 2px;
 }
 
-/* Santa Icon Styling */
-.chatbot-santa-icon {
-  width: 20px;
-  height: 20px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+/* Improved Santa Icon Container */
+.chatbot-toggle-santa-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chatbot-toggle-santa-icon {
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   animation: santaBounce 3s ease-in-out infinite;
+  z-index: 2;
 }
 
 @keyframes santaBounce {
@@ -78,38 +94,87 @@
     transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateY(-2px) scale(1.05);
+    transform: translateY(-3px) scale(1.08);
   }
 }
 
-.chatbot-toggle:hover .chatbot-santa-icon {
-  animation: santaWiggle 0.5s ease-in-out;
+.chatbot-toggle:hover .chatbot-toggle-santa-icon {
+  animation: santaWiggle 0.6s ease-in-out infinite;
 }
 
 @keyframes santaWiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-5deg); }
-  75% { transform: rotate(5deg); }
+  0%, 100% { transform: rotate(0deg) scale(1.08); }
+  25% { transform: rotate(-8deg) scale(1.08); }
+  75% { transform: rotate(8deg) scale(1.08); }
+}
+
+/* Christmas Sparkles Animation */
+.chatbot-toggle-sparkles {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  font-size: 8px;
+  color: var(--christmas-gold);
+  animation: sparkleTwinkle 2s ease-in-out infinite;
+  text-shadow: 0 0 4px var(--christmas-gold);
+}
+
+.sparkle-1 {
+  top: -4px;
+  right: -4px;
+  animation-delay: 0s;
+}
+
+.sparkle-2 {
+  bottom: -4px;
+  left: -4px;
+  animation-delay: 0.7s;
+}
+
+.sparkle-3 {
+  top: 50%;
+  right: -6px;
+  animation-delay: 1.4s;
+}
+
+@keyframes sparkleTwinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 .chatbot-toggle-text {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
-/* Enhanced Chat Window */
+
+/* Enhanced Christmas Chat Window with Twinkling Lights */
 .chatbot-window {
   position: absolute;
-  bottom: 70px;
+  bottom: 80px;
   right: 0;
   width: 400px;
   max-height: 70vh;
-  background: var(--chatbot-glass-bg);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(220, 38, 38, 0.1));
   backdrop-filter: blur(20px);
-  border: 1px solid var(--chatbot-glass-border);
+  border: 2px solid transparent;
   border-radius: var(--chatbot-border-radius);
-  box-shadow: var(--chatbot-shadow);
+  box-shadow: var(--chatbot-shadow), 0 0 30px rgba(220, 38, 38, 0.2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -118,40 +183,179 @@
   transition: var(--chatbot-transition);
   color: white;
   will-change: transform, opacity;
+  position: relative;
 }
+
+.chatbot-window::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, 
+    var(--christmas-red), 
+    var(--christmas-gold), 
+    var(--christmas-green), 
+    var(--christmas-red));
+  border-radius: var(--chatbot-border-radius);
+  z-index: -1;
+  animation: christmasLights 3s linear infinite;
+  background-size: 400% 400%;
+}
+
+@keyframes christmasLights {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 
 .chatbot-container.chatbot-open .chatbot-window {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
 
-/* Enhanced Header */
+/* Christmas Snowflakes Animation */
+.chatbot-snowflakes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.snowflake {
+  position: absolute;
+  top: -10px;
+  color: var(--snow-white);
+  font-size: 12px;
+  animation: fall linear infinite;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.snowflake-1 { left: 10%; animation-duration: 4s; }
+.snowflake-2 { left: 20%; animation-duration: 5s; animation-delay: 0.5s; }
+.snowflake-3 { left: 30%; animation-duration: 3.5s; animation-delay: 1s; }
+.snowflake-4 { left: 40%; animation-duration: 4.5s; animation-delay: 0.2s; }
+.snowflake-5 { left: 50%; animation-duration: 3.8s; animation-delay: 1.5s; }
+.snowflake-6 { left: 60%; animation-duration: 4.2s; animation-delay: 0.8s; }
+.snowflake-7 { left: 70%; animation-duration: 3.6s; animation-delay: 1.2s; }
+.snowflake-8 { left: 80%; animation-duration: 4.8s; animation-delay: 0.3s; }
+.snowflake-9 { left: 90%; animation-duration: 3.3s; animation-delay: 1.8s; }
+
+
+/* Enhanced Christmas Header */
 .chatbot-header {
   padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(5, 150, 105, 0.2));
+  border-bottom: 2px solid rgba(245, 158, 11, 0.3);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 70px;
+  min-height: 80px;
+  position: relative;
+  z-index: 2;
 }
 
 .chatbot-header-content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
-.chatbot-header-icon {
-  width: 24px;
-  height: 24px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  animation: float 3s ease-in-out infinite;
+.chatbot-header-santa-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+.chatbot-header-santa-icon {
+  width: 28px;
+  height: 28px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+  animation: santaHeaderFloat 4s ease-in-out infinite;
+}
+
+@keyframes santaHeaderFloat {
+  0%, 100% { 
+    transform: translateY(0) scale(1); 
+  }
+  50% { 
+    transform: translateY(-4px) scale(1.05); 
+  }
+}
+
+.chatbot-header-lights {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  pointer-events: none;
+}
+
+.light {
+  position: absolute;
+  font-size: 12px;
+  animation: lightTwinkle 2.5s ease-in-out infinite;
+  text-shadow: 0 0 8px currentColor;
+}
+
+.light-1 {
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--christmas-gold);
+  animation-delay: 0s;
+}
+
+.light-2 {
+  top: 50%;
+  right: -6px;
+  transform: translateY(-50%);
+  color: var(--christmas-red);
+  animation-delay: 0.8s;
+}
+
+.light-3 {
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--christmas-green);
+  animation-delay: 1.6s;
+}
+
+@keyframes lightTwinkle {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translateX(-50%) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.2);
+  }
 }
 
 .chatbot-header h3 {
@@ -159,10 +363,11 @@
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #ffffff, #e0e7ff);
+  background: linear-gradient(135deg, var(--snow-white), var(--christmas-gold));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .chatbot-header-controls {
@@ -250,7 +455,8 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Enhanced Empty State */
+
+/* Enhanced Christmas Empty State */
 .chatbot-empty-state {
   display: flex;
   flex-direction: column;
@@ -260,6 +466,8 @@
   height: 100%;
   padding: 40px 20px;
   animation: fadeInUp 0.6s ease;
+  position: relative;
+  z-index: 2;
 }
 
 @keyframes fadeInUp {
@@ -276,6 +484,7 @@
 .chatbot-empty-icon {
   margin-bottom: 16px;
   animation: welcomeBounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(220, 38, 38, 0.3));
 }
 
 @keyframes welcomeBounce {
@@ -283,10 +492,10 @@
     transform: translateY(0);
   }
   40% {
-    transform: translateY(-8px);
+    transform: translateY(-10px);
   }
   60% {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
   }
 }
 
@@ -294,17 +503,40 @@
   margin: 0 0 12px 0;
   font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(135deg, #ffffff, #e0e7ff);
+  background: linear-gradient(135deg, var(--snow-white), var(--christmas-gold));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .chatbot-empty-state p {
-  margin: 0 0 24px 0;
-  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 16px 0;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
   line-height: 1.6;
+  font-weight: 500;
+}
+
+.chatbot-empty-message {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--christmas-gold);
+  font-size: 13px;
+  font-style: italic;
+  backdrop-filter: blur(5px);
+  animation: gentleGlow 3s ease-in-out infinite;
+}
+
+@keyframes gentleGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+  }
 }
 
 /* Quick Actions */
@@ -443,12 +675,15 @@
   line-height: 1.3;
 }
 
-/* Enhanced Message Styling */
+
+/* Enhanced Christmas Message Styling */
 .chatbot-message {
   display: flex;
   gap: 12px;
   animation: messageSlideIn 0.4s ease;
   max-width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 @keyframes messageSlideIn {
@@ -480,17 +715,59 @@
   font-size: 16px;
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: relative;
 }
 
 .chatbot-message.user .chatbot-avatar {
   background: linear-gradient(135deg, var(--chatbot-primary-color), var(--chatbot-secondary-color));
-  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 12px rgba(220, 38, 38, 0.4);
 }
 
 .chatbot-message.bot .chatbot-avatar {
-  background: linear-gradient(135deg, var(--chatbot-accent-color), #ff8e8e);
-  box-shadow: 0 2px 12px rgba(255, 107, 107, 0.3);
+  background: linear-gradient(135deg, var(--christmas-red), var(--christmas-green));
+  box-shadow: 0 2px 12px rgba(220, 38, 38, 0.4);
 }
+
+/* User Avatar */
+.user-avatar {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced Santa Avatar */
+.santa-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.santa-avatar img {
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.santa-hat {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  font-size: 12px;
+  animation: santaHatWiggle 2s ease-in-out infinite;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes santaHatWiggle {
+  0%, 100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
 
 .chatbot-message-bubble {
   max-width: 280px;
@@ -505,19 +782,20 @@
 }
 
 .chatbot-message.user .chatbot-message-bubble {
-  background: linear-gradient(135deg, var(--chatbot-primary-color), var(--chatbot-secondary-color));
+  background: linear-gradient(135deg, var(--christmas-red), var(--christmas-green));
   color: white;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .chatbot-message.bot .chatbot-message-bubble {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(245, 158, 11, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.3);
   color: white;
   border-bottom-left-radius: 4px;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
 .chatbot-message-content p {
@@ -556,40 +834,47 @@
   text-align: left;
 }
 
-/* Enhanced Typing Indicator */
+
+/* Enhanced Christmas Typing Indicator */
 .chatbot-typing-indicator {
   display: flex;
   gap: 4px;
   align-items: center;
 }
 
-.chatbot-typing-indicator span {
+.chatbot-typing-indicator .typing-dot {
   width: 8px;
   height: 8px;
-  background: rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   animation: typingPulse 1.4s infinite ease-in-out;
+  box-shadow: 0 0 6px currentColor;
 }
 
-.chatbot-typing-indicator span:nth-child(1) {
+.chatbot-typing-indicator .typing-dot:nth-child(1) {
+  background: var(--christmas-red);
+  color: var(--christmas-red);
   animation-delay: 0s;
 }
 
-.chatbot-typing-indicator span:nth-child(2) {
+.chatbot-typing-indicator .typing-dot:nth-child(2) {
+  background: var(--christmas-gold);
+  color: var(--christmas-gold);
   animation-delay: 0.2s;
 }
 
-.chatbot-typing-indicator span:nth-child(3) {
+.chatbot-typing-indicator .typing-dot:nth-child(3) {
+  background: var(--christmas-green);
+  color: var(--christmas-green);
   animation-delay: 0.4s;
 }
 
 @keyframes typingPulse {
   0%, 60%, 100% {
-    transform: translateY(0);
-    opacity: 0.4;
+    transform: translateY(0) scale(0.8);
+    opacity: 0.5;
   }
   30% {
-    transform: translateY(-8px);
+    transform: translateY(-8px) scale(1.2);
     opacity: 1;
   }
 }
@@ -837,7 +1122,8 @@
   }
 }
 
-/* Mobile (below 576px) */
+
+/* Mobile (below 576px) - Touch-Friendly Christmas Optimizations */
 @media (max-width: 575px) {
   .chatbot-container {
     bottom: 15px;
@@ -847,22 +1133,27 @@
   .chatbot-window {
     width: calc(100vw - 30px);
     max-height: 75vh;
-    bottom: 70px;
+    bottom: 75px;
   }
   
   .chatbot-toggle {
-    padding: 10px 16px;
-    min-height: 44px;
-    min-width: 100px;
+    padding: 12px 18px;
+    min-height: 48px;
+    min-width: 110px;
+    font-size: 14px;
   }
   
-  .chatbot-santa-icon {
-    width: 18px;
-    height: 18px;
+  .chatbot-toggle-santa-icon {
+    width: 20px;
+    height: 20px;
   }
   
   .chatbot-toggle-text {
     font-size: 13px;
+  }
+  
+  .sparkle {
+    font-size: 6px;
   }
   
   .chatbot-header {
