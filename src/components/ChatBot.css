@@ -26,7 +26,7 @@
   right: 0 !important;
   left: auto !important;
   top: auto !important;
-  z-index: 1200 !important;
+  z-index: 1000 !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-end !important;
@@ -42,7 +42,7 @@
 /* Enhanced Chat Toggle Button with Improved Santa Icon */
 .chatbot-toggle {
   pointer-events: auto !important;
-  z-index: 1201 !important;
+  z-index: 1001 !important;
   position: relative !important;
   background: linear-gradient(135deg, var(--christmas-red), var(--christmas-green));
   backdrop-filter: blur(10px);

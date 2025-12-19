@@ -14,17 +14,71 @@ const ChatBot = () => {
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
-  // Website navigation paths
+  // Website navigation paths with comprehensive information
   const websitePaths = {
-    home: { path: '/', label: 'Home', icon: '🏠' },
-    about: { path: '/about', label: 'About GrantTracker', icon: 'ℹ️' },
-    dashboard: { path: '/chart', label: 'Analytics Dashboard', icon: '📊' },
-    benefits: { path: '/benefits', label: 'Government Benefits', icon: '🏛️' },
-    suggestions: { path: '/suggestions', label: 'Public Suggestions', icon: '💬' },
-    creator: { path: '/creator-login', label: 'Creator Portal', icon: '✍️' },
-    government: { path: '/gov-login', label: 'Government Dashboard', icon: '🏛️' },
-    create: { path: '/create-grant', label: 'Create Grant', icon: '📝' },
-    view: { path: '/view', label: 'Public View', icon: '👁️' }
+    home: { 
+      path: '/', 
+      label: 'Home', 
+      icon: '🏠',
+      description: 'Main landing page with overview of GrantTracker',
+      features: ['Grant overview', 'Quick access to all features', 'Hero section with key stats']
+    },
+    about: { 
+      path: '/about', 
+      label: 'About GrantTracker', 
+      icon: 'ℹ️',
+      description: 'Learn about our mission, team, and platform',
+      features: ['Company information', 'Team details', 'Platform history', 'Mission statement']
+    },
+    dashboard: { 
+      path: '/chart', 
+      label: 'Analytics Dashboard', 
+      icon: '📊',
+      description: 'Interactive charts and grant analytics',
+      features: ['Grant distribution charts', 'Sector-wise analysis', 'Statistical insights', 'Data visualization']
+    },
+    benefits: { 
+      path: '/benefits', 
+      label: 'Government Benefits', 
+      icon: '🏛️',
+      description: 'Comprehensive list of government schemes and benefits',
+      features: ['Searchable benefit database', 'Category filtering', 'Detailed scheme information', 'Application guidance']
+    },
+    suggestions: { 
+      path: '/suggestions', 
+      label: 'Public Suggestions', 
+      icon: '💬',
+      description: 'Submit and view public feedback and suggestions',
+      features: ['Submit suggestions', 'View community feedback', 'Vote on ideas', 'Community discussion']
+    },
+    creator: { 
+      path: '/creator-login', 
+      label: 'Creator Portal', 
+      icon: '✍️',
+      description: 'Login portal for grant creators and applicants',
+      features: ['User authentication', 'Grant application', 'Creator dashboard', 'Application tracking']
+    },
+    government: { 
+      path: '/gov-login', 
+      label: 'Government Dashboard', 
+      icon: '🏛️',
+      description: 'Official government access portal',
+      features: ['Government authentication', 'Official dashboard', 'Grant management', 'Administrative tools']
+    },
+    create: { 
+      path: '/create-grant', 
+      label: 'Create Grant', 
+      icon: '📝',
+      description: 'Form to create and submit new grant proposals',
+      features: ['Grant proposal form', 'Document upload', 'Submission process', 'Draft saving']
+    },
+    view: { 
+      path: '/view', 
+      label: 'Public View', 
+      icon: '👁️',
+      description: 'Browse and view public grant information',
+      features: ['Public grant browsing', 'Detailed grant views', 'Search functionality', 'Public access']
+    }
   };
 
   // Languages supported
@@ -52,7 +106,7 @@ const ChatBot = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Enhanced Natural Language Processing for Direct Navigation
+  // Enhanced Natural Language Processing for Comprehensive Website Assistance
   const analyzeIntent = useCallback((text) => {
     const normalized = text.toLowerCase().trim();
     const cleaned = normalized.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '');
@@ -67,27 +121,78 @@ const ChatBot = () => {
     if (/(dashboard|analytics|chart|statistics|reports)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'dashboard', confidence: 0.9 };
     }
-    if (/(benefits|schemes|government schemes|welfare)/i.test(cleaned)) {
+    if (/(benefits|schemes|government schemes|welfare|government benefits)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'benefits', confidence: 0.9 };
     }
     if (/(suggestions|feedback|public|comment)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'suggestions', confidence: 0.9 };
     }
-    if (/(creator|login|register|apply)/i.test(cleaned)) {
+    if (/(creator|login|register|apply|grant application)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'creator', confidence: 0.85 };
     }
-    if (/(government|official|admin|ministry)/i.test(cleaned)) {
+    if (/(government|official|admin|ministry|government portal)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'government', confidence: 0.85 };
     }
-    if (/(create|new|submit)/i.test(cleaned)) {
+    if (/(create|new|submit|make a grant|grant creation)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'create', confidence: 0.85 };
     }
-    if (/(view|public|see)/i.test(cleaned)) {
+    if (/(view|public|see|browse grants)/i.test(cleaned)) {
       return { intent: 'navigate', target: 'view', confidence: 0.85 };
     }
     
+    // Feature explanations
+    if (/(what is|explain|tell me about|how does|features|functionality|capabilities)/i.test(cleaned)) {
+      if (/(dashboard|analytics|chart)/i.test(cleaned)) {
+        return { intent: 'feature_info', target: 'dashboard', confidence: 0.9 };
+      }
+      if (/(benefits|schemes|welfare)/i.test(cleaned)) {
+        return { intent: 'feature_info', target: 'benefits', confidence: 0.9 };
+      }
+      if (/(suggestions|feedback)/i.test(cleaned)) {
+        return { intent: 'feature_info', target: 'suggestions', confidence: 0.9 };
+      }
+      if (/(grant|creation|create)/i.test(cleaned)) {
+        return { intent: 'feature_info', target: 'create', confidence: 0.9 };
+      }
+      return { intent: 'feature_info', target: 'general', confidence: 0.7 };
+    }
+    
+    // How-to questions
+    if (/(how to|how do i|guide me|walk me through|steps|instructions)/i.test(cleaned)) {
+      if (/(apply|application|submit)/i.test(cleaned)) {
+        return { intent: 'how_to', target: 'application', confidence: 0.9 };
+      }
+      if (/(create|make|new grant)/i.test(cleaned)) {
+        return { intent: 'how_to', target: 'create_grant', confidence: 0.9 };
+      }
+      if (/(find|search|discover|browse)/i.test(cleaned)) {
+        return { intent: 'how_to', target: 'find_grants', confidence: 0.9 };
+      }
+      return { intent: 'how_to', target: 'general', confidence: 0.7 };
+    }
+    
+    // Troubleshooting
+    if (/(troubleshoot|error|problem|issue|not working|broken|fix|debug)/i.test(cleaned)) {
+      return { intent: 'troubleshoot', confidence: 0.85 };
+    }
+    
+    // Content discovery
+    if (/(find|search|discover|show me|browse|look for|what grants)/i.test(cleaned)) {
+      return { intent: 'content_discovery', confidence: 0.8 };
+    }
+    
+    // Technical support
+    if (/(technical|support|help|contact|assistance|customer service)/i.test(cleaned)) {
+      return { intent: 'technical_support', confidence: 0.8 };
+    }
+    
+    // Website information
+    if (/(what is granttracker|about this site|platform info|site information)/i.test(cleaned)) {
+      return { intent: 'website_info', confidence: 0.9 };
+    }
+    
     // Quick action patterns
-    if (/(show me|navigate|go to|take me)/i.test(cleaned)) {
+    if (/(show me|navigate|go to|take me|list all|all options)/i.test(cleaned)) {
       return { intent: 'show_actions', confidence: 0.8 };
     }
     
@@ -97,7 +202,7 @@ const ChatBot = () => {
     }
     
     // Help
-    if (/(help|support|assistance|trouble|issue|problem|how to|guide|walk me through|explain|need help)/i.test(cleaned)) {
+    if (/(help|support|assistance|guide|explain|need help)/i.test(cleaned)) {
       return { intent: 'help', confidence: 0.8 };
     }
     
@@ -140,7 +245,7 @@ const ChatBot = () => {
     return false;
   }, [navigate]);
 
-  // Generate response based on intent
+  // Generate comprehensive response based on intent
   const generateResponse = useCallback(async (message, intent) => {
     setIsLoading(true);
     setIsTyping(true);
@@ -159,6 +264,30 @@ const ChatBot = () => {
           } else {
             response = 'I couldn\'t find that section. Let me show you what\'s available.';
           }
+          break;
+          
+        case 'feature_info':
+          response = getFeatureInfoResponse(intent.target);
+          break;
+          
+        case 'how_to':
+          response = getHowToResponse(intent.target);
+          break;
+          
+        case 'troubleshoot':
+          response = getTroubleshootResponse();
+          break;
+          
+        case 'content_discovery':
+          response = getContentDiscoveryResponse();
+          break;
+          
+        case 'technical_support':
+          response = getTechnicalSupportResponse();
+          break;
+          
+        case 'website_info':
+          response = getWebsiteInfoResponse();
           break;
           
         case 'show_actions':
@@ -219,6 +348,51 @@ const ChatBot = () => {
     ).join('\n\n')}\n\nJust tell me where you'd like to go!`;
   };
 
+  const getFeatureInfoResponse = (target) => {
+    if (target === 'general') {
+      return `GrantTracker is a comprehensive platform for grant management and discovery. Here are our key features:\n\n🎯 **Grant Discovery** - Browse and search through available grants\n📊 **Analytics Dashboard** - Visual insights into grant data\n🏛️ **Government Benefits** - Comprehensive benefit schemes database\n💬 **Community Suggestions** - Public feedback and idea sharing\n✍️ **Creator Portal** - Apply for grants and track applications\n🏛️ **Government Dashboard** - Official government access portal\n📝 **Grant Creation** - Submit new grant proposals\n\nWhich feature would you like to learn more about?`;
+    }
+    
+    const pathInfo = websitePaths[target];
+    if (pathInfo) {
+      return `**${pathInfo.label}** - ${pathInfo.description}\n\n**Key Features:**\n${pathInfo.features.map(feature => `• ${feature}`).join('\n')}\n\nWould you like me to take you there or explain any specific aspect?`;
+    }
+    
+    return "I'd be happy to explain our features! Could you be more specific about which feature you're interested in?";
+  };
+
+  const getHowToResponse = (target) => {
+    switch (target) {
+      case 'application':
+        return `Here's how to apply for grants:\n\n1. **Visit Creator Portal** - Go to the Creator Login page\n2. **Create Account** - Sign up or log in to your account\n3. **Browse Grants** - Explore available grant opportunities\n4. **Select Grant** - Choose the grant that fits your project\n5. **Fill Application** - Complete the application form with project details\n6. **Upload Documents** - Submit required documentation\n7. **Submit Application** - Review and submit your application\n8. **Track Status** - Monitor your application progress\n\nNeed help with any of these steps? Just ask!`;
+      
+      case 'create_grant':
+        return `Here's how to create a new grant:\n\n1. **Access Grant Creation** - Navigate to Create Grant page\n2. **Fill Basic Info** - Enter grant title, description, and category\n3. **Set Criteria** - Define eligibility requirements\n4. **Add Details** - Specify funding amount, deadline, and contact info\n5. **Upload Documentation** - Add supporting documents\n6. **Review & Submit** - Double-check all information\n7. **Publish** - Make the grant live for applicants\n\nWould you like me to guide you through any specific step?`;
+      
+      case 'find_grants':
+        return `Here's how to find grants that match your needs:\n\n1. **Browse Public View** - Check the Public View section\n2. **Use Search** - Search by keywords, category, or sector\n3. **Filter Results** - Narrow down by funding amount, deadline, etc.\n4. **View Details** - Click on grants for complete information\n5. **Check Eligibility** - Review requirements before applying\n6. **Save Favorites** - Bookmark interesting opportunities\n\nYou can also check the Benefits section for government schemes!`;
+      
+      default:
+        return `I'm here to help guide you through any process! What specific task would you like assistance with? I can help with:\n\n• Grant applications\n• Creating new grants\n• Finding grant opportunities\n• Using the dashboard\n• Navigating the platform\n\nJust let me know what you need help with!`;
+    }
+  };
+
+  const getTroubleshootResponse = () => {
+    return `I'm here to help troubleshoot any issues you're experiencing! Here are solutions to common problems:\n\n🔧 **Login Issues**\n• Check your username and password\n• Try clearing browser cache\n• Ensure you're using the correct portal (Creator vs Government)\n\n📄 **Form Submission Problems**\n• Check required fields are filled\n• Ensure documents are in supported formats\n• Verify internet connection is stable\n\n📊 **Dashboard Not Loading**\n• Refresh the page\n• Check your internet connection\n• Try a different browser\n\n🔍 **Search Issues**\n• Try different keywords\n• Clear search filters\n• Check spelling\n\nStill having trouble? Describe your specific issue and I'll provide targeted help!`;
+  };
+
+  const getContentDiscoveryResponse = () => {
+    return `I can help you discover content across GrantTracker! Here's how to find what you're looking for:\n\n🔍 **Search Methods:**\n• Use the search bar on relevant pages\n• Browse by category or sector\n• Filter by funding amount, deadline, or location\n\n📋 **Content Types Available:**\n• **Grants** - Various funding opportunities\n• **Government Benefits** - Official welfare schemes\n• **Public Suggestions** - Community ideas and feedback\n• **Analytics Data** - Charts and statistics\n\n💡 **Discovery Tips:**\n• Try broad terms first, then narrow down\n• Use multiple search terms\n• Check different sections of the site\n\nWhat type of content are you looking for? I can guide you to the right section!`;
+  };
+
+  const getTechnicalSupportResponse = () => {
+    return `I'm your technical support assistant! Here's how I can help:\n\n🛠️ **Common Technical Issues:**\n• Page loading problems\n• Form submission errors\n• Login difficulties\n• Browser compatibility\n• Mobile responsiveness\n\n📱 **Device-Specific Help:**\n• Desktop optimization\n• Mobile navigation\n• Tablet compatibility\n\n🌐 **Browser Support:**\n• Chrome (recommended)\n• Firefox\n• Safari\n• Edge\n\n💡 **General Tips:**\n• Keep browser updated\n• Clear cache regularly\n• Check internet connection\n• Disable browser extensions if needed\n\nDescribe your specific technical issue and I'll provide detailed assistance!`;
+  };
+
+  const getWebsiteInfoResponse = () => {
+    return `**Welcome to GrantTracker!** 🎅\n\nGrantTracker is a comprehensive platform designed to connect grant seekers with funding opportunities and streamline the grant management process.\n\n🚀 **What We Do:**\n• **Grant Discovery** - Help you find relevant funding opportunities\n• **Application Management** - Streamline the application process\n• **Data Analytics** - Provide insights into grant trends and success rates\n• **Community Engagement** - Foster collaboration between seekers and funders\n\n🎯 **Our Mission:**\nTo make grant funding accessible, transparent, and efficient for everyone.\n\n🌟 **Key Benefits:**\n• Save time with intelligent matching\n• Access to comprehensive databases\n• Real-time application tracking\n• Community-driven suggestions\n• Government-verified information\n\nReady to explore? Just tell me where you'd like to start!`;
+  };
+
   const getGreetingResponse = (lang) => {
     const greetings = {
       en: 'Hello! 👋 I can help you navigate directly to any section of GrantTracker. Where would you like to go?',
@@ -232,8 +406,8 @@ const ChatBot = () => {
 
   const getHelpResponse = (lang) => {
     const responses = {
-      en: 'I\'m your direct navigation assistant! Tell me where you want to go:\n\n🏠 **Home** - Main page\n📊 **Dashboard** - Analytics\n🏛️ **Benefits** - Government schemes\n💬 **Suggestions** - Public feedback\n✍️ **Creator** - Apply for grants\n🏛️ **Government** - Official portal\n\nJust say "show me" to see all options!',
-      es: '¡Soy tu asistente de navegación directa! Dime a dónde quieres ir:\n\n🏠 **Inicio** - Página principal\n📊 **Panel** - Análisis\n🏛️ **Beneficios** - Esquemas gubernamentales\n💬 **Sugerencias** - Comentarios públicos\n✍️ **Creador** - Solicitar subvenciones\n🏛️ **Gobierno** - Portal oficial\n\n¡Solo di "muéstrame" para ver todas las opciones!'
+      en: 'I\'m your comprehensive GrantTracker assistant! I can help you with:\n\n🧭 **Navigation** - "Take me to dashboard"\n🔍 **Feature Info** - "What is the benefits section?"\n📋 **How-To Guides** - "How do I apply for grants?"\n🔧 **Troubleshooting** - "I\'m having login issues"\n📖 **Content Discovery** - "Show me available grants"\n🛠️ **Technical Support** - "Page not loading properly"\nℹ️ **Website Info** - "What is GrantTracker?"\n\n💡 **Example Questions:**\n• "How do I create a new grant?"\n• "What features does the dashboard have?"\n• "I need help finding funding opportunities"\n• "The form won\'t submit, can you help?"\n\nJust ask me anything about the platform!',
+      es: '¡Soy tu asistente completo de GrantTracker! Puedo ayudarte con:\n\n🧭 **Navegación** - "Llévame al panel"\n🔍 **Información de funciones** - "¿Qué es la sección de beneficios?"\n📋 **Guías prácticas** - "¿Cómo solicito subvenciones?"\n🔧 **Solución de problemas** - "Tengo problemas de inicio de sesión"\n📖 **Descubrimiento de contenido** - "Muéstrame las subvenciones disponibles"\n🛠️ **Soporte técnico** - "La página no carga correctamente"\nℹ️ **Información del sitio web** - "¿Qué es GrantTracker?"\n\n💡 **Preguntas de ejemplo:**\n• "¿Cómo creo una nueva subvención?"\n• "¿Qué funciones tiene el panel?"\n• "Necesito ayuda para encontrar oportunidades de financiación"\n• "El formulario no se envía, ¿puedes ayudar?"\n\n¡Solo pregúntame cualquier cosa sobre la plataforma!'
     };
     return responses[lang] || responses.en;
   };
@@ -251,11 +425,8 @@ const ChatBot = () => {
 
   const getFallbackResponse = (lang) => {
     const responses = {
-      en: 'I didn\'t quite catch that. I can help you navigate to any section of GrantTracker. Try saying "show me" to see all available sections!',
-      es: 'No entendí bien eso. Puedo ayudarte a navegar a cualquier sección de GrantTracker. ¡Intenta decir "muéstrame" para ver todas las secciones disponibles!',
-      fr: 'Je n\'ai pas bien compris cela. Je peux vous aider à naviguer vers n\'importe quelle section de GrantTracker. Essayez de dire "montrez-moi" pour voir toutes les sections disponibles!',
-      de: 'Das habe ich nicht ganz verstanden. Ich kann Ihnen helfen, zu jedem Bereich von GrantTracker zu navigieren. Versuchen Sie "zeigen Sie mir" zu sagen, um alle verfügbaren Bereiche zu sehen!',
-      hi: 'मुझे वो बात समझ नहीं आई। मैं आपको GrantTracker के किसी भी सेक्शन पर नेविगेट करने में मदद कर सकता हूँ। सभी उपलब्ध सेक्शन देखने के लिए "दिखाओ" कहने की कोशिश करें!'
+      en: 'I didn\'t quite catch that, but I\'m here to help! I can assist you with:\n\n🧭 **Navigation** - "Take me to [section]"\n🔍 **Information** - "What is [feature]?"\n📋 **Guidance** - "How do I [task]?"\n🔧 **Support** - "I have a problem with..."\n\nTry asking:\n• "What features does GrantTracker have?"\n• "How do I apply for grants?"\n• "Show me the dashboard"\n• "I need help with..."\n\nOr just say "show me all options" to see what I can do!',
+      es: 'No entendí bien eso, ¡pero estoy aquí para ayudar! Puedo asistirte con:\n\n🧭 **Navegación** - "Llévame a [sección]"\n🔍 **Información** - "¿Qué es [función]?"\n📋 **Orientación** - "¿Cómo hago [tarea]?"\n🔧 **Soporte** - "Tengo un problema con..."\n\nIntenta preguntar:\n• "¿Qué funciones tiene GrantTracker?"\n• "¿Cómo solicito subvenciones?"\n• "Muéstrame el panel"\n• "Necesito ayuda con..."\n\n¡O simplemente di "muéstrame todas las opciones" para ver qué puedo hacer!'
     };
     return responses[lang] || responses.en;
   };
@@ -446,9 +617,9 @@ const ChatBot = () => {
                   height="56"
                 />
                 <h4>🎄 Welcome to GrantTracker Assistant</h4>
-                <p>Ho ho ho! I'm here to help you navigate directly to any section!</p>
+                <p>Ho ho ho! I'm your comprehensive website assistant!</p>
                 <div className="chatbot-empty-message">
-                  Just type where you'd like to go, like "show me dashboard" or "take me to benefits"
+                  Ask me anything! Try "What features does GrantTracker have?" or "How do I apply for grants?"
                 </div>
               </div>
             )}
