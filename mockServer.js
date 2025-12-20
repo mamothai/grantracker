@@ -90,6 +90,12 @@ const MOCK_GRANTS = [
 function extractIntent(query) {
   const queryLower = query.toLowerCase();
   
+  // Check for holiday mode first
+  if (queryLower.includes('santa') || queryLower.includes('christmas') || 
+      queryLower.includes('holiday') || queryLower.includes('festive')) {
+    return { primary: 'greeting_holiday', confidence: 0.98 };
+  }
+  
   if (queryLower.includes('find') || queryLower.includes('search') || queryLower.includes('grant') || 
       queryLower.includes('small business') || queryLower.includes('innovation') || queryLower.includes('research')) {
     return { primary: 'grant_search', confidence: 0.8 };
@@ -106,7 +112,17 @@ function extractIntent(query) {
   if (queryLower.includes('apply') || queryLower.includes('application')) {
     return { primary: 'application_help', confidence: 0.8 };
   }
-  if (queryLower.includes('hello') || queryLower.includes('hi') || queryLower.includes('hey')) {
+  if (queryLower.includes('hello') || queryLower.includes('hi') || queryLower.includes('hey') || 
+      queryLower.includes('hola') || queryLower.includes('bonjour')) {
+    
+    // Multi-language support (excluding holiday which is handled above)
+    if (queryLower.includes('hola')) {
+      return { primary: 'greeting_spanish', confidence: 0.95 };
+    }
+    if (queryLower.includes('bonjour')) {
+      return { primary: 'greeting_french', confidence: 0.95 };
+    }
+    
     return { primary: 'greeting', confidence: 0.9 };
   }
   if (queryLower.includes('help')) {
@@ -180,6 +196,18 @@ function processAdvancedChat(query) {
           response += '\n';
         }
       });
+      break;
+      
+    case 'greeting_holiday':
+      response = '🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄';
+      break;
+      
+    case 'greeting_spanish':
+      response = '¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. Puedo ayudarte a encontrar subvenciones, verificar elegibilidad, entender requisitos y navegar por la plataforma. ¿Qué te gustaría explorar?';
+      break;
+      
+    case 'greeting_french':
+      response = 'Bonjour! Je suis votre assistant avancé de découverte de subventions. Je peux vous aider à trouver des subventions, vérifier l\'éligibilité, comprendre les exigences et naviguer sur la plateforme. Que souhaitez-vous explorer?';
       break;
       
     case 'greeting':

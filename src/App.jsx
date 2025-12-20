@@ -14,7 +14,7 @@ import PublicView from "./PublicView.jsx";
 import SectorDetails from "./pages/SectorDetails.jsx";
 import BenefitsScheme from "./pages/BenefitsScheme.jsx";
 
-import ChatBot from "./components/ChatBot.advanced.jsx";
+import ChatBot from "./components/ChatBot.ultimate.jsx";
 
 import "./App.css";
 import "./scrollAnimations.css";
