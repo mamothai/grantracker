@@ -129,16 +129,12 @@ body {
   right: var(--space-6);
   z-index: var(--z-chatbot);
   font-family: var(--font-family);
+  pointer-events: auto;
 }
 
 .chatbot-container * {
   pointer-events: auto;
 }
-
-/* ===================================
-   TOGGLE BUTTON
-   Modern floating action button
-   =================================== */
 
 .chatbot-toggle {
   width: var(--toggle-size);
@@ -156,6 +152,9 @@ body {
   overflow: hidden;
   color: var(--white);
   font-size: var(--font-size-lg);
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
 }
 
 .chatbot-toggle::before {

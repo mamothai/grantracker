@@ -388,14 +388,14 @@ const ChatBot = () => {
         responseText = `Language switched to ${intent.lang}. ${generateResponse(currentMessage, { intent: 'greeting' })}`;
       } else if (intent.intent === 'holiday_mode') {
         setIsHolidayMode(true);
-        responseText = responses.holiday_mode;
+        responseText = "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄";
       } else if (intent.intent === 'ho_greeting') {
         setIsHolidayMode(true);
-        responseText = responses.ho_greeting;
+        responseText = "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄";
       } else if (intent.intent === 'greeting_spanish') {
-        responseText = responses.greeting_spanish;
+        responseText = "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?";
       } else if (intent.intent === 'greeting_french') {
-        responseText = responses.greeting_french;
+        responseText = "Bonjour! Je suis votre assistant avancé de découverte de subventions. Comment puis-je vous aider aujourd'hui?";
       } else if (intent.intent === 'occupation_grants') {
         responseText = `Based on your occupation${intent.occupations.length > 1 ? 's' : ''}, here are relevant grants:\n\n`;
         intent.occupations.forEach(occ => {
@@ -446,14 +446,14 @@ const ChatBot = () => {
         responseText = `Language switched to ${intent.lang}. ${t.greeting}`;
       } else if (intent.intent === 'holiday_mode') {
         setIsHolidayMode(true);
-        responseText = responses.holiday_mode;
+        responseText = "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄";
       } else if (intent.intent === 'ho_greeting') {
         setIsHolidayMode(true);
-        responseText = responses.ho_greeting;
+        responseText = "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄";
       } else if (intent.intent === 'greeting_spanish') {
-        responseText = responses.greeting_spanish;
+        responseText = "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?";
       } else if (intent.intent === 'greeting_french') {
-        responseText = responses.greeting_french;
+        responseText = "Bonjour! Je suis votre assistant avancé de découverte de subventions. Comment puis-je vous aider aujourd'hui?";
       } else if (intent.intent === 'occupation_grants') {
         responseText = `Based on your occupation${intent.occupations.length > 1 ? 's' : ''}, here are relevant grants:\n\n`;
         intent.occupations.forEach(occ => {
