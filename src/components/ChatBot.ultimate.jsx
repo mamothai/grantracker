@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { chatAPI } from '../services/apiService.js';
+import santaImage from '../assets/santa.svg';
 import './ChatBot.css';
 
 // Ultimate ChatBot with all advanced features
@@ -131,6 +132,11 @@ const ChatBot = () => {
       return { intent: 'holiday_mode', confidence: 0.98 };
     }
     
+    // Special "Ho" handling for progressive typing
+    if (/^ho\b/i.test(query.trim())) {
+      return { intent: 'ho_greeting', confidence: 0.98 };
+    }
+    
     // Greeting intents
     if (/(hello|hi|hey|hola|bonjour)/i.test(query)) {
       if (query.includes('hola')) {
@@ -140,6 +146,12 @@ const ChatBot = () => {
         return { intent: 'greeting_french', confidence: 0.95 };
       }
       return { intent: 'greeting', confidence: 0.95 };
+    }
+    
+    // Occupation detection
+    const occupations = detectOccupation(query);
+    if (occupations.length > 0) {
+      return { intent: 'occupation_grants', occupations, confidence: 0.9 };
     }
     
     // Grant-specific intents
@@ -232,6 +244,7 @@ const ChatBot = () => {
       greeting: t.greeting,
       greeting_spanish: "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?",
       greeting_french: "Bonjour! Je suis votre assistant avancé de découverte de subventions. Comment puis-je vous aider aujourd'hui?",
+      ho_greeting: "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄",
       holiday_mode: "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄",
       gratitude: language === 'es' ? "¡De nada! Estoy aquí para ayudar con cualquier otra pregunta sobre subvenciones." :
                   language === 'fr' ? "De rien! Je suis là pour vous aider avec toute autre question sur les subventions." :
@@ -376,10 +389,19 @@ const ChatBot = () => {
       } else if (intent.intent === 'holiday_mode') {
         setIsHolidayMode(true);
         responseText = responses.holiday_mode;
+      } else if (intent.intent === 'ho_greeting') {
+        setIsHolidayMode(true);
+        responseText = responses.ho_greeting;
       } else if (intent.intent === 'greeting_spanish') {
         responseText = responses.greeting_spanish;
       } else if (intent.intent === 'greeting_french') {
         responseText = responses.greeting_french;
+      } else if (intent.intent === 'occupation_grants') {
+        responseText = `Based on your occupation${intent.occupations.length > 1 ? 's' : ''}, here are relevant grants:\n\n`;
+        intent.occupations.forEach(occ => {
+          responseText += `**${occ.occupation.charAt(0).toUpperCase() + occ.occupation.slice(1)}** grants:\n`;
+          responseText += occ.grants.map(grant => `• ${grant}`).join('\n') + '\n\n';
+        });
       } else {
         responseText = response.response || generateResponse(currentMessage, intent);
       }
@@ -425,10 +447,19 @@ const ChatBot = () => {
       } else if (intent.intent === 'holiday_mode') {
         setIsHolidayMode(true);
         responseText = responses.holiday_mode;
+      } else if (intent.intent === 'ho_greeting') {
+        setIsHolidayMode(true);
+        responseText = responses.ho_greeting;
       } else if (intent.intent === 'greeting_spanish') {
         responseText = responses.greeting_spanish;
       } else if (intent.intent === 'greeting_french') {
         responseText = responses.greeting_french;
+      } else if (intent.intent === 'occupation_grants') {
+        responseText = `Based on your occupation${intent.occupations.length > 1 ? 's' : ''}, here are relevant grants:\n\n`;
+        intent.occupations.forEach(occ => {
+          responseText += `**${occ.occupation.charAt(0).toUpperCase() + occ.occupation.slice(1)}** grants:\n`;
+          responseText += occ.grants.map(grant => `• ${grant}`).join('\n') + '\n\n';
+        });
       } else {
         responseText = generateResponse(currentMessage, intent);
       }
@@ -510,6 +541,74 @@ const ChatBot = () => {
     );
   };
 
+  // Occupation-based grant suggestions
+  const occupationGrants = {
+    // Healthcare
+    'doctor': ['NIH SBIR', 'Healthcare Innovation Grants', 'Medical Research Grants'],
+    'nurse': ['Healthcare Workforce Grants', 'Nursing Education Grants', 'Public Health Grants'],
+    'researcher': ['NSF Research Grants', 'NIH Research Grants', 'University Research Grants'],
+    'scientist': ['NSF Grants', 'DOE Research Grants', 'Scientific Research Grants'],
+    
+    // Technology
+    'engineer': ['SBIR Technology Grants', 'Innovation Grants', 'STEM Education Grants'],
+    'programmer': ['Tech Startup Grants', 'Software Development Grants', 'Digital Innovation Grants'],
+    'developer': ['Technology Grants', 'App Development Grants', 'Tech Innovation Grants'],
+    'entrepreneur': ['Small Business Grants', 'Startup Funding', 'Business Innovation Grants'],
+    
+    // Education
+    'teacher': ['Education Grants', 'STEM Education Grants', 'Teacher Professional Development'],
+    'professor': ['Academic Research Grants', 'University Grants', 'Faculty Development Grants'],
+    'student': ['Student Grants', 'Graduate Research Grants', 'Educational Scholarships'],
+    
+    // Arts & Creative
+    'artist': ['Arts Grants', 'Creative Projects Grants', 'Cultural Funding'],
+    'musician': ['Arts Grants', 'Music Production Grants', 'Cultural Grants'],
+    'writer': ['Literature Grants', 'Writing Fellowships', 'Creative Writing Grants'],
+    'designer': ['Design Grants', 'Creative Industry Grants', 'Innovation Design Grants'],
+    
+    // Business & Finance
+    'consultant': ['Business Development Grants', 'Consulting Grants', 'Professional Services Grants'],
+    'manager': ['Leadership Grants', 'Management Development Grants', 'Business Training Grants'],
+    'analyst': ['Data Analytics Grants', 'Research Grants', 'Financial Research Grants'],
+    
+    // Environment & Energy
+    'environmentalist': ['Environmental Grants', 'Sustainability Grants', 'Green Technology Grants']
+  };
+
+  // Detect occupation from message
+  const detectOccupation = (text) => {
+    const lowerText = text.toLowerCase();
+    const detectedOccupations = [];
+    
+    for (const [occupation, grants] of Object.entries(occupationGrants)) {
+      if (lowerText.includes(occupation)) {
+        detectedOccupations.push({ occupation, grants });
+      }
+    }
+    
+    return detectedOccupations;
+  };
+
+  // Progressive typing effect
+  const [typingText, setTypingText] = useState('');
+  const [isTypingEffect, setIsTypingEffect] = useState(false);
+
+  const typeText = (text, delay = 50) => {
+    setIsTypingEffect(true);
+    setTypingText('');
+    
+    let i = 0;
+    const typeInterval = setInterval(() => {
+      if (i < text.length) {
+        setTypingText(text.substring(0, i + 1));
+        i++;
+      } else {
+        clearInterval(typeInterval);
+        setIsTypingEffect(false);
+      }
+    }, delay);
+  };
+
   // Quick action suggestions
   const quickActions = [
     "Find grants",
@@ -535,8 +634,12 @@ const ChatBot = () => {
         aria-expanded={isOpen}
         title={isOpen ? 'Close chat (Ctrl+K)' : 'Open chat (Ctrl+K)'}
       >
-        {isHolidayMode ? '🎅' : isOpen ? '×' : '💬'}
-        {isHolidayMode && <span className="santa-sparkle">✨</span>}
+        {isHolidayMode ? (
+          <div className="santa-button-content">
+            <img src={santaImage} alt="Santa" className="santa-image-icon" />
+            <span className="santa-sparkle">✨</span>
+          </div>
+        ) : isOpen ? '×' : '💬'}
       </button>
 
       {/* Chat Window */}
