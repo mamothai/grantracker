@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { chatAPI } from '../services/apiService.js';
-import santaImage from '../assets/santa.svg';
+// Santa image removed
 import './ChatBot.css';
 
 // Ultimate ChatBot with all advanced features
@@ -634,12 +634,7 @@ const ChatBot = () => {
         aria-expanded={isOpen}
         title={isOpen ? 'Close chat (Ctrl+K)' : 'Open chat (Ctrl+K)'}
       >
-        {isHolidayMode ? (
-          <div className="santa-button-content">
-            <img src={santaImage} alt="Santa" className="santa-image-icon" />
-            <span className="santa-sparkle">✨</span>
-          </div>
-        ) : isOpen ? '×' : '💬'}
+        {isOpen ? '×' : isHolidayMode ? '🎅' : '💬'}
       </button>
 
       {/* Chat Window */}

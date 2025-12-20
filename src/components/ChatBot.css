@@ -124,12 +124,19 @@ body {
    =================================== */
 
 .chatbot-container {
-  position: fixed;
-  bottom: var(--space-6);
-  right: var(--space-6);
-  z-index: var(--z-chatbot);
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 99999 !important;
   font-family: var(--font-family);
-  pointer-events: auto;
+  pointer-events: auto !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  transform: none !important;
 }
 
 .chatbot-container * {
@@ -137,24 +144,27 @@ body {
 }
 
 .chatbot-toggle {
-  width: var(--toggle-size);
-  height: var(--toggle-size);
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-  border: none;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-lg);
-  transition: all var(--transition-normal);
-  position: relative;
-  overflow: hidden;
-  color: var(--white);
-  font-size: var(--font-size-lg);
-  pointer-events: auto;
-  visibility: visible;
-  opacity: 1;
+  width: 56px !important;
+  height: 56px !important;
+  min-width: 56px !important;
+  min-height: 56px !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4) !important;
+  transition: all 0.2s ease-out !important;
+  position: relative !important;
+  overflow: hidden !important;
+  color: #ffffff !important;
+  font-size: 1.5rem !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 .chatbot-toggle::before {
@@ -1655,40 +1665,8 @@ body {
   }
 }
 
-/* Smooth Gradient Background Behind Chatbot */
-.chatbot-container {
-  position: relative;
-}
-
-.chatbot-container::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(59, 130, 246, 0.05) 0%,
-    rgba(16, 185, 129, 0.05) 25%,
-    rgba(139, 92, 246, 0.05) 50%,
-    rgba(236, 72, 153, 0.05) 75%,
-    rgba(251, 191, 36, 0.05) 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.chatbot-container.holiday-mode::before {
-  background: linear-gradient(135deg, 
-    rgba(220, 38, 38, 0.08) 0%,
-    rgba(239, 68, 68, 0.06) 25%,
-    rgba(251, 191, 36, 0.08) 50%,
-    rgba(34, 197, 94, 0.06) 75%,
-    rgba(59, 130, 246, 0.08) 100%);
-  background-size: 400% 400%;
-  animation: holidayGradientShift 20s ease infinite;
-}
+/* Smooth Gradient Background Behind Chatbot - DISABLED to ensure visibility */
+/* .chatbot-container::before is removed to prevent visibility issues */
 
 @keyframes gradientShift {
   0% {
