@@ -127,7 +127,7 @@ const ChatBot = () => {
     }
   }));
 
-  // Enhanced intent recognition
+  // Enhanced intent recognition with improved patterns
   const analyzeIntent = (text) => {
     const query = text.toLowerCase();
     
@@ -141,21 +141,49 @@ const ChatBot = () => {
       return { intent: 'ho_greeting', confidence: 0.98 };
     }
     
-    // Greeting intents
-    if (/(hello|hi|hey|hola|bonjour)/i.test(query)) {
+    // Enhanced greeting detection
+    if (/(hello|hi|hey|hola|bonjour|good morning|good afternoon|good evening|howdy|whats up)/i.test(query)) {
       if (query.includes('hola')) {
         return { intent: 'greeting_spanish', confidence: 0.95 };
       }
       if (query.includes('bonjour')) {
         return { intent: 'greeting_french', confidence: 0.95 };
       }
+      if (query.includes('morning')) {
+        return { intent: 'greeting_morning', confidence: 0.95 };
+      }
+      if (query.includes('afternoon')) {
+        return { intent: 'greeting_afternoon', confidence: 0.95 };
+      }
+      if (query.includes('evening')) {
+        return { intent: 'greeting_evening', confidence: 0.95 };
+      }
       return { intent: 'greeting', confidence: 0.95 };
     }
     
-    // Occupation detection
+    // Enhanced occupation detection with more patterns
     const occupations = detectOccupation(query);
     if (occupations.length > 0) {
       return { intent: 'occupation_grants', occupations, confidence: 0.9 };
+    }
+    
+    // "I am" / "I'm" / "I work as" patterns
+    if (/(i am|i'm|i work as|my profession|my job|doing|farmer|doctor|teacher|engineer|student)/i.test(query)) {
+      const occupations = detectOccupation(query);
+      if (occupations.length > 0) {
+        return { intent: 'occupation_grants', occupations, confidence: 0.92 };
+      }
+      return { intent: 'occupation_inquiry', confidence: 0.8 };
+    }
+    
+    // Grant search intent
+    if (/(find|search|look for|browse|show me|what.*grant|which.*grant)/i.test(query)) {
+      return { intent: 'grant_search', confidence: 0.9 };
+    }
+    
+    // Amount/Funding specific queries
+    if (/(how much|money|cost|funding|financial|budget|investment)/i.test(query)) {
+      return { intent: 'funding_amount', confidence: 0.85 };
     }
     
     // Grant-specific intents
@@ -240,37 +268,82 @@ const ChatBot = () => {
     return { intent: 'unknown', confidence: 0.1 };
   };
 
-  // Generate response based on intent
+  // Enhanced response generation with intelligent, contextual responses
   const generateResponse = (query, intent) => {
     const t = translations[language] || translations.en;
+    const currentHour = new Date().getHours();
     
     const responses = {
-      greeting: t.greeting,
-      greeting_spanish: "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?",
-      greeting_french: "Bonjour! Je suis votre assistant avancé de découverte de subventions. Comment puis-je vous aider aujourd'hui?",
+      // Enhanced greetings with time awareness
+      greeting: () => {
+        let timeGreeting = "Hello!";
+        if (currentHour < 12) timeGreeting = "Good morning!";
+        else if (currentHour < 17) timeGreeting = "Good afternoon!";
+        else if (currentHour < 22) timeGreeting = "Good evening!";
+        
+        return `${timeGreeting} I'm your intelligent grant discovery assistant! I'm here to help you find the perfect funding opportunities for your projects. Whether you're a student, researcher, entrepreneur, or professional, I can guide you through grants, eligibility requirements, and application processes. What would you like to explore today?`;
+      },
+      
+      greeting_morning: "Good morning! ☀️ I hope you're having a great start to your day! I'm here to help you discover amazing grant opportunities that could fuel your next project or research. What kind of funding are you looking for?",
+      
+      greeting_afternoon: "Good afternoon! 🌟 I hope your day is going well! I'm your personal grant discovery assistant, ready to help you find funding opportunities that match your goals and qualifications. How can I assist you today?",
+      
+      greeting_evening: "Good evening! 🌙 I hope you've had a productive day! I'm here to help you explore grant opportunities that could make your projects a reality. What type of funding or grants are you interested in?",
+      
+      greeting_spanish: "¡Hola! Soy tu asistente inteligente de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?",
+      greeting_french: "Bonjour! Je suis votre assistant intelligent de découverte de subventions. Comment puis-je vous aider aujourd'hui?",
+      
       ho_greeting: "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄",
       holiday_mode: "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄",
-      gratitude: language === 'es' ? "¡De nada! Estoy aquí para ayudar con cualquier otra pregunta sobre subvenciones." :
-                  language === 'fr' ? "De rien! Je suis là pour vous aider avec toute autre question sur les subventions." :
-                  "You're welcome! I'm here to help with any other questions about grants.",
-      help: t.help,
       
-      grant_info: language === 'es' ? "¡Puedo ayudarte a encontrar subvenciones! Aquí está lo que sé:\n\n• Usa el Portal del Creador para solicitar subvenciones\n• Consulta la Vista Pública para navegar oportunidades disponibles\n• Visita Beneficios para esquemas gubernamentales\n• Mira el Panel para análisis\n\n¿Qué tipo de subvenciones buscas?" :
-                language === 'fr' ? "Je peux vous aider à trouver des subventions! Voici ce que je sais:\n\n• Utilisez le Portail Créateur pour demander des subventions\n• Consultez la Vue Publique pour parcourir les opportunités disponibles\n• Visitez Avantages pour les régimes gouvernementaux\n• Regardez le Tableau de bord pour l'analyse\n\nQuel type de subventions recherchez-vous?" :
-                "I can help you find grants! Here's what I know:\n\n• Use the Creator Portal to apply for grants\n• Check the Public View to browse available opportunities\n• Visit Benefits for government schemes\n• Look at the Dashboard for analytics\n\nWhat type of grants are you looking for?",
+      gratitude: language === 'es' ? "¡De nada! Me encanta ayudarte a encontrar las subvenciones perfectas. Si tienes más preguntas sobre financiamiento o necesitas orientación adicional, ¡estaré aquí para ayudarte!" :
+                  language === 'fr' ? "De rien! J'adore vous aider à trouver les subventions parfaites. Si vous avez d'autres questions sur le financement ou avez besoin d'orientations supplémentaires, je serai là pour vous aider!" :
+                  "You're welcome! I love helping you find the perfect grants. If you have more questions about funding or need additional guidance, I'll be right here to help!",
+      
+      help: language === 'es' ? "¡Estoy aquí para ayudarte con mucho más que solo subvenciones! Puedo asistirte con:\n\n🎯 **Descubrimiento de Financiamiento**\n• Encontrar subvenciones específicas para tu campo\n• Verificar elegibilidad y requisitos\n• Entender procesos de aplicación\n\n📋 **Navegación de Plataforma**\n• Guiarte a diferentes secciones\n• Explicar funciones y características\n• Mostrar opciones disponibles\n\n📊 **Análisis y Reportes**\n• Ver estadísticas de conversación\n• Historial de chats anteriores\n• Configuraciones personalizadas\n\n¿Qué área te interesa más?" :
+                language === 'fr' ? "Je suis là pour vous aider avec bien plus que les subventions! Je peux vous assister avec:\n\n🎯 **Découverte de Financement**\n• Trouver des subventions spécifiques à votre domaine\n• Vérifier l'éligibilité et les exigences\n• Comprendre les processus de candidature\n\n📋 **Navigation de Plateforme**\n• Vous guider vers différentes sections\n• Expliquer les fonctions et caractéristiques\n• Montrer les options disponibles\n\n📊 **Analyses et Rapports**\n• Voir les statistiques de conversation\n• Historique des discussions précédentes\n• Paramètres personnalisés\n\nQuel domaine vous intéresse le plus?" :
+                "I'm here to help you with much more than just grants! I can assist you with:\n\n🎯 **Grant Discovery**\n• Finding grants specific to your field\n• Checking eligibility and requirements\n• Understanding application processes\n\n📋 **Platform Navigation**\n• Guiding you to different sections\n• Explaining features and functions\n• Showing available options\n\n📊 **Analytics & Reports**\n• Viewing conversation statistics\n• Accessing chat history\n• Customizing settings\n\nWhat area interests you most?",
+      
+      // Enhanced grant information with more detail
+      grant_info: () => {
+        const responses = {
+          en: "I'd love to help you discover grants! Let me share what I know about funding opportunities:\n\n🏛️ **Government Grants**\n• Federal and state funding programs\n• Research and development grants\n• Small business innovation grants\n• Educational and training grants\n\n💼 **Private & Foundation Grants**\n• Corporate sponsorship programs\n• Nonprofit foundation funding\n• Industry-specific grants\n• Innovation and technology grants\n\n🎓 **Academic & Research Grants**\n• University research funding\n• Student scholarships and fellowships\n• Postdoctoral research grants\n• Conference and travel grants\n\nTo give you the most relevant suggestions, could you tell me:\n• What's your profession or field of work?\n• What type of project are you planning?\n• Are you looking for research, business, or personal funding?",
+          es: "¡Me encanta ayudarte a descubrir subvenciones! Permíteme compartir lo que sé sobre oportunidades de financiamiento:\n\n🏛️ **Subvenciones Gubernamentales**\n• Programas de financiamiento federal y estatal\n• Subvenciones de investigación y desarrollo\n• Subvenciones de innovación para pequeñas empresas\n• Subvenciones educativas y de capacitación\n\n💼 **Subvenciones Privadas y de Fundaciones**\n• Programas de patrocinio corporativo\n• Financiamiento de fundaciones sin fines de lucro\n• Subvenciones específicas de la industria\n• Subvenciones de innovación y tecnología\n\n🎓 **Subvenciones Académicas y de Investigación**\n• Financiamiento de investigación universitaria\n• Becas y fellowships para estudiantes\n• Subvenciones de investigación postdoctoral\n• Subvenciones para conferencias y viajes\n\nPara darte las sugerencias más relevantes, ¿podrías contarme?:\n• ¿Cuál es tu profesión o campo de trabajo?\n• ¿Qué tipo de proyecto estás planeando?\n• ¿Estás buscando financiamiento para investigación, negocios o personal?",
+          fr: "J'adore vous aider à découvrir des subventions! Permettez-moi de partager ce que je sais sur les opportunités de financement:\n\n🏛️ **Subventions Gouvernementales**\n• Programmes de financement fédéral et étatique\n• Subventions de recherche et développement\n• Subventions d'innovation pour petites entreprises\n• Subventions éducatives et de formation\n\n💼 **Subventions Privées et de Fondations**\n• Programmes de parrainage d'entreprise\n• Financement de fondations à but non lucratif\n• Subventions spécifiques à l'industrie\n• Subventions d'innovation et de technologie\n\n🎓 **Subventions Académiques et de Recherche**\n• Financement de recherche universitaire\n• Bourses et fellowships pour étudiants\n• Subventions de recherche postdoctoral\n• Subventions pour conférences et voyages\n\nPour vous donner les suggestions les plus pertinentes, pourriez-vous me dire:\n• Quelle est votre profession ou domaine de travail?\n• Quel type de projet planifiez-vous?\n• Recherchez-vous un financement pour la recherche, les affaires ou personnel?"
+        };
+        return responses[language] || responses.en;
+      },
+      
+      // New intelligent responses
+      occupation_grants: (intent) => {
+        const occupationText = intent.occupations.map(occ => 
+          `**${occ.occupation.charAt(0).toUpperCase() + occ.occupation.slice(1)}**`
+        ).join(', ');
+        
+        return `Great! I found some excellent grant opportunities for ${occupationText}:\n\n${intent.occupations.map(occ => {
+          return `🎯 **${occ.occupation.charAt(0).toUpperCase() + occ.occupation.slice(1)} Grants:**\n${occ.grants.map(grant => `• ${grant}`).join('\n')}\n`;
+        }).join('')}💡 **Pro Tips:**\n• Check eligibility criteria carefully\n• Prepare required documentation in advance\n• Consider application deadlines\n• Look for matching funding opportunities\n\nWould you like me to help you check specific requirements for any of these grants, or would you prefer to explore grants in a different category?`;
+      },
+      
+      occupation_inquiry: "That's interesting! I'd love to help you find grants that match your profession. Could you tell me a bit more about your work? Are you involved in:\n\n• Healthcare or medical research\n• Technology or engineering\n• Education or academia\n• Arts and creative work\n• Business or entrepreneurship\n• Environmental or agricultural work\n• Something else entirely?\n\nOnce I understand your field better, I can provide much more targeted grant recommendations!",
+      
+      grant_search: "I'd be happy to help you find grants! To give you the most relevant results, could you tell me:\n\n🎯 **What type of funding are you looking for?**\n• Research grants for academic projects\n• Business startup or innovation funding\n• Educational scholarships or fellowships\n• Creative or artistic project grants\n• Community or nonprofit funding\n• Technology or scientific research\n\n🏢 **What's your background?**\n• Student or recent graduate\n• Researcher or academic\n• Entrepreneur or business owner\n• Nonprofit organization\n• Individual artist or creative professional\n\nThe more specific you can be, the better I can tailor my recommendations to your needs!",
+      
+      funding_amount: "Great question about funding amounts! Grant sizes vary widely depending on the type and purpose:\n\n💰 **Typical Grant Ranges:**\n• **Small Grants:** $1,000 - $25,000\n  - Individual research projects\n  - Student scholarships\n  - Community initiatives\n\n• **Medium Grants:** $25,000 - $250,000\n  - Research programs\n  - Business innovation\n  - Educational programs\n\n• **Large Grants:** $250,000 - $1,000,000+\n  - Major research initiatives\n  - Large-scale projects\n  - Multi-year programs\n\n📊 **Factors that affect amount:**\n• Project scope and duration\n• Organization size and type\n• Funding source (government vs. private)\n• Expected impact and outcomes\n\nWhat type of project are you planning? I can help you identify grants that typically fund projects like yours!",
       
       eligibility: language === 'es' ? "La elegibilidad de las subvenciones varía según el programa. Generalmente, necesitarás:\n\n• Ser un tipo de organización elegible (sin fines de lucro, negocio, etc.)\n• Cumplir criterios específicos para cada subvención\n• Tener un proyecto o propósito calificado\n• Enviar documentación requerida\n\n¿Te gustaría que te ayude a verificar programas específicos?" :
                     language === 'fr' ? "L'éligibilité des subventions varie selon le programme. Généralement, vous aurez besoin de:\n\n• Être un type d'organisation éligible (à but non lucratif, entreprise, etc.)\n• Respecter des critères spécifiques pour chaque subvention\n• Avoir un projet ou un objectif qualifié\n• Soumettre la documentation requise\n\n'aimeriez-vous que je vous aide à vérifier des programmes spécifiques?" :
-                    "Grant eligibility varies by program. Generally, you'll need to:\n\n• Be an eligible organization type (nonprofit, business, etc.)\n• Meet specific criteria for each grant\n• Have a qualifying project or purpose\n• Submit required documentation\n\nWould you like me to help you check specific programs?",
+                    "Grant eligibility varies by program, but I can help you understand the common requirements:\n\n✅ **Typical Eligibility Criteria:**\n• **Organization Type:** Nonprofit, business, educational institution, or individual\n• **Geographic Location:** Often restricted to specific regions or countries\n• **Project Focus:** Must align with the grantor's mission and goals\n• **Financial Need:** Demonstrate genuine need for funding\n• **Impact Potential:** Show how your project will create meaningful results\n\n📋 **Common Requirements:**\n• Detailed project proposal or plan\n• Budget and financial statements\n• Letters of support or recommendation\n• Proof of tax-exempt status (for nonprofits)\n• CV or resume of key personnel\n\nWould you like me to help you check specific eligibility requirements for any particular grants?",
       
       show_actions: "I can take you directly to these sections:",
       
-      unknown: language === 'es' ? "Estoy aquí para ayudar con subvenciones y navegación de la plataforma. Puedes preguntarme sobre:\n\n• Encontrar subvenciones y financiación\n• Procesos de aplicación\n• Requisitos de elegibilidad\n• Navegación de la plataforma\n\n¡O intenta preguntarme para 'mostrar opciones de navegación' para enlaces directos!" :
-               language === 'fr' ? "Je suis ici pour vous aider avec les subventions et la navigation de la plateforme. Vous pouvez me demander:\n\n• Trouver des subventions et financement\n• Processus de candidature\n• Critères d'éligibilité\n• Navigation de la plateforme\n\nOu essayez de me demander de 'afficher les options de navigation' pour des liens directs!" :
-               "I'm here to help with grants and platform navigation. You can ask me about:\n\n• Finding grants and funding\n• Application processes\n• Eligibility requirements\n• Platform navigation\n\nOr try asking me to 'show navigation options' for direct links!"
+      unknown: language === 'es' ? "Interesante pregunta! Aunque no estoy seguro de entender exactamente lo que buscas, estoy aquí para ayudarte con subvenciones y navegación de la plataforma. Puedes preguntarme sobre:\n\n• Encontrar subvenciones específicas para tu campo\n• Verificar elegibilidad y requisitos\n• Procesos de aplicación paso a paso\n• Navegación a diferentes secciones\n• Análisis de oportunidades de financiamiento\n\n¿Podrías ser un poco más específico sobre lo que te interesa? ¡Estoy aquí para ayudarte!" :
+               language === 'fr' ? "Question intéressante! Bien que je ne sois pas sûr de comprendre exactement ce que vous recherchez, je suis ici pour vous aider avec les subventions et la navigation de la plateforme. Vous pouvez me demander:\n\n• Trouver des subventions spécifiques à votre domaine\n• Vérifier l'éligibilité et les exigences\n• Processus de candidature étape par étape\n• Navigation vers différentes sections\n• Analyse des opportunités de financement\n\nPourriez-vous être un peu plus spécifique sur ce qui vous intéresse? Je suis là pour vous aider!" :
+               "That's an interesting question! While I'm not entirely sure what you're looking for, I'm here to help you with grants and platform navigation. You can ask me about:\n\n• Finding grants specific to your field\n• Checking eligibility and requirements\n• Step-by-step application processes\n• Navigating to different sections\n• Analyzing funding opportunities\n\nCould you be a bit more specific about what interests you? I'm here to help you discover exactly what you need!"
     };
 
-    return responses[intent.intent] || responses.unknown;
+    const response = responses[intent.intent];
+    return typeof response === 'function' ? response(intent) : response || responses.unknown;
   };
 
   // Website paths for navigation
@@ -375,7 +448,7 @@ const ChatBot = () => {
       
       let responseText = '';
       
-      // Handle different intents
+      // Handle different intents - Updated to use intelligent responses
       if (intent.intent === 'show_analytics') {
         setShowAnalytics(true);
         responseText = 'Opening analytics dashboard...';
@@ -396,16 +469,24 @@ const ChatBot = () => {
       } else if (intent.intent === 'ho_greeting') {
         setIsHolidayMode(true);
         responseText = "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄";
+      } else if (intent.intent === 'greeting_morning') {
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'greeting_afternoon') {
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'greeting_evening') {
+        responseText = generateResponse(currentMessage, intent);
       } else if (intent.intent === 'greeting_spanish') {
-        responseText = "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?";
+        responseText = generateResponse(currentMessage, intent);
       } else if (intent.intent === 'greeting_french') {
-        responseText = "Bonjour! Je suis votre assistant avancé de découverte de subventions. Comment puis-je vous aider aujourd'hui?";
+        responseText = generateResponse(currentMessage, intent);
       } else if (intent.intent === 'occupation_grants') {
-        responseText = `Based on your occupation${intent.occupations.length > 1 ? 's' : ''}, here are relevant grants:\n\n`;
-        intent.occupations.forEach(occ => {
-          responseText += `**${occ.occupation.charAt(0).toUpperCase() + occ.occupation.slice(1)}** grants:\n`;
-          responseText += occ.grants.map(grant => `• ${grant}`).join('\n') + '\n\n';
-        });
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'occupation_inquiry') {
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'grant_search') {
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'funding_amount') {
+        responseText = generateResponse(currentMessage, intent);
       } else {
         responseText = response.response || generateResponse(currentMessage, intent);
       }
@@ -446,24 +527,31 @@ const ChatBot = () => {
         responseText = handleNavigation(intent.target);
       } else if (intent.intent === 'switch_language') {
         setLanguage(intent.lang);
-        const t = translations[intent.lang] || translations.en;
-        responseText = `Language switched to ${intent.lang}. ${t.greeting}`;
+        responseText = `Language switched to ${intent.lang}. ${generateResponse(currentMessage, { intent: 'greeting' })}`;
       } else if (intent.intent === 'holiday_mode') {
         setIsHolidayMode(true);
         responseText = "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄";
       } else if (intent.intent === 'ho_greeting') {
         setIsHolidayMode(true);
         responseText = "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄";
+      } else if (intent.intent === 'greeting_morning') {
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'greeting_afternoon') {
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'greeting_evening') {
+        responseText = generateResponse(currentMessage, intent);
       } else if (intent.intent === 'greeting_spanish') {
-        responseText = "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?";
+        responseText = generateResponse(currentMessage, intent);
       } else if (intent.intent === 'greeting_french') {
-        responseText = "Bonjour! Je suis votre assistant avancé de découverte de subventions. Comment puis-je vous aider aujourd'hui?";
+        responseText = generateResponse(currentMessage, intent);
       } else if (intent.intent === 'occupation_grants') {
-        responseText = `Based on your occupation${intent.occupations.length > 1 ? 's' : ''}, here are relevant grants:\n\n`;
-        intent.occupations.forEach(occ => {
-          responseText += `**${occ.occupation.charAt(0).toUpperCase() + occ.occupation.slice(1)}** grants:\n`;
-          responseText += occ.grants.map(grant => `• ${grant}`).join('\n') + '\n\n';
-        });
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'occupation_inquiry') {
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'grant_search') {
+        responseText = generateResponse(currentMessage, intent);
+      } else if (intent.intent === 'funding_amount') {
+        responseText = generateResponse(currentMessage, intent);
       } else {
         responseText = generateResponse(currentMessage, intent);
       }
@@ -545,48 +633,103 @@ const ChatBot = () => {
     );
   };
 
-  // Occupation-based grant suggestions
+  // Enhanced occupation-based grant suggestions with more occupations and detailed grants
   const occupationGrants = {
-    // Healthcare
-    'doctor': ['NIH SBIR', 'Healthcare Innovation Grants', 'Medical Research Grants'],
-    'nurse': ['Healthcare Workforce Grants', 'Nursing Education Grants', 'Public Health Grants'],
-    'researcher': ['NSF Research Grants', 'NIH Research Grants', 'University Research Grants'],
-    'scientist': ['NSF Grants', 'DOE Research Grants', 'Scientific Research Grants'],
+    // Healthcare & Medical
+    'doctor': ['NIH SBIR Grants', 'Healthcare Innovation Grants', 'Medical Research Grants', 'WHO Health Grants', 'CDC Public Health Grants'],
+    'nurse': ['Healthcare Workforce Grants', 'Nursing Education Grants', 'Public Health Grants', 'Hospital Innovation Grants'],
+    'researcher': ['NSF Research Grants', 'NIH Research Grants', 'University Research Grants', 'Scientific Collaboration Grants'],
+    'scientist': ['NSF Grants', 'DOE Research Grants', 'Scientific Research Grants', 'Lab Equipment Grants'],
+    'dentist': ['Dental Health Grants', 'Oral Health Research Grants', 'Community Health Grants'],
+    'pharmacist': ['Pharmaceutical Research Grants', 'Healthcare Innovation Grants', 'Public Health Grants'],
+    'psychologist': ['Mental Health Grants', 'Behavioral Research Grants', 'Healthcare Innovation Grants'],
     
-    // Technology
-    'engineer': ['SBIR Technology Grants', 'Innovation Grants', 'STEM Education Grants'],
-    'programmer': ['Tech Startup Grants', 'Software Development Grants', 'Digital Innovation Grants'],
-    'developer': ['Technology Grants', 'App Development Grants', 'Tech Innovation Grants'],
-    'entrepreneur': ['Small Business Grants', 'Startup Funding', 'Business Innovation Grants'],
+    // Technology & Engineering
+    'engineer': ['SBIR Technology Grants', 'Innovation Grants', 'STEM Education Grants', 'Technology Transfer Grants'],
+    'programmer': ['Tech Startup Grants', 'Software Development Grants', 'Digital Innovation Grants', 'AI Development Grants'],
+    'developer': ['Technology Grants', 'App Development Grants', 'Tech Innovation Grants', 'Platform Development Grants'],
+    'entrepreneur': ['Small Business Grants', 'Startup Funding', 'Business Innovation Grants', 'Angel Investment Grants'],
+    'architect': ['Design Innovation Grants', 'Sustainable Architecture Grants', 'Urban Planning Grants'],
+    'data scientist': ['Data Analytics Grants', 'AI Research Grants', 'Machine Learning Innovation Grants'],
     
     // Education
-    'teacher': ['Education Grants', 'STEM Education Grants', 'Teacher Professional Development'],
-    'professor': ['Academic Research Grants', 'University Grants', 'Faculty Development Grants'],
-    'student': ['Student Grants', 'Graduate Research Grants', 'Educational Scholarships'],
+    'teacher': ['Education Grants', 'STEM Education Grants', 'Teacher Professional Development', 'Classroom Innovation Grants'],
+    'professor': ['Academic Research Grants', 'University Grants', 'Faculty Development Grants', 'Research Collaboration Grants'],
+    'student': ['Student Grants', 'Graduate Research Grants', 'Educational Scholarships', 'Study Abroad Grants'],
+    'educator': ['Educational Innovation Grants', 'Curriculum Development Grants', 'Teaching Excellence Grants'],
+    'librarian': ['Digital Library Grants', 'Community Education Grants', 'Information Access Grants'],
     
     // Arts & Creative
-    'artist': ['Arts Grants', 'Creative Projects Grants', 'Cultural Funding'],
-    'musician': ['Arts Grants', 'Music Production Grants', 'Cultural Grants'],
-    'writer': ['Literature Grants', 'Writing Fellowships', 'Creative Writing Grants'],
-    'designer': ['Design Grants', 'Creative Industry Grants', 'Innovation Design Grants'],
+    'artist': ['Arts Grants', 'Creative Projects Grants', 'Cultural Funding', 'Individual Artist Grants'],
+    'musician': ['Arts Grants', 'Music Production Grants', 'Cultural Grants', 'Performance Grants'],
+    'writer': ['Literature Grants', 'Writing Fellowships', 'Creative Writing Grants', 'Publishing Support Grants'],
+    'designer': ['Design Grants', 'Creative Industry Grants', 'Innovation Design Grants', 'UX/UI Development Grants'],
+    'photographer': ['Visual Arts Grants', 'Cultural Documentation Grants', 'Artistic Innovation Grants'],
+    'filmmaker': ['Film Production Grants', 'Documentary Grants', 'Media Arts Grants'],
     
     // Business & Finance
-    'consultant': ['Business Development Grants', 'Consulting Grants', 'Professional Services Grants'],
-    'manager': ['Leadership Grants', 'Management Development Grants', 'Business Training Grants'],
-    'analyst': ['Data Analytics Grants', 'Research Grants', 'Financial Research Grants'],
+    'consultant': ['Business Development Grants', 'Consulting Grants', 'Professional Services Grants', 'Strategy Innovation Grants'],
+    'manager': ['Leadership Grants', 'Management Development Grants', 'Business Training Grants', 'Executive Education Grants'],
+    'analyst': ['Data Analytics Grants', 'Research Grants', 'Financial Research Grants', 'Market Analysis Grants'],
+    'accountant': ['Accounting Technology Grants', 'Financial Education Grants', 'Business Process Grants'],
+    'marketing': ['Digital Marketing Grants', 'Brand Development Grants', 'Market Research Grants'],
+    'sales': ['Sales Training Grants', 'Customer Experience Grants', 'Business Development Grants'],
     
     // Environment & Energy
-    'environmentalist': ['Environmental Grants', 'Sustainability Grants', 'Green Technology Grants']
+    'environmentalist': ['Environmental Grants', 'Sustainability Grants', 'Green Technology Grants', 'Climate Research Grants'],
+    'farmer': ['Agricultural Grants', 'Farm Innovation Grants', 'Sustainable Farming Grants', 'Rural Development Grants'],
+    'agriculturist': ['Agriculture Research Grants', 'Food Security Grants', 'Rural Innovation Grants'],
+    'biologist': ['Wildlife Conservation Grants', 'Ecology Research Grants', 'Biodiversity Grants'],
+    'geologist': ['Earth Science Grants', 'Mining Research Grants', 'Environmental Monitoring Grants'],
+    
+    // Social Services & Non-Profit
+    'social worker': ['Social Services Grants', 'Community Development Grants', 'Human Services Grants'],
+    'counselor': ['Mental Health Grants', 'Community Support Grants', ''],
+    'nonprofit': ['FoundationTherapeutic Program Grants Grants', 'Community Development Grants', 'Social Impact Grants'],
+    'volunteer': ['Community Service Grants', 'Volunteer Program Grants', 'Social Innovation Grants'],
+    
+    // Legal & Government
+    'lawyer': ['Legal Aid Grants', 'Justice System Grants', 'Public Interest Law Grants'],
+    'judge': ['Court Innovation Grants', 'Justice Technology Grants', 'Legal System Improvement Grants'],
+    
+    // Trades & Manufacturing
+    'mechanic': ['Automotive Technology Grants', 'Skills Development Grants', 'Trade Innovation Grants'],
+    'electrician': ['Energy Efficiency Grants', 'Smart Grid Technology Grants', 'Electrical Safety Grants'],
+    'plumber': ['Water Conservation Grants', 'Infrastructure Grants', 'Green Building Grants'],
+    'carpenter': ['Construction Innovation Grants', 'Sustainable Building Grants', 'Housing Development Grants']
   };
 
-  // Detect occupation from message
+  // Enhanced occupation detection with more patterns
   const detectOccupation = (text) => {
     const lowerText = text.toLowerCase();
     const detectedOccupations = [];
     
+    // Direct occupation matches
     for (const [occupation, grants] of Object.entries(occupationGrants)) {
       if (lowerText.includes(occupation)) {
         detectedOccupations.push({ occupation, grants });
+      }
+    }
+    
+    // Pattern-based detection
+    const occupationPatterns = {
+      'doctor': [/medical doctor|physician|md|general practitioner|gp/i],
+      'nurse': [/registered nurse|rn|nursing|healthcare worker/i],
+      'teacher': [/educator|instructor|professor|lecturer|academician/i],
+      'student': [/undergraduate|graduate student|phd candidate|research student/i],
+      'engineer': [/software engineer|mechanical engineer|civil engineer|electrical engineer/i],
+      'programmer': [/coder|software developer|software engineer|web developer/i],
+      'farmer': [/agriculture|farming|rancher|crop|livestock/i],
+      'artist': [/painter|sculptor|visual artist|creative professional/i],
+      'musician': [/composer|performer|music producer|singer/i],
+      'writer': [/author|novelist|journalist|content writer/i],
+      'lawyer': [/attorney|legal counsel|law professional|legal advisor/i],
+      'consultant': [/business consultant|advisor|specialist|expert/i]
+    };
+    
+    for (const [occupation, patterns] of Object.entries(occupationPatterns)) {
+      if (patterns.some(pattern => pattern.test(lowerText)) && !detectedOccupations.find(o => o.occupation === occupation)) {
+        detectedOccupations.push({ occupation, grants: occupationGrants[occupation] });
       }
     }
     
