@@ -428,13 +428,11 @@ const ChatBot = () => {
     );
   };
 
-  // Quick action suggestions
+  // Quick action suggestions (more concise)
   const quickActions = [
-    "Find grants for my business",
-    "Check eligibility requirements",
-    "Show navigation options",
-    "Tell me about deadlines",
-    "How much funding is available?"
+    "Find grants",
+    "Check eligibility",
+    "Show navigation"
   ];
   
   const advancedActions = [

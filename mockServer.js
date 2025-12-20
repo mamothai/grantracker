@@ -106,6 +106,12 @@ function extractIntent(query) {
   if (queryLower.includes('apply') || queryLower.includes('application')) {
     return { primary: 'application_help', confidence: 0.8 };
   }
+  if (queryLower.includes('hello') || queryLower.includes('hi') || queryLower.includes('hey')) {
+    return { primary: 'greeting', confidence: 0.9 };
+  }
+  if (queryLower.includes('help')) {
+    return { primary: 'help', confidence: 0.8 };
+  }
   
   return { primary: 'general', confidence: 0.5 };
 }
@@ -174,6 +180,14 @@ function processAdvancedChat(query) {
           response += '\n';
         }
       });
+      break;
+      
+    case 'greeting':
+      response = 'Hello! I\'m your advanced grant discovery assistant. I can help you find grants, check eligibility, understand requirements, and navigate the platform. What would you like to explore?';
+      break;
+      
+    case 'help':
+      response = 'I can help you with:\n\n• Finding grants and funding opportunities\n• Checking eligibility requirements\n• Understanding application processes\n• Navigating to different sections\n• Information about deadlines and amounts\n\nWhat specific area interests you?';
       break;
       
     default:
