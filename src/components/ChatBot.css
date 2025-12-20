@@ -129,7 +129,6 @@ body {
   right: var(--space-6);
   z-index: var(--z-chatbot);
   font-family: var(--font-family);
-  pointer-events: none;
 }
 
 .chatbot-container * {
