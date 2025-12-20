@@ -126,8 +126,19 @@ const ChatBot = () => {
   const analyzeIntent = (text) => {
     const query = text.toLowerCase();
     
+    // Holiday mode detection first
+    if (/(santa|christmas|holiday|festive)/i.test(query)) {
+      return { intent: 'holiday_mode', confidence: 0.98 };
+    }
+    
     // Greeting intents
     if (/(hello|hi|hey|hola|bonjour)/i.test(query)) {
+      if (query.includes('hola')) {
+        return { intent: 'greeting_spanish', confidence: 0.95 };
+      }
+      if (query.includes('bonjour')) {
+        return { intent: 'greeting_french', confidence: 0.95 };
+      }
       return { intent: 'greeting', confidence: 0.95 };
     }
     
@@ -199,11 +210,6 @@ const ChatBot = () => {
       return { intent: 'switch_language', lang: 'fr', confidence: 0.9 };
     }
     
-    // Holiday mode
-    if (/(santa|christmas|holiday|festive)/i.test(query)) {
-      return { intent: 'holiday_mode', confidence: 0.9 };
-    }
-    
     // General intents
     if (/(help|support)/i.test(query)) {
       return { intent: 'help', confidence: 0.9 };
@@ -224,6 +230,9 @@ const ChatBot = () => {
     
     const responses = {
       greeting: t.greeting,
+      greeting_spanish: "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?",
+      greeting_french: "Bonjour! Je suis votre assistant avancé de découverte de subventions. Comment puis-je vous aider aujourd'hui?",
+      holiday_mode: "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄",
       gratitude: language === 'es' ? "¡De nada! Estoy aquí para ayudar con cualquier otra pregunta sobre subvenciones." :
                   language === 'fr' ? "De rien! Je suis là pour vous aider avec toute autre question sur les subventions." :
                   "You're welcome! I'm here to help with any other questions about grants.",
@@ -272,10 +281,19 @@ const ChatBot = () => {
   // Initialize with welcome message
   useEffect(() => {
     if (messages.length === 0) {
-      const t = translations[language] || translations.en;
+      let welcomeText;
+      
+      // Check if it's holiday season or use language-specific greeting
+      if (isHolidayMode) {
+        welcomeText = "🎅 Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover? 🎄";
+      } else {
+        const t = translations[language] || translations.en;
+        welcomeText = t.welcome;
+      }
+      
       const welcomeMessage = {
         id: 1,
-        text: t.welcome,
+        text: welcomeText,
         sender: 'bot',
         timestamp: new Date(),
         intent: 'greeting'
@@ -284,7 +302,7 @@ const ChatBot = () => {
       conversationManager.addMessage(welcomeMessage, false);
       setMessages([welcomeMessage]);
     }
-  }, [language]);
+  }, [language, isHolidayMode]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -357,7 +375,11 @@ const ChatBot = () => {
         responseText = `Language switched to ${intent.lang}. ${generateResponse(currentMessage, { intent: 'greeting' })}`;
       } else if (intent.intent === 'holiday_mode') {
         setIsHolidayMode(true);
-        responseText = isHolidayMode ? 'Holiday mode activated! 🎄' : 'Holiday mode activated! 🎅';
+        responseText = responses.holiday_mode;
+      } else if (intent.intent === 'greeting_spanish') {
+        responseText = responses.greeting_spanish;
+      } else if (intent.intent === 'greeting_french') {
+        responseText = responses.greeting_french;
       } else {
         responseText = response.response || generateResponse(currentMessage, intent);
       }
@@ -402,7 +424,11 @@ const ChatBot = () => {
         responseText = `Language switched to ${intent.lang}. ${t.greeting}`;
       } else if (intent.intent === 'holiday_mode') {
         setIsHolidayMode(true);
-        responseText = 'Holiday mode activated! 🎄🎅';
+        responseText = responses.holiday_mode;
+      } else if (intent.intent === 'greeting_spanish') {
+        responseText = responses.greeting_spanish;
+      } else if (intent.intent === 'greeting_french') {
+        responseText = responses.greeting_french;
       } else {
         responseText = generateResponse(currentMessage, intent);
       }
@@ -510,6 +536,7 @@ const ChatBot = () => {
         title={isOpen ? 'Close chat (Ctrl+K)' : 'Open chat (Ctrl+K)'}
       >
         {isHolidayMode ? '🎅' : isOpen ? '×' : '💬'}
+        {isHolidayMode && <span className="santa-sparkle">✨</span>}
       </button>
 
       {/* Chat Window */}
