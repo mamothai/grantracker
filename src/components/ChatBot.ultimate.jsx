@@ -19,6 +19,10 @@ const ChatBot = () => {
   const [language, setLanguage] = useState('en');
   const [isHolidayMode, setIsHolidayMode] = useState(false);
   const [conversationId] = useState(() => `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [particles, setParticles] = useState([]);
+  const [confetti, setConfetti] = useState([]);
+  const particleIntervalRef = useRef(null);
+  const confettiIntervalRef = useRef(null);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -589,6 +593,104 @@ const ChatBot = () => {
     return detectedOccupations;
   };
 
+  // Particle System for Holiday Mode
+  const createParticle = () => {
+    const holidayEmojis = ['🎄', '⭐', '✨', '🎅', '🎁', '❄️', '🔔', '🕯️'];
+    return {
+      id: Date.now() + Math.random(),
+      emoji: holidayEmojis[Math.floor(Math.random() * holidayEmojis.length)],
+      x: Math.random() * window.innerWidth,
+      y: -10,
+      speed: Math.random() * 2 + 1,
+      opacity: Math.random() * 0.7 + 0.3
+    };
+  };
+
+  const createConfetti = () => {
+    const colors = ['#dc2626', '#f59e0b', '#16a34a', '#3b82f6', '#8b5cf6', '#ec4899'];
+    return {
+      id: Date.now() + Math.random(),
+      x: Math.random() * window.innerWidth,
+      y: -10,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 8 + 4,
+      speed: Math.random() * 3 + 2,
+      rotation: Math.random() * 360
+    };
+  };
+
+  const startParticleSystem = () => {
+    if (particleIntervalRef.current) clearInterval(particleIntervalRef.current);
+    
+    particleIntervalRef.current = setInterval(() => {
+      setParticles(prev => {
+        const newParticles = [...prev, createParticle()];
+        // Keep only last 50 particles
+        return newParticles.slice(-50);
+      });
+    }, 300);
+  };
+
+  const startConfettiSystem = () => {
+    if (confettiIntervalRef.current) clearInterval(confettiIntervalRef.current);
+    
+    confettiIntervalRef.current = setInterval(() => {
+      setConfetti(prev => {
+        const newConfetti = [...prev, createConfetti()];
+        // Keep only last 30 confetti pieces
+        return newConfetti.slice(-30);
+      });
+    }, 200);
+  };
+
+  const stopParticleSystem = () => {
+    if (particleIntervalRef.current) {
+      clearInterval(particleIntervalRef.current);
+      particleIntervalRef.current = null;
+    }
+    setParticles([]);
+  };
+
+  const stopConfettiSystem = () => {
+    if (confettiIntervalRef.current) {
+      clearInterval(confettiIntervalRef.current);
+      confettiIntervalRef.current = null;
+    }
+    setConfetti([]);
+  };
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      stopParticleSystem();
+      stopConfettiSystem();
+    };
+  }, []);
+
+  // Handle holiday mode toggle effects
+  useEffect(() => {
+    if (isHolidayMode) {
+      startParticleSystem();
+      // Add confetti burst when entering holiday mode
+      setConfetti(Array.from({ length: 20 }, () => createConfetti()));
+      setTimeout(() => stopConfettiSystem(), 3000);
+      
+      // Add visual celebration effect
+      setTimeout(() => {
+        const celebrationElements = document.querySelectorAll('.chatbot-container');
+        celebrationElements.forEach(el => {
+          el.style.animation = 'holidayCelebration 1s ease-in-out';
+          setTimeout(() => {
+            el.style.animation = '';
+          }, 1000);
+        });
+      }, 100);
+    } else {
+      stopParticleSystem();
+      stopConfettiSystem();
+    }
+  }, [isHolidayMode]);
+
   // Progressive typing effect
   const [typingText, setTypingText] = useState('');
   const [isTypingEffect, setIsTypingEffect] = useState(false);
@@ -622,7 +724,44 @@ const ChatBot = () => {
       {isHolidayMode && (
         <div className="holiday-overlay">
           <div className="santa-image">🎅</div>
-          <div className="snow-animation">❄️❄️❄️</div>
+          <div className="snow-animation">
+            <div className="snow-layer-1"></div>
+          </div>
+          
+          {/* Particle System */}
+          <div className="particle-system">
+            {particles.map(particle => (
+              <div
+                key={particle.id}
+                className="particle"
+                style={{
+                  left: `${particle.x}px`,
+                  animationDuration: `${6 + Math.random() * 4}s`,
+                  opacity: particle.opacity
+                }}
+              >
+                {particle.emoji}
+              </div>
+            ))}
+          </div>
+          
+          {/* Confetti System */}
+          <div className="confetti-container">
+            {confetti.map(piece => (
+              <div
+                key={piece.id}
+                className="confetti"
+                style={{
+                  left: `${piece.x}px`,
+                  backgroundColor: piece.color,
+                  width: `${piece.size}px`,
+                  height: `${piece.size}px`,
+                  animationDuration: `${3 + Math.random() * 2}s`,
+                  transform: `rotate(${piece.rotation}deg)`
+                }}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -652,9 +791,9 @@ const ChatBot = () => {
                 </h3>
                 <div className="chatbot-status">
                   <span className="status-indicator"></span>
-                  <span>Online</span>
-                  <span className="pro-badge">Pro</span>
-                  {isHolidayMode && <span className="holiday-badge">🎄</span>}
+                  <span>{isHolidayMode ? '🎅 Online - Ho Ho Ho!' : 'Online'}</span>
+                  <span className="pro-badge">{isHolidayMode ? '🎄 Pro' : 'Pro'}</span>
+                  {isHolidayMode && <span className="holiday-badge">🎁 Festive</span>}
                 </div>
               </div>
             </div>
@@ -739,20 +878,53 @@ const ChatBot = () => {
               </div>
             ))}
 
-            {/* Typing Indicator */}
+            {/* Enhanced Typing Indicator */}
             {(isLoading || isTyping) && (
               <div className="chatbot-message bot" role="status" aria-live="polite">
                 <div className="chatbot-avatar">
-                  {isHolidayMode ? '🎅' : '🤖'}
+                  {isHolidayMode ? (
+                    <div style={{ position: 'relative' }}>
+                      🎅
+                      {isHolidayMode && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '-5px',
+                          right: '-5px',
+                          fontSize: '8px',
+                          animation: 'sparkle 1s ease-in-out infinite alternate'
+                        }}>
+                          ✨
+                        </div>
+                      )}
+                    </div>
+                  ) : '🤖'}
                 </div>
                 <div className="chatbot-message-bubble">
                   <div className="chatbot-typing-indicator">
-                    <span className="typing-dot"></span>
-                    <span className="typing-dot"></span>
-                    <span className="typing-dot"></span>
+                    {isHolidayMode ? (
+                      <>
+                        <span className="typing-dot" style={{ background: '#dc2626' }}>🎄</span>
+                        <span className="typing-dot" style={{ background: '#f59e0b' }}>✨</span>
+                        <span className="typing-dot" style={{ background: '#16a34a' }}>🎅</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="typing-dot"></span>
+                        <span className="typing-dot"></span>
+                        <span className="typing-dot"></span>
+                      </>
+                    )}
                   </div>
                   <div className="typing-text">
-                    {isHolidayMode ? 'Ho ho ho, thinking...' : 'Thinking...'}
+                    {isHolidayMode ? (
+                      <span style={{ 
+                        color: '#dc2626',
+                        fontWeight: '600',
+                        textShadow: '0 0 5px rgba(220, 38, 38, 0.3)'
+                      }}>
+                        🎄 Ho ho ho, thinking of perfect grants... 🎁
+                      </span>
+                    ) : 'Thinking...'}
                   </div>
                 </div>
               </div>
@@ -801,11 +973,32 @@ const ChatBot = () => {
                   <button
                     key={index}
                     className="quick-action-button"
-                    onClick={() => handleQuickAction(action)}
+                    onClick={(e) => {
+                      // Add visual feedback for holiday mode
+                      if (isHolidayMode) {
+                        e.target.style.transform = 'scale(0.95)';
+                        e.target.style.boxShadow = '0 0 20px rgba(220, 38, 38, 0.6)';
+                        setTimeout(() => {
+                          e.target.style.transform = 'scale(1)';
+                          e.target.style.boxShadow = '';
+                        }, 200);
+                      }
+                      handleQuickAction(action);
+                    }}
                     disabled={isLoading}
                     aria-label={`Ask: ${action}`}
                   >
-                    {isHolidayMode ? `🎄 ${action}` : action}
+                    {isHolidayMode ? (
+                      <>
+                        <span style={{ 
+                          marginRight: '4px',
+                          animation: 'sparkle 1.5s ease-in-out infinite alternate'
+                        }}>
+                          {index === 0 ? '🎄' : index === 1 ? '✨' : '🎅'}
+                        </span>
+                        {action}
+                      </>
+                    ) : action}
                   </button>
                 ))}
               </div>
