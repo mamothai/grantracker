@@ -1,6 +1,7 @@
 /* ===================================
-   MODERN CHATBOT CSS
-   Clean, accessible, and performant
+   ADVANCED CHATBOT CSS
+   Enterprise Quality UI/UX with Modern Design
+   Optimized for all devices and accessibility
    =================================== */
 
 /* CSS Custom Properties - Modern Design System */
@@ -274,6 +275,18 @@ body {
   font-weight: var(--font-weight-medium);
 }
 
+.pro-badge {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 3px rgba(251, 191, 36, 0.3);
+}
+
 .status-indicator {
   width: 8px;
   height: 8px;
@@ -496,6 +509,16 @@ body {
 
 .chatbot-message.user .chatbot-message-time {
   color: rgba(255, 255, 255, 0.7);
+}
+
+.confidence-indicator {
+  margin-left: var(--space-2);
+  font-size: 10px;
+  opacity: 0.7;
+  background: rgba(37, 99, 235, 0.1);
+  padding: 1px 4px;
+  border-radius: 8px;
+  color: var(--primary);
 }
 
 /* ===================================
@@ -1342,6 +1365,91 @@ body {
 .settings-header button:hover {
   background: var(--gray-100);
   color: var(--gray-700);
+}
+
+/* Additional Advanced Styles */
+.conversation-id-display {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 10px;
+  background: var(--gray-100);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--gray-700);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stats-display {
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+/* Enhanced Message Bubbles */
+.chatbot-message-bubble {
+  position: relative;
+  overflow: hidden;
+}
+
+.chatbot-message-bubble::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.chatbot-message.bot .chatbot-message-bubble::before {
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+}
+
+/* Improved Empty State */
+.chatbot-empty-state {
+  position: relative;
+}
+
+.chatbot-empty-state::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  border-radius: 1px;
+}
+
+/* Enhanced Quick Actions */
+.quick-action-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-action-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.quick-action-button:active::after {
+  width: 100px;
+  height: 100px;
 }
 
 /* ===================================
