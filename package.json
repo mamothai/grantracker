@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "node mockServer.js",
+    "dev:full": "npm run dev:mock & npm run dev",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
