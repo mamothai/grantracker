@@ -578,6 +578,10 @@ body {
   font-style: italic;
 }
 
+.holiday-mode .typing-text {
+  color: #374151;
+}
+
 /* ===================================
    INPUT AREA
    Clean form design
@@ -2154,6 +2158,7 @@ body {
   border: 2px solid #fca5a5;
   position: relative;
   animation: messageHolidayGlow 3s ease-in-out infinite;
+  color: #1f2937;
   box-shadow: 
     0 4px 15px rgba(220, 38, 38, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -2324,6 +2329,14 @@ body {
   position: relative;
 }
 
+.holiday-mode .chatbot-header h3 {
+  color: #1f2937;
+}
+
+.holiday-mode .chatbot-status {
+  color: #374151;
+}
+
 .holiday-mode .chatbot-header::before {
   content: '';
   position: absolute;
@@ -2372,6 +2385,11 @@ body {
 .holiday-mode .chatbot-input {
   border: 2px solid #fca5a5;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #1f2937;
+}
+
+.holiday-mode .chatbot-input::placeholder {
+  color: #6b7280;
 }
 
 .holiday-mode .chatbot-input:focus {
@@ -2383,6 +2401,14 @@ body {
 .holiday-mode .chatbot-settings-panel {
   border: 2px solid #fca5a5;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.holiday-mode .settings-content {
+  color: #1f2937;
+}
+
+.holiday-mode .setting-group label {
+  color: #374151;
 }
 
 /* Quick Action Holiday Theme */
