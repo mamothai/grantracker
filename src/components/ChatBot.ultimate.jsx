@@ -3,8 +3,12 @@ import { chatAPI } from '../services/apiService.js';
 // Santa image removed
 import './ChatBot.css';
 
+import { useNavigate } from 'react-router-dom';
+
 // Ultimate ChatBot with all advanced features
 const ChatBot = () => {
+  // Navigation hook
+  const navigate = useNavigate();
   // State management
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -262,9 +266,14 @@ const ChatBot = () => {
       return { intent: 'gratitude', confidence: 0.9 };
     }
     if (/(show|navigate|go to|take me)/i.test(query)) {
-      return { intent: 'show_actions', confidence: 0.8 };
+      return { intent: 'navigation', confidence: 0.8 };
     }
     
+    // Website info intents
+    if (/(website|app|what is|contact|support)/i.test(query)) {
+      return { intent: 'website_info', confidence: 0.8 };
+    }
+
     return { intent: 'unknown', confidence: 0.1 };
   };
 
@@ -335,6 +344,10 @@ const ChatBot = () => {
                     language === 'fr' ? "L'éligibilité des subventions varie selon le programme. Généralement, vous aurez besoin de:\n\n• Être un type d'organisation éligible (à but non lucratif, entreprise, etc.)\n• Respecter des critères spécifiques pour chaque subvention\n• Avoir un projet ou un objectif qualifié\n• Soumettre la documentation requise\n\n'aimeriez-vous que je vous aide à vérifier des programmes spécifiques?" :
                     "Grant eligibility varies by program, but I can help you understand the common requirements:\n\n✅ **Typical Eligibility Criteria:**\n• **Organization Type:** Nonprofit, business, educational institution, or individual\n• **Geographic Location:** Often restricted to specific regions or countries\n• **Project Focus:** Must align with the grantor's mission and goals\n• **Financial Need:** Demonstrate genuine need for funding\n• **Impact Potential:** Show how your project will create meaningful results\n\n📋 **Common Requirements:**\n• Detailed project proposal or plan\n• Budget and financial statements\n• Letters of support or recommendation\n• Proof of tax-exempt status (for nonprofits)\n• CV or resume of key personnel\n\nWould you like me to help you check specific eligibility requirements for any particular grants?",
       
+      navigation: "I can help you navigate the website. Try saying 'Go to Home', 'Open Creator Login', or 'Show me Public View'.",
+      
+      website_info: "GranTracker is a platform designed to help users find and apply for government grants. We connect grant seekers with funding opportunities across various sectors.",
+
       show_actions: "I can take you directly to these sections:",
       
       unknown: language === 'es' ? "Interesante pregunta! Aunque no estoy seguro de entender exactamente lo que buscas, estoy aquí para ayudarte con subvenciones y navegación de la plataforma. Puedes preguntarme sobre:\n\n• Encontrar subvenciones específicas para tu campo\n• Verificar elegibilidad y requisitos\n• Procesos de aplicación paso a paso\n• Navegación a diferentes secciones\n• Análisis de oportunidades de financiamiento\n\n¿Podrías ser un poco más específico sobre lo que te interesa? ¡Estoy aquí para ayudarte!" :
@@ -491,6 +504,13 @@ const ChatBot = () => {
         responseText = response.response || generateResponse(currentMessage, intent);
       }
 
+      // Handle navigation from response
+      if (response.navigationPath) {
+        setTimeout(() => {
+          navigate(response.navigationPath);
+        }, 1500);
+      }
+
       const botMessage = {
         id: Date.now() + 1,
         text: responseText,
@@ -524,7 +544,29 @@ const ChatBot = () => {
         setShowSettings(true);
         responseText = 'Opening settings...';
       } else if (intent.intent === 'navigate') {
-        responseText = handleNavigation(intent.target);
+         responseText = handleNavigation(intent.target);
+      } else if (intent.intent === 'navigation') {
+        if (currentMessage.toLowerCase().includes('home')) {
+           responseText = "Navigating you to the Home page.";
+           setTimeout(() => navigate('/'), 1500);
+        } else if (currentMessage.toLowerCase().includes('about')) {
+           responseText = "Taking you to the About Us page.";
+           setTimeout(() => navigate('/about'), 1500);
+        } else if (currentMessage.toLowerCase().includes('creator') || currentMessage.toLowerCase().includes('login')) {
+           responseText = "Redirecting you to the Creator Login page.";
+           setTimeout(() => navigate('/creator-login'), 1500);
+        } else if (currentMessage.toLowerCase().includes('gov') || currentMessage.toLowerCase().includes('dashboard')) {
+           responseText = "Taking you to the Government Dashboard login.";
+           setTimeout(() => navigate('/gov-login'), 1500);
+        } else if (currentMessage.toLowerCase().includes('suggestion')) {
+           responseText = "Opening the Suggestion Box for you.";
+           setTimeout(() => navigate('/suggestion-box'), 1500);
+        } else if (currentMessage.toLowerCase().includes('public') || currentMessage.toLowerCase().includes('view')) {
+           responseText = "Taking you to the Public View where you can see all grants.";
+           setTimeout(() => navigate('/public-view'), 1500);
+        } else {
+           responseText = generateResponse(currentMessage, intent);
+        }
       } else if (intent.intent === 'switch_language') {
         setLanguage(intent.lang);
         responseText = `Language switched to ${intent.lang}. ${generateResponse(currentMessage, { intent: 'greeting' })}`;

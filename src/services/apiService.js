@@ -29,26 +29,75 @@ const MOCK_RESPONSES = {
       const intent = extractIntent(query);
       let response = '';
       let grants = [];
+      let navigationPath = null;
       
       switch (intent.primary) {
         case 'grant_search':
           grants = grantDatabase.filter(grant => 
             query.toLowerCase().includes(grant.title.toLowerCase()) ||
             query.toLowerCase().includes(grant.agency.toLowerCase()) ||
-            query.toLowerCase().includes(grant.sector.toLowerCase())
+            query.toLowerCase().includes(grant.sector.toLowerCase()) ||
+            (grant.keywords && grant.keywords.some(k => query.toLowerCase().includes(k)))
           ).slice(0, 3);
           
-          response = `I found ${grants.length} grant${grants.length > 1 ? 's' : ''} that match your criteria:\n\n`;
-          grants.forEach((grant, index) => {
-            response += `**${index + 1}. ${grant.title}**\n`;
-            response += `🏛️ Agency: ${grant.agency}\n`;
-            response += `💰 Amount: ${grant.amount}\n`;
-            response += `📅 Deadline: ${grant.deadline}\n\n`;
-          });
+          if (grants.length > 0) {
+            response = `I found ${grants.length} grant${grants.length > 1 ? 's' : ''} that match your criteria:\n\n`;
+            grants.forEach((grant, index) => {
+              response += `**${index + 1}. ${grant.title}**\n`;
+              response += `🏛️ Agency: ${grant.agency}\n`;
+              response += `💰 Amount: ${grant.amount}\n`;
+              response += `📅 Deadline: ${grant.deadline}\n\n`;
+            });
+            navigationPath = '/public-view';
+          } else {
+            response = "I couldn't find any specific grants matching your search. However, you can browse all available grants in our Public View section.";
+            navigationPath = '/public-view';
+          }
           break;
+
+        case 'navigation':
+          if (query.toLowerCase().includes('home')) {
+            response = "Navigating you to the Home page.";
+            navigationPath = '/';
+          } else if (query.toLowerCase().includes('about')) {
+            response = "Taking you to the About Us page.";
+            navigationPath = '/about';
+          } else if (query.toLowerCase().includes('creator') || query.toLowerCase().includes('login')) {
+            response = "Redirecting you to the Creator Login page.";
+            navigationPath = '/creator-login';
+          } else if (query.toLowerCase().includes('gov') || query.toLowerCase().includes('dashboard')) {
+            response = "Taking you to the Government Dashboard login.";
+            navigationPath = '/gov-login';
+          } else if (query.toLowerCase().includes('suggestion')) {
+            response = "Opening the Suggestion Box for you.";
+            navigationPath = '/suggestion-box';
+          } else if (query.toLowerCase().includes('public') || query.toLowerCase().includes('view')) {
+            response = "Taking you to the Public View where you can see all grants.";
+            navigationPath = '/public-view';
+          } else if (query.toLowerCase().includes('create') || query.toLowerCase().includes('new grant')) {
+             response = "Taking you to the Create Grant page.";
+             navigationPath = '/create-grant';
+          } else if (query.toLowerCase().includes('benefits')) {
+             response = "Taking you to the Benefits Scheme page.";
+             navigationPath = '/benefits-scheme';
+          } else {
+            response = "I can help you navigate to: Home, About, Creator Login, Government Dashboard, Suggestion Box, Public View, Create Grant, and Benefits Scheme. Where would you like to go?";
+          }
+          break;
+
+        case 'website_info':
+            if (query.toLowerCase().includes('what is this') || query.toLowerCase().includes('about')) {
+                response = "GranTracker is a platform designed to help users find and apply for government grants. It connects grant seekers with funding opportunities across various sectors like Agriculture, Education, Health, and more.";
+            } else if (query.toLowerCase().includes('contact') || query.toLowerCase().includes('support')) {
+                response = "You can reach out to our support team through the Suggestion Box page or email us at support@grantracker.com.";
+                navigationPath = '/suggestion-box';
+            } else {
+                 response = "I can answer questions about GranTracker, its features, and how to use it. feel free to ask!";
+            }
+            break;
           
         default:
-          response = `I can help you with grant-related questions! Try asking about:\n\n• Available grants\n• Eligibility requirements\n• Application deadlines\n• Funding amounts\n\nWhat specific area interests you?`;
+          response = `I can help you with grant-related questions and navigating the website! Try asking about:\n\n• Available grants (e.g., "Find agriculture grants")\n• Navigation (e.g., "Go to dashboard")\n• Website Info (e.g., "What is this website?")\n\nWhat specific area interests you?`;
       }
       
       return {
@@ -56,10 +105,11 @@ const MOCK_RESPONSES = {
         response,
         suggestions: [
           'Show me available grants',
-          'What are the eligibility requirements?',
-          'Tell me about deadlines'
+          'Go to Public View',
+          'What is this website?'
         ],
         grants,
+        navigationPath,
         metadata: {
           intent: intent.primary,
           confidence: intent.confidence,
@@ -76,9 +126,21 @@ const MOCK_RESPONSES = {
 function extractIntent(query) {
   const queryLower = query.toLowerCase();
   
-  if (queryLower.includes('find') || queryLower.includes('search') || queryLower.includes('grant')) {
+  if (queryLower.includes('go to') || queryLower.includes('navigate') || queryLower.includes('take me') || queryLower.includes('open page')) {
+    return { primary: 'navigation', confidence: 0.9 };
+  }
+  if (queryLower.includes('find') || queryLower.includes('search') || queryLower.includes('grant') || queryLower.includes('funding')) {
     return { primary: 'grant_search', confidence: 0.8 };
   }
+  if (queryLower.includes('website') || queryLower.includes('app') || queryLower.includes('what is') || queryLower.includes('contact') || queryLower.includes('support')) {
+      return { primary: 'website_info', confidence: 0.8 };
+  }
+  
+  // existing checks as fallback/additional context
+  if (queryLower.includes('eligible') || queryLower.includes('qualify')) {
+    return { primary: 'eligibility_check', confidence: 0.7 };
+  }
+
   if (queryLower.includes('eligible') || queryLower.includes('qualify')) {
     return { primary: 'eligibility_check', confidence: 0.7 };
   }
