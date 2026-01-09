@@ -102,93 +102,85 @@ function IconRobot() {
 }
 
 export default function Home() {
+
   return (
     <main className="page-scroll" style={{ position: 'relative', overflow: 'visible', zIndex: 1 }}>
-      {/* Animated falling stars background */}
+      {/* Night sky background with static stars and shooting star animation */}
       <div style={{
         position: 'fixed',
         top: 0,
         left: 0,
-        width: '100%',
-        height: '100%',
+        width: '100vw',
+        height: '100vh',
         zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
-        background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%)'
+        background: 'radial-gradient(ellipse at 50% 20%, #232946 60%, #0a0a1a 100%)'
       }}>
-        {/* Stars container */}
         <style>{`
-          @keyframes starfall {
+          .night-star {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            opacity: 0.7;
+            pointer-events: none;
+            box-shadow: 0 0 6px 1px #fffbe7cc;
+          }
+          .shooting-star {
+            position: absolute;
+            width: 2px;
+            height: 120px;
+            background: linear-gradient(265deg, #fffbe7 0%, #facc15 60%, transparent 100%);
+            border-radius: 50px;
+            box-shadow: 0 0 16px 4px #fffbe7cc;
+            pointer-events: none;
+            opacity: 0.85;
+            transform: rotate(-25deg);
+            animation: shootingStar 2.2s cubic-bezier(0.7,0.1,0.9,0.7) infinite;
+            animation-delay: 1.2s;
+          }
+          @keyframes shootingStar {
             0% {
-              transform: translateY(-10vh) scale(1) rotate(0deg);
+              left: 80vw;
+              top: 10vh;
+              opacity: 0;
+            }
+            5% {
               opacity: 1;
             }
-            80% {
+            60% {
               opacity: 1;
             }
             100% {
-              transform: translateY(100vh) scale(0.7) rotate(360deg);
+              left: 10vw;
+              top: 70vh;
               opacity: 0;
             }
           }
-          .falling-star {
-            position: absolute;
-            width: 2px;
-            height: 18px;
-            background: linear-gradient(180deg, #fffbe7 0%, #facc15 80%, transparent 100%);
-            border-radius: 50px;
-            box-shadow: 0 0 8px 2px #fffbe7cc;
-            pointer-events: none;
-          }
-          .falling-star::after {
-            content: '';
-            display: block;
-            position: absolute;
-            left: 50%;
-            top: 0;
-            width: 6px;
-            height: 6px;
-            background: #fffbe7;
-            border-radius: 50%;
-            transform: translateX(-50%);
-            box-shadow: 0 0 8px 2px #fffbe7cc;
-          }
         `}</style>
-
-        {/* Generate stars dynamically */}
-        {[...Array(40)].map((_, i) => {
-          const duration = 5 + Math.random() * 8;
-          const delay = Math.random() * 6;
-          const leftPos = Math.random() * 100;
-          const size = 10 + Math.random() * 10;
-          const rotate = Math.random() * 360;
+        {/* Static stars */}
+        {Array.from({ length: 80 }).map((_, i) => {
+          const size = Math.random() * 1.5 + 0.5;
+          const left = Math.random() * 100;
+          const top = Math.random() * 100;
+          const opacity = 0.5 + Math.random() * 0.5;
           return (
             <div
               key={i}
-              className="falling-star"
+              className="night-star"
               style={{
-                left: `${leftPos}%`,
-                top: `-${Math.random() * 10}vh`,
-                height: `${size}px`,
-                transform: `rotate(${rotate}deg)`,
-                animation: `starfall ${duration}s linear ${delay}s infinite`,
-                opacity: 0.7 + Math.random() * 0.3,
-                filter: `blur(${Math.random() * 0.5}px)`
+                width: `${size + 1}px`,
+                height: `${size + 1}px`,
+                left: `${left}%`,
+                top: `${top}%`,
+                opacity,
+                filter: `blur(${Math.random() * 0.7}px)`
               }}
             />
           );
         })}
-
-        {/* Subtle gradient overlay */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'radial-gradient(circle at 30% 0%, rgba(6, 182, 212, 0.05), transparent 40%), radial-gradient(circle at 70% 100%, rgba(168, 85, 247, 0.05), transparent 40%)',
-          pointerEvents: 'none'
-        }} />
+        {/* Shooting star */}
+        <div className="shooting-star" />
       </div>
 
       {/* HERO */}
