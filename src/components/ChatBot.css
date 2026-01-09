@@ -16,7 +16,7 @@
   animation: meteorFlight 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
 }
 
-/* Trail in front of the meteor (direction of travel) */
+/* Trail in front of the meteor, rotated to follow diagonal direction */
 .shooting-star-real::before {
   content: '';
   position: absolute;
@@ -24,7 +24,7 @@
   left: 100%;
   width: 100px;
   height: 1.2px;
-  background: linear-gradient(to right, 
+  background: linear-gradient(to left, 
     rgba(255, 255, 255, 0.95) 0%,
     rgba(255, 255, 255, 0.7) 10%,
     rgba(240, 245, 255, 0.45) 25%,
@@ -32,10 +32,11 @@
     rgba(180, 195, 225, 0.1) 75%,
     transparent 100%
   );
-  transform: translateY(-50%);
+  transform: translateY(-50%) rotate(25deg);
   border-radius: 50%;
   filter: blur(0.3px);
-  animation: trailReverse 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
+  animation: trailFading 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
+  transform-origin: left center;
 }
 
 /* Secondary subtle trail layer */
@@ -46,15 +47,16 @@
   left: 100%;
   width: 60px;
   height: 0.6px;
-  background: linear-gradient(to right, 
+  background: linear-gradient(to left, 
     rgba(255, 250, 240, 0.7) 0%,
     rgba(245, 248, 255, 0.4) 30%,
     transparent 70%
   );
-  transform: translateY(-50%);
+  transform: translateY(-50%) rotate(25deg);
   border-radius: 50%;
   filter: blur(0.2px);
-  animation: trailReverse 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
+  animation: trailFading 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
+  transform-origin: left center;
 }
 
 @keyframes meteorFlight {
@@ -80,7 +82,7 @@
   }
 }
 
-@keyframes trailReverse {
+@keyframes trailFading {
   0% {
     opacity: 1;
     width: 100px;
