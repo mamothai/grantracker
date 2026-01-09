@@ -13,41 +13,36 @@ const ShootingStar = () => {
       const newStars = [];
 
       for (let i = 0; i < count; i++) {
-        const left = Math.random() * 70 + 15; // 15vw to 85vw
-        const top = Math.random() * 30 + 5; // 5vh to 35vh
-        const angle = Math.random() * 25 - 12; // -12deg to +12deg
-        const duration = 1.5 + Math.random() * 1; // 1.5s to 2.5s
-        const delay = Math.random() * 0.5; // 0 to 0.5s delay
-
+        // Start from the right side, upper portion of the sky
+        const left = Math.random() * 40 + 50; // 50vw to 90vw
+        const top = Math.random() * 25 + 5; // 5vh to 30vh
+        
         newStars.push({
           id: Date.now() + i,
           left,
-          top,
-          angle,
-          duration,
-          delay
+          top
         });
       }
 
       // Add new stars to state
       setShootingStars(prev => [...prev, ...newStars]);
 
-      // Remove stars after animation completes
-      newStars.forEach((star, index) => {
+      // Remove stars after animation completes (1.5s duration)
+      newStars.forEach(star => {
         const timeoutId = setTimeout(() => {
           setShootingStars(prev => prev.filter(s => s.id !== star.id));
-        }, (star.duration + star.delay) * 1000);
+        }, 1600);
         timeoutIds.push(timeoutId);
       });
 
       // Schedule next batch of shooting stars
-      // Random interval between 1.5s and 4s for more variety
-      const nextTimeout = setTimeout(createShootingStar, 1500 + Math.random() * 2500);
+      // Random interval between 2s and 5s for more variety
+      const nextTimeout = setTimeout(createShootingStar, 2000 + Math.random() * 3000);
       timeoutIds.push(nextTimeout);
     };
 
-    // Start the shooting stars
-    const initialTimeout = setTimeout(createShootingStar, 500);
+    // Start the shooting stars after a short delay
+    const initialTimeout = setTimeout(createShootingStar, 1000);
     timeoutIds.push(initialTimeout);
 
     return () => {
@@ -63,10 +58,7 @@ const ShootingStar = () => {
           className="shooting-star-real"
           style={{
             left: `${star.left}vw`,
-            top: `${star.top}vh`,
-            '--angle': `${star.angle}deg`,
-            animationDuration: `${star.duration}s`,
-            animationDelay: `${star.delay}s`
+            top: `${star.top}vh`
           }}
         />
       ))}
