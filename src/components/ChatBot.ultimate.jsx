@@ -60,41 +60,6 @@ const ChatBot = () => {
     }
     return () => clearTimeout(timeoutId);
   }, [isHolidayMode]);
-  // Shooting star state
-  const [shootingStar, setShootingStar] = useState({
-    key: 0,
-    active: false,
-    left: 0,
-    top: 0,
-    angle: 0
-  });
-    // Shooting star effect for holiday mode
-    useEffect(() => {
-      let timeoutId;
-      function launchShootingStar() {
-        // Randomize start/end positions and angle
-        const left = Math.random() * 60 + 20; // 20vw to 80vw
-        const top = Math.random() * 20 + 5; // 5vh to 25vh
-        const angle = Math.random() * 30 - 15; // -15deg to +15deg
-        setShootingStar({
-          key: Date.now(),
-          active: true,
-          left,
-          top,
-          angle
-        });
-        // Hide after animation duration
-        setTimeout(() => setShootingStar(s => ({ ...s, active: false })), 1800);
-        // Schedule next shooting star
-        timeoutId = setTimeout(launchShootingStar, 3500 + Math.random() * 4000);
-      }
-      if (isHolidayMode) {
-        launchShootingStar();
-      } else {
-        setShootingStar(s => ({ ...s, active: false }));
-      }
-      return () => clearTimeout(timeoutId);
-    }, [isHolidayMode]);
   const particleIntervalRef = useRef(null);
   const confettiIntervalRef = useRef(null);
   
