@@ -8,16 +8,15 @@ const ShootingStar = () => {
     let timeoutIds = [];
 
     const createShootingStar = () => {
-      // Rare occurrence - mostly 1 at a time
-      const count = Math.random() > 0.8 ? 2 : 1;
+      // Very rare - mostly single occurrence
+      const count = Math.random() > 0.85 ? 2 : 1;
       const newStars = [];
 
       for (let i = 0; i < count; i++) {
-        // Start from right side, random upper position
-        const left = Math.random() * 35 + 55; // 55vw to 90vw
-        const top = Math.random() * 20 + 3; // 3vh to 23vh
-        // Vary speed slightly for natural feel
-        const duration = 0.7 + Math.random() * 0.4; // 0.7s to 1.1s
+        // Start from right side, varied upper positions
+        const left = Math.random() * 30 + 60; // 60vw to 90vw
+        const top = Math.random() * 18 + 4; // 4vh to 22vh
+        const duration = 0.7 + Math.random() * 0.25; // 0.7s to 0.95s
         
         newStars.push({
           id: Date.now() + i,
@@ -34,18 +33,18 @@ const ShootingStar = () => {
       newStars.forEach(star => {
         const timeoutId = setTimeout(() => {
           setShootingStars(prev => prev.filter(s => s.id !== star.id));
-        }, (star.duration + 0.2) * 1000);
+        }, (star.duration + 0.15) * 1000);
         timeoutIds.push(timeoutId);
       });
 
-      // Long random pauses between occurrences (5-12 seconds)
-      // This makes it feel rare and easily missable
-      const nextTimeout = setTimeout(createShootingStar, 5000 + Math.random() * 7000);
+      // Long pauses between occurrences (6-15 seconds)
+      // Makes it feel rare and easy to miss
+      const nextTimeout = setTimeout(createShootingStar, 6000 + Math.random() * 9000);
       timeoutIds.push(nextTimeout);
     };
 
-    // Start with a random delay
-    const initialTimeout = setTimeout(createShootingStar, 2000 + Math.random() * 3000);
+    // Start with random initial delay
+    const initialTimeout = setTimeout(createShootingStar, 3000 + Math.random() * 4000);
     timeoutIds.push(initialTimeout);
 
     return () => {
