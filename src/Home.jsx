@@ -127,60 +127,48 @@ export default function Home() {
             pointer-events: none;
             box-shadow: 0 0 6px 1px #fffbe7cc;
           }
-          .shooting-star {
-            position: absolute;
-            width: 2px;
-            height: 120px;
-            background: linear-gradient(265deg, #fffbe7 0%, #facc15 60%, transparent 100%);
-            border-radius: 50px;
-            box-shadow: 0 0 16px 4px #fffbe7cc;
-            pointer-events: none;
-            opacity: 0.85;
-            transform: rotate(-25deg);
-            animation: shootingStar 2.2s cubic-bezier(0.7,0.1,0.9,0.7) infinite;
-            animation-delay: 1.2s;
+          .night-star.twinkle {
+            animation: twinkle 2s ease-in-out infinite;
           }
-          @keyframes shootingStar {
-            0% {
-              left: 80vw;
-              top: 10vh;
-              opacity: 0;
+          @keyframes twinkle {
+            0%, 100% {
+              opacity: 0.3;
+              transform: scale(0.8);
             }
-            5% {
+            50% {
               opacity: 1;
-            }
-            60% {
-              opacity: 1;
-            }
-            100% {
-              left: 10vw;
-              top: 70vh;
-              opacity: 0;
+              transform: scale(1.2);
             }
           }
         `}</style>
-        {/* Static stars */}
-        {Array.from({ length: 80 }).map((_, i) => {
-          const size = Math.random() * 1.5 + 0.5;
+        {/* Static stars with twinkling effect */}
+        {Array.from({ length: 120 }).map((_, i) => {
+          const size = Math.random() * 2 + 0.5;
           const left = Math.random() * 100;
           const top = Math.random() * 100;
-          const opacity = 0.5 + Math.random() * 0.5;
+          const opacity = 0.3 + Math.random() * 0.7;
+          const blur = Math.random() * 0.7;
+          const delay = Math.random() * 3;
+          const duration = 1.5 + Math.random() * 2.5;
+          const isTwinkle = Math.random() > 0.5;
           return (
             <div
               key={i}
-              className="night-star"
+              className={isTwinkle ? 'night-star twinkle' : 'night-star'}
               style={{
                 width: `${size + 1}px`,
                 height: `${size + 1}px`,
                 left: `${left}%`,
                 top: `${top}%`,
                 opacity,
-                filter: `blur(${Math.random() * 0.7}px)`
+                filter: `blur(${blur}px)`,
+                animationDelay: `${delay}s`,
+                animationDuration: `${duration}s`
               }}
             />
           );
         })}
-        {/* Realistic Shooting Star Animation */}
+        {/* Multiple Random Shooting Stars */}
         <ShootingStar />
       </div>
 
