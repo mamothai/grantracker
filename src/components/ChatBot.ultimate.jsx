@@ -25,6 +25,76 @@ const ChatBot = () => {
   const [conversationId] = useState(() => `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [particles, setParticles] = useState([]);
   const [confetti, setConfetti] = useState([]);
+  // Shooting star state
+  const [shootingStar, setShootingStar] = useState({
+    key: 0,
+    active: false,
+    left: 0,
+    top: 0,
+    angle: 0
+  });
+  // Shooting star effect for holiday mode
+  useEffect(() => {
+    let timeoutId;
+    function launchShootingStar() {
+      // Randomize start/end positions and angle
+      const left = Math.random() * 60 + 20; // 20vw to 80vw
+      const top = Math.random() * 20 + 5; // 5vh to 25vh
+      const angle = Math.random() * 30 - 15; // -15deg to +15deg
+      setShootingStar({
+        key: Date.now(),
+        active: true,
+        left,
+        top,
+        angle
+      });
+      // Hide after animation duration
+      setTimeout(() => setShootingStar(s => ({ ...s, active: false })), 1800);
+      // Schedule next shooting star
+      timeoutId = setTimeout(launchShootingStar, 3500 + Math.random() * 4000);
+    }
+    if (isHolidayMode) {
+      launchShootingStar();
+    } else {
+      setShootingStar(s => ({ ...s, active: false }));
+    }
+    return () => clearTimeout(timeoutId);
+  }, [isHolidayMode]);
+  // Shooting star state
+  const [shootingStar, setShootingStar] = useState({
+    key: 0,
+    active: false,
+    left: 0,
+    top: 0,
+    angle: 0
+  });
+    // Shooting star effect for holiday mode
+    useEffect(() => {
+      let timeoutId;
+      function launchShootingStar() {
+        // Randomize start/end positions and angle
+        const left = Math.random() * 60 + 20; // 20vw to 80vw
+        const top = Math.random() * 20 + 5; // 5vh to 25vh
+        const angle = Math.random() * 30 - 15; // -15deg to +15deg
+        setShootingStar({
+          key: Date.now(),
+          active: true,
+          left,
+          top,
+          angle
+        });
+        // Hide after animation duration
+        setTimeout(() => setShootingStar(s => ({ ...s, active: false })), 1800);
+        // Schedule next shooting star
+        timeoutId = setTimeout(launchShootingStar, 3500 + Math.random() * 4000);
+      }
+      if (isHolidayMode) {
+        launchShootingStar();
+      } else {
+        setShootingStar(s => ({ ...s, active: false }));
+      }
+      return () => clearTimeout(timeoutId);
+    }, [isHolidayMode]);
   const particleIntervalRef = useRef(null);
   const confettiIntervalRef = useRef(null);
   
@@ -861,6 +931,18 @@ const ChatBot = () => {
 
   return (
     <div className={`chatbot-container ${isHolidayMode ? 'holiday-mode' : ''}`}>
+      {/* Realistic Shooting Star Animation */}
+      {isHolidayMode && shootingStar.active && (
+        <div
+          key={shootingStar.key}
+          className="shooting-star-real"
+          style={{
+            left: `${shootingStar.left}vw`,
+            top: `${shootingStar.top}vh`,
+            '--angle': `${shootingStar.angle}deg`
+          }}
+        />
+      )}
       {/* Holiday Mode Overlay */}
       {isHolidayMode && (
         <div className="holiday-overlay">
@@ -868,7 +950,18 @@ const ChatBot = () => {
           <div className="snow-animation">
             <div className="snow-layer-1"></div>
           </div>
-          
+          {/* Shooting Star */}
+          {shootingStar.active && (
+            <div
+              key={shootingStar.key}
+              className="shooting-star-real"
+              style={{
+                left: `${shootingStar.left}vw`,
+                top: `${shootingStar.top}vh`,
+                transform: `rotate(${shootingStar.angle}deg)`
+              }}
+            />
+          )}
           {/* Particle System */}
           <div className="particle-system">
             {particles.map(particle => (
@@ -885,7 +978,6 @@ const ChatBot = () => {
               </div>
             ))}
           </div>
-          
           {/* Confetti System */}
           <div className="confetti-container">
             {confetti.map(piece => (
