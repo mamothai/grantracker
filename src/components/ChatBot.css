@@ -16,43 +16,45 @@
   animation: meteorFlight 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
 }
 
+/* Main fading trail behind the meteor */
 .shooting-star-real::before {
   content: '';
   position: absolute;
   top: 50%;
   right: 100%;
-  width: 70px;
-  height: 0.8px;
+  width: 100px;
+  height: 1.2px;
   background: linear-gradient(to left, 
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(255, 255, 255, 0.6) 15%,
-    rgba(240, 245, 255, 0.35) 35%,
-    rgba(200, 215, 245, 0.15) 60%,
-    rgba(180, 195, 225, 0.05) 85%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.7) 10%,
+    rgba(240, 245, 255, 0.45) 25%,
+    rgba(200, 215, 245, 0.25) 50%,
+    rgba(180, 195, 225, 0.1) 75%,
     transparent 100%
   );
   transform: translateY(-50%);
   border-radius: 50%;
-  filter: blur(0.2px);
-  animation: trailIonized 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
+  filter: blur(0.3px);
+  animation: trailFading 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
 }
 
+/* Secondary subtle trail layer */
 .shooting-star-real::after {
   content: '';
   position: absolute;
   top: 50%;
   right: 100%;
-  width: 45px;
-  height: 0.5px;
+  width: 60px;
+  height: 0.6px;
   background: linear-gradient(to left, 
-    rgba(255, 250, 240, 0.6) 0%,
-    rgba(245, 248, 255, 0.3) 40%,
-    transparent 100%
+    rgba(255, 250, 240, 0.7) 0%,
+    rgba(245, 248, 255, 0.4) 30%,
+    transparent 70%
   );
   transform: translateY(-50%);
   border-radius: 50%;
-  filter: blur(0.15px);
-  animation: trailIonized 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
+  filter: blur(0.2px);
+  animation: trailFading 0.85s cubic-bezier(0.2, 0.08, 0.45, 1) forwards;
 }
 
 @keyframes meteorFlight {
@@ -78,22 +80,22 @@
   }
 }
 
-@keyframes trailIonized {
+@keyframes trailFading {
   0% {
     opacity: 0;
-    width: 5px;
+    width: 10px;
   }
   2% {
     opacity: 1;
-    width: 70px;
+    width: 100px;
   }
   50% {
     opacity: 0.7;
-    width: 70px;
+    width: 100px;
   }
   75% {
     opacity: 0.35;
-    width: 70px;
+    width: 100px;
   }
   100% {
     opacity: 0;
