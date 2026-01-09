@@ -1,6 +1,7 @@
 // src/Home.jsx
 import { Link } from "react-router-dom";
 import "./App.css";
+import ShootingStar from "./components/ShootingStar";
 
 function IconNetwork() {
   return (
@@ -179,8 +180,8 @@ export default function Home() {
             />
           );
         })}
-        {/* Shooting star */}
-        <div className="shooting-star" />
+        {/* Realistic Shooting Star Animation */}
+        <ShootingStar />
       </div>
 
       {/* HERO */}
