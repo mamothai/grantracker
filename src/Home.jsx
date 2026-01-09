@@ -104,7 +104,7 @@ function IconRobot() {
 export default function Home() {
   return (
     <main className="page-scroll" style={{ position: 'relative', overflow: 'visible', zIndex: 1 }}>
-      {/* Animated snowfall background */}
+      {/* Animated falling stars background */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -116,82 +116,63 @@ export default function Home() {
         overflow: 'hidden',
         background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%)'
       }}>
-        {/* Snowflakes container */}
+        {/* Stars container */}
         <style>{`
-          @keyframes snowfall {
+          @keyframes starfall {
             0% {
-              transform: translateY(-10vh) translateX(0);
+              transform: translateY(-10vh) scale(1) rotate(0deg);
               opacity: 1;
             }
-            90% {
+            80% {
               opacity: 1;
             }
             100% {
-              transform: translateY(100vh) translateX(100px);
+              transform: translateY(100vh) scale(0.7) rotate(360deg);
               opacity: 0;
             }
           }
-          @keyframes snowfall-2 {
-            0% {
-              transform: translateY(-10vh) translateX(0);
-              opacity: 1;
-            }
-            90% {
-              opacity: 1;
-            }
-            100% {
-              transform: translateY(100vh) translateX(-50px);
-              opacity: 0;
-            }
-          }
-          @keyframes snowfall-3 {
-            0% {
-              transform: translateY(-10vh) translateX(0);
-              opacity: 1;
-            }
-            90% {
-              opacity: 1;
-            }
-            100% {
-              transform: translateY(100vh) translateX(70px);
-              opacity: 0;
-            }
-          }
-          @keyframes sway {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(30px); }
-          }
-          .snowflake {
+          .falling-star {
             position: absolute;
-            width: 10px;
-            height: 10px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            width: 2px;
+            height: 18px;
+            background: linear-gradient(180deg, #fffbe7 0%, #facc15 80%, transparent 100%);
+            border-radius: 50px;
+            box-shadow: 0 0 8px 2px #fffbe7cc;
             pointer-events: none;
+          }
+          .falling-star::after {
+            content: '';
+            display: block;
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 6px;
+            height: 6px;
+            background: #fffbe7;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 8px 2px #fffbe7cc;
           }
         `}</style>
 
-        {/* Generate snowflakes dynamically */}
-        {[...Array(60)].map((_, i) => {
-          const duration = 10 + Math.random() * 15;
-          const delay = Math.random() * 5;
+        {/* Generate stars dynamically */}
+        {[...Array(40)].map((_, i) => {
+          const duration = 5 + Math.random() * 8;
+          const delay = Math.random() * 6;
           const leftPos = Math.random() * 100;
-          const size = 6 + Math.random() * 8;
-          const animationNames = ['snowfall', 'snowfall-2', 'snowfall-3'];
-          const animation = animationNames[i % 3];
-          
+          const size = 10 + Math.random() * 10;
+          const rotate = Math.random() * 360;
           return (
             <div
               key={i}
-              className="snowflake"
+              className="falling-star"
               style={{
                 left: `${leftPos}%`,
                 top: `-${Math.random() * 10}vh`,
-                width: `${size}px`,
                 height: `${size}px`,
-                animation: `${animation} ${duration}s linear ${delay}s infinite`,
-                opacity: 0.6 + Math.random() * 0.4,
+                transform: `rotate(${rotate}deg)`,
+                animation: `starfall ${duration}s linear ${delay}s infinite`,
+                opacity: 0.7 + Math.random() * 0.3,
                 filter: `blur(${Math.random() * 0.5}px)`
               }}
             />
