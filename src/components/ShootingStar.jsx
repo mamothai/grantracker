@@ -8,40 +8,44 @@ const ShootingStar = () => {
     let timeoutIds = [];
 
     const createShootingStar = () => {
-      // Random number of shooting stars (1-2) for natural look
-      const count = Math.floor(Math.random() * 2) + 1;
+      // Rare occurrence - mostly 1 at a time
+      const count = Math.random() > 0.8 ? 2 : 1;
       const newStars = [];
 
       for (let i = 0; i < count; i++) {
-        // Start from the right side, upper portion of the sky
-        const left = Math.random() * 40 + 50; // 50vw to 90vw
-        const top = Math.random() * 25 + 5; // 5vh to 30vh
+        // Start from right side, random upper position
+        const left = Math.random() * 35 + 55; // 55vw to 90vw
+        const top = Math.random() * 20 + 3; // 3vh to 23vh
+        // Vary speed slightly for natural feel
+        const duration = 0.7 + Math.random() * 0.4; // 0.7s to 1.1s
         
         newStars.push({
           id: Date.now() + i,
           left,
-          top
+          top,
+          duration
         });
       }
 
       // Add new stars to state
       setShootingStars(prev => [...prev, ...newStars]);
 
-      // Remove stars after animation completes (0.8s duration)
+      // Remove stars after animation completes
       newStars.forEach(star => {
         const timeoutId = setTimeout(() => {
           setShootingStars(prev => prev.filter(s => s.id !== star.id));
-        }, 900);
+        }, (star.duration + 0.2) * 1000);
         timeoutIds.push(timeoutId);
       });
 
-      // Schedule next shooting star - random interval for natural feel
-      const nextTimeout = setTimeout(createShootingStar, 2000 + Math.random() * 4000);
+      // Long random pauses between occurrences (5-12 seconds)
+      // This makes it feel rare and easily missable
+      const nextTimeout = setTimeout(createShootingStar, 5000 + Math.random() * 7000);
       timeoutIds.push(nextTimeout);
     };
 
-    // Start the shooting stars
-    const initialTimeout = setTimeout(createShootingStar, 1000);
+    // Start with a random delay
+    const initialTimeout = setTimeout(createShootingStar, 2000 + Math.random() * 3000);
     timeoutIds.push(initialTimeout);
 
     return () => {
@@ -57,7 +61,8 @@ const ShootingStar = () => {
           className="shooting-star-real"
           style={{
             left: `${star.left}vw`,
-            top: `${star.top}vh`
+            top: `${star.top}vh`,
+            animationDuration: `${star.duration}s`
           }}
         />
       ))}

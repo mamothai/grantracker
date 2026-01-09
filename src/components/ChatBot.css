@@ -1,18 +1,19 @@
-/* Realistic Shooting Star Animation */
+/* Ultra-Realistic Shooting Star Animation - Based on atmospheric entry behavior */
 .shooting-star-real {
   position: absolute;
-  width: 3px;
-  height: 3px;
+  width: 2.5px;
+  height: 2.5px;
   background: #fff;
   border-radius: 50%;
   box-shadow: 
-    0 0 6px 3px rgba(255, 255, 255, 0.9),
-    0 0 12px 6px rgba(255, 255, 200, 0.6),
-    0 0 20px 10px rgba(255, 250, 150, 0.3);
+    0 0 4px 2px rgba(255, 255, 255, 1),
+    0 0 8px 4px rgba(255, 255, 240, 0.8),
+    0 0 12px 6px rgba(255, 250, 200, 0.4),
+    0 0 20px 10px rgba(255, 245, 180, 0.2);
   pointer-events: none;
   opacity: 0;
   z-index: 10;
-  animation: shootingStarMove 0.8s cubic-bezier(0.25, 0.1, 0.5, 1) forwards;
+  animation: meteorFlight 0.9s cubic-bezier(0.15, 0.05, 0.4, 1) forwards;
 }
 
 .shooting-star-real::before {
@@ -20,18 +21,19 @@
   position: absolute;
   top: 50%;
   right: 100%;
-  width: 80px;
-  height: 1.5px;
+  width: 90px;
+  height: 1px;
   background: linear-gradient(to left, 
-    rgba(255, 255, 255, 0.9) 0%, 
-    rgba(255, 255, 255, 0.7) 20%, 
-    rgba(200, 220, 255, 0.4) 50%, 
-    rgba(150, 180, 255, 0.1) 80%, 
-    transparent 100%);
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.7) 15%,
+    rgba(220, 235, 255, 0.4) 40%,
+    rgba(180, 210, 255, 0.2) 70%,
+    rgba(150, 190, 255, 0.05) 100%
+  );
   transform: translateY(-50%);
   border-radius: 50%;
-  filter: blur(0.5px);
-  animation: trailFade 0.8s cubic-bezier(0.25, 0.1, 0.5, 1) forwards;
+  filter: blur(0.3px);
+  animation: trailPlasma 0.9s cubic-bezier(0.15, 0.05, 0.4, 1) forwards;
 }
 
 .shooting-star-real::after {
@@ -39,49 +41,59 @@
   position: absolute;
   top: 50%;
   right: 100%;
-  width: 50px;
-  height: 1px;
+  width: 60px;
+  height: 0.8px;
   background: linear-gradient(to left, 
-    rgba(255, 250, 200, 0.8) 0%, 
-    rgba(255, 245, 180, 0.5) 30%, 
-    rgba(200, 220, 255, 0.2) 60%, 
-    transparent 100%);
+    rgba(255, 250, 220, 0.8) 0%,
+    rgba(255, 245, 200, 0.5) 30%,
+    rgba(200, 220, 255, 0.2) 60%,
+    transparent 100%
+  );
   transform: translateY(-50%);
   border-radius: 50%;
-  filter: blur(0.3px);
-  animation: trailFade 0.8s cubic-bezier(0.25, 0.1, 0.5, 1) forwards;
+  filter: blur(0.2px);
+  animation: trailPlasma 0.9s cubic-bezier(0.15, 0.05, 0.4, 1) forwards;
 }
 
-@keyframes shootingStarMove {
+@keyframes meteorFlight {
   0% {
     opacity: 0;
-    transform: translateX(0) translateY(0);
+    transform: translateX(0) translateY(0) scale(0.8);
   }
-  3% {
+  2% {
     opacity: 1;
-    transform: translateX(0) translateY(0);
+    transform: translateX(0) translateY(0) scale(1);
   }
-  70% {
-    opacity: 0.8;
+  50% {
+    opacity: 1;
+    transform: translateX(-25vw) translateY(12vh) scale(1.1);
+  }
+  75% {
+    opacity: 0.7;
+    transform: translateX(-45vw) translateY(22vh) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translateX(-50vw) translateY(25vh);
+    transform: translateX(-60vw) translateY(30vh) scale(0.9);
   }
 }
 
-@keyframes trailFade {
+@keyframes trailPlasma {
   0% {
     opacity: 0;
-    width: 80px;
+    width: 10px;
   }
-  5% {
+  3% {
     opacity: 1;
-    width: 80px;
+    width: 90px;
   }
-  60% {
-    opacity: 0.6;
-    width: 80px;
+  50% {
+    opacity: 0.8;
+    width: 90px;
+  }
+  80% {
+    opacity: 0.4;
+    width: 90px;
   }
   100% {
     opacity: 0;
