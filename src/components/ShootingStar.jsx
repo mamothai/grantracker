@@ -14,35 +14,36 @@ const ShootingStar = () => {
 
       for (let i = 0; i < count; i++) {
         // Start from the right side, upper portion of the sky
-        const left = Math.random() * 40 + 50; // 50vw to 90vw
-        const top = Math.random() * 25 + 5; // 5vh to 30vh
+        const left = Math.random() * 50 + 40; // 40vw to 90vw
+        const top = Math.random() * 30 + 5; // 5vh to 35vh
+        const duration = 1 + Math.random() * 0.8; // 1s to 1.8s
         
         newStars.push({
           id: Date.now() + i,
           left,
-          top
+          top,
+          duration
         });
       }
 
       // Add new stars to state
       setShootingStars(prev => [...prev, ...newStars]);
 
-      // Remove stars after animation completes (1.5s duration)
+      // Remove stars after animation completes
       newStars.forEach(star => {
         const timeoutId = setTimeout(() => {
           setShootingStars(prev => prev.filter(s => s.id !== star.id));
-        }, 1600);
+        }, (star.duration + 0.2) * 1000);
         timeoutIds.push(timeoutId);
       });
 
       // Schedule next batch of shooting stars
-      // Random interval between 2s and 5s for more variety
-      const nextTimeout = setTimeout(createShootingStar, 2000 + Math.random() * 3000);
+      const nextTimeout = setTimeout(createShootingStar, 2500 + Math.random() * 3500);
       timeoutIds.push(nextTimeout);
     };
 
     // Start the shooting stars after a short delay
-    const initialTimeout = setTimeout(createShootingStar, 1000);
+    const initialTimeout = setTimeout(createShootingStar, 1500);
     timeoutIds.push(initialTimeout);
 
     return () => {
@@ -58,7 +59,8 @@ const ShootingStar = () => {
           className="shooting-star-real"
           style={{
             left: `${star.left}vw`,
-            top: `${star.top}vh`
+            top: `${star.top}vh`,
+            animationDuration: `${star.duration}s`
           }}
         />
       ))}
