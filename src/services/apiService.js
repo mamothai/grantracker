@@ -3,6 +3,56 @@
 
 import GrantDataExtractor from '../components/GrantDataExtractor.js';
 
+// --- OpenAI Integration ---
+// Add your OpenAI API key below (or set via environment variable)
+const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY || '';
+
+export async function askOpenAI(message, sessionId = 'default', language = 'en') {
+  if (!OPENAI_API_KEY) {
+    // No key, fallback to mock
+    return MOCK_RESPONSES.chat.POST(message, sessionId, language);
+  }
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: 'You are a helpful grant discovery assistant for a government portal. Answer clearly and concisely.' },
+          { role: 'user', content: message }
+        ],
+        user: sessionId,
+        temperature: 0.7
+      })
+    });
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || 'Sorry, I could not get a response.';
+    return {
+      text,
+      timestamp: new Date().toISOString(),
+      sessionId,
+      language,
+      metadata: {
+        processed: true,
+        intent: 'ai',
+        confidence: 0.99
+      }
+    };
+  } catch (error) {
+    return {
+      text: 'Sorry, there was an error connecting to the AI service.',
+      timestamp: new Date().toISOString(),
+      sessionId,
+      language,
+      metadata: { processed: false, error: true }
+    };
+  }
+}
+
 // Mock API responses
 const MOCK_RESPONSES = {
   chat: {

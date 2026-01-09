@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { chatAPI } from '../services/apiService.js';
+import { chatAPI, askOpenAI } from '../services/apiService.js';
 // Santa image removed
 import './ChatBot.css';
 
@@ -279,6 +279,51 @@ const ChatBot = () => {
 
   // Enhanced response generation with intelligent, contextual responses
   const generateResponse = (query, intent) => {
+    const t = translations[language] || translations.en;
+    const currentHour = new Date().getHours();
+    // ...existing code...
+    const response = responses[intent.intent];
+    return typeof response === 'function' ? response(intent) : response || responses.unknown;
+  };
+
+  // --- Main send handler: uses OpenAI if enabled, else local logic ---
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+    const userMessage = {
+      id: Date.now().toString(),
+      text: inputValue,
+      sender: 'user',
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue('');
+    setIsLoading(true);
+    setIsTyping(true);
+
+    let botResponse;
+    if (typeof askOpenAI === 'function') {
+      // Try OpenAI API (will fallback to mock if no key)
+      botResponse = await askOpenAI(userMessage.text, conversationId, language);
+    } else {
+      // Fallback to local intent/response
+      const intent = analyzeIntent(userMessage.text);
+      botResponse = {
+        id: Date.now().toString() + '_bot',
+        text: generateResponse(userMessage.text, intent),
+        sender: 'bot',
+        timestamp: new Date(),
+        confidence: intent.confidence || 0.9
+      };
+    }
+
+    setMessages((prev) => [...prev, {
+      ...botResponse,
+      sender: 'bot',
+      timestamp: new Date(),
+    }]);
+    setIsLoading(false);
+    setIsTyping(false);
+  };
     const t = translations[language] || translations.en;
     const currentHour = new Date().getHours();
     
@@ -1126,7 +1171,7 @@ const ChatBot = () => {
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyPress={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
                 placeholder={isHolidayMode 
                   ? "Ho ho ho! What grant are you looking for? 🎄"
                   : "Ask about grants or navigation..."
