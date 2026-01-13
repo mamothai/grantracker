@@ -1,8 +1,15 @@
-/* Globe 3D Canvas Styles */
-.globe-canvas {
+/* Globe 3D Container Styles */
+.globe-container {
   width: 320px;
   height: 320px;
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin: 0 auto;
+}
+
+.globe-container canvas {
+  width: 100%;
+  height: 100%;
   filter: drop-shadow(0 0 30px rgba(6, 182, 212, 0.4)) drop-shadow(0 0 60px rgba(6, 182, 212, 0.2));
 }

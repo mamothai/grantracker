@@ -2,134 +2,161 @@ import React, { useEffect, useRef } from 'react';
 import './Globe3D.css';
 
 const Globe3D = () => {
-  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    const ctx = canvas.getContext('2d');
-    let animationId;
-    let rotation = 0;
+    // Dynamically import Three.js from CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    script.onload = () => {
+      const THREE = window.THREE;
 
-    const draw = () => {
-      const width = canvas.width;
-      const height = canvas.height;
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const radius = 85;
-
-      // Clear canvas
-      ctx.fillStyle = 'rgba(10, 10, 26, 0)';
-      ctx.fillRect(0, 0, width, height);
-
-      // Draw globe
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(rotation);
-
-      // Draw ocean (base sphere)
-      const oceanGradient = ctx.createRadialGradient(-15, -15, 20, 0, 0, radius);
-      oceanGradient.addColorStop(0, '#1e90ff');
-      oceanGradient.addColorStop(0.6, '#0066cc');
-      oceanGradient.addColorStop(1, '#003d99');
+      // Scene setup
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, 320 / 320, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       
-      ctx.fillStyle = oceanGradient;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, 0, Math.PI * 2);
-      ctx.fill();
+      renderer.setSize(320, 320);
+      renderer.setClearColor(0x000000, 0);
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
 
-      // Draw continents (North America)
+      camera.position.z = 2.5;
+
+      // Create Earth sphere
+      const geometry = new THREE.SphereGeometry(1, 64, 64);
+
+      // Create canvas texture for Earth
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      // Draw ocean blue background
+      ctx.fillStyle = '#1a4d7a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw continents with realistic shapes
       ctx.fillStyle = '#2d5016';
+
+      // North America
       ctx.beginPath();
-      ctx.ellipse(-35, -15, 22, 25, -0.3, 0, Math.PI * 2);
+      ctx.ellipse(canvas.width * 0.2, canvas.height * 0.35, 120, 150, -0.3, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw continents (South America)
-      ctx.fillStyle = '#3a6b1f';
+      // Central America
       ctx.beginPath();
-      ctx.ellipse(-25, 20, 12, 18, 0.2, 0, Math.PI * 2);
+      ctx.ellipse(canvas.width * 0.25, canvas.height * 0.52, 40, 60, 0.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw continents (Europe/Africa)
-      ctx.fillStyle = '#2d5016';
+      // South America
       ctx.beginPath();
-      ctx.ellipse(15, -10, 18, 30, 0.1, 0, Math.PI * 2);
+      ctx.ellipse(canvas.width * 0.27, canvas.height * 0.68, 60, 90, 0.1, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw continents (Asia)
-      ctx.fillStyle = '#3a6b1f';
+      // Europe
       ctx.beginPath();
-      ctx.ellipse(30, 5, 28, 22, 0.15, 0, Math.PI * 2);
+      ctx.ellipse(canvas.width * 0.52, canvas.height * 0.28, 80, 60, 0.1, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw Australia
-      ctx.fillStyle = '#2d5016';
+      // Africa
       ctx.beginPath();
-      ctx.ellipse(50, 30, 8, 10, 0.3, 0, Math.PI * 2);
+      ctx.ellipse(canvas.width * 0.55, canvas.height * 0.55, 100, 120, 0.05, 0, Math.PI * 2);
       ctx.fill();
 
-      // Add cloud texture
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      // Asia
       ctx.beginPath();
-      ctx.ellipse(-20, -30, 35, 20, 0.4, 0, Math.PI * 2);
+      ctx.ellipse(canvas.width * 0.72, canvas.height * 0.38, 150, 110, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Australia
+      ctx.beginPath();
+      ctx.ellipse(canvas.width * 0.82, canvas.height * 0.65, 50, 60, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Greenland
+      ctx.beginPath();
+      ctx.ellipse(canvas.width * 0.42, canvas.height * 0.15, 40, 70, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Add polar ice caps
+      ctx.fillStyle = '#e0e0e0';
+      ctx.beginPath();
+      ctx.ellipse(canvas.width * 0.5, canvas.height * 0.05, canvas.width * 0.4, canvas.height * 0.08, 0, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.beginPath();
-      ctx.ellipse(25, 15, 25, 15, -0.2, 0, Math.PI * 2);
+      ctx.ellipse(canvas.width * 0.5, canvas.height * 0.95, canvas.width * 0.4, canvas.height * 0.08, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Add atmospheric glow
-      ctx.shadowColor = 'rgba(6, 182, 212, 0.4)';
-      ctx.shadowBlur = 30;
-      ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, 0, Math.PI * 2);
-      ctx.stroke();
+      // Add cloud layer
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      for (let i = 0; i < 30; i++) {
+        ctx.beginPath();
+        ctx.ellipse(
+          Math.random() * canvas.width,
+          Math.random() * canvas.height,
+          Math.random() * 60 + 20,
+          Math.random() * 20 + 10,
+          Math.random() * Math.PI,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
 
-      // Add top highlight
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.beginPath();
-      ctx.ellipse(-20, -70, 35, 15, 0, 0, Math.PI * 2);
-      ctx.fill();
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.MeshPhongMaterial({ map: texture });
+      const sphere = new THREE.Mesh(geometry, material);
+      scene.add(sphere);
 
-      // Add subtle side lighting
-      const sideGradient = ctx.createLinearGradient(-radius, 0, radius, 0);
-      sideGradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
-      sideGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
-      sideGradient.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
-      
-      ctx.fillStyle = sideGradient;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, 0, Math.PI * 2);
-      ctx.fill();
+      // Add lighting
+      const light1 = new THREE.DirectionalLight(0xffffff, 1);
+      light1.position.set(5, 3, 5);
+      scene.add(light1);
 
-      ctx.restore();
+      const light2 = new THREE.DirectionalLight(0xffffff, 0.5);
+      light2.position.set(-5, -3, -5);
+      scene.add(light2);
 
-      // Update rotation
-      rotation += 0.001;
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
 
-      animationId = requestAnimationFrame(draw);
+      // Animation loop
+      let animationId;
+      const animate = () => {
+        animationId = requestAnimationFrame(animate);
+        sphere.rotation.y += 0.0005;
+        renderer.render(scene, camera);
+      };
+
+      animate();
+
+      // Cleanup function
+      return () => {
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+        renderer.dispose();
+        geometry.dispose();
+        material.dispose();
+        texture.dispose();
+      };
     };
 
-    draw();
+    document.head.appendChild(script);
 
     return () => {
-      if (animationId) {
-        cancelAnimationFrame(animationId);
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
     };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="globe-canvas"
-      width={320}
-      height={320}
-    />
-  );
+  return <div ref={containerRef} className="globe-container" />;
 };
 
 export default Globe3D;
