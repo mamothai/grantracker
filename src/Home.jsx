@@ -2,6 +2,7 @@
 import { Link } from "react-router-dom";
 import "./App.css";
 import ShootingStar from "./components/ShootingStar";
+import AdvancedGrantChatBot from "./components/AdvancedGrantChatBot";
 
 function IconNetwork() {
   return (
@@ -103,9 +104,12 @@ function IconRobot() {
 }
 
 export default function Home() {
-
   return (
     <main className="page-scroll" style={{ position: 'relative', overflow: 'visible', zIndex: 1 }}>
+      {/* Snowflake Animation Overlay */}
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 100, pointerEvents: 'none' }}>
+        <AdvancedGrantChatBot />
+      </div>
       {/* Night sky background with static stars and shooting star animation */}
       <div style={{
         position: 'fixed',

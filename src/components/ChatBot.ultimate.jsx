@@ -66,30 +66,33 @@ const ChatBot = () => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   
-  // Multi-language support
+  // Multi-language support with New Year 2026 greeting
   const translations = {
     en: {
-      welcome: "Hello! I'm your advanced grant discovery assistant. I can help you find grants, check eligibility, understand requirements, and navigate the platform. What would you like to explore?",
+      welcome: "🎉 Happy New Year 2026! 🎊\n\nWelcome! I'm your advanced grant discovery assistant. I can help you find grants, check eligibility, understand requirements, and navigate the platform. What would you like to explore?",
       help: "I can help you with:\n\n• Finding grants and funding opportunities\n• Checking eligibility requirements\n• Understanding application processes\n• Navigating to different sections\n• Information about deadlines and amounts\n\nWhat specific area interests you?",
-      greeting: "Hello! I'm your advanced grant discovery assistant. I can help you find grants, check eligibility, understand requirements, and navigate the platform. What would you like to explore?",
+      greeting: "🎉 Happy New Year 2026! 🎊\n\nHello! I'm your advanced grant discovery assistant. I can help you find grants, check eligibility, understand requirements, and navigate the platform. What would you like to explore?",
+      newYear2026: "🎉 Happy New Year 2026! 🎊\n\nMay your year be filled with grant opportunities and funding success! How can I assist you today?",
       analytics: "Analytics",
       history: "History", 
       settings: "Settings",
       holidayMode: "Holiday Mode"
     },
     es: {
-      welcome: "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. Puedo ayudarte a encontrar subvenciones, verificar elegibilidad, entender requisitos y navegar por la plataforma. ¿Qué te gustaría explorar?",
+      welcome: "🎉 ¡Feliz Año Nuevo 2026! 🎊\n\n¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. Puedo ayudarte a encontrar subvenciones, verificar elegibilidad, entender requisitos y navegar por la plataforma. ¿Qué te gustaría explorar?",
       help: "Puedo ayudarte con:\n\n• Encontrar subvenciones y oportunidades de financiación\n• Verificar requisitos de elegibilidad\n• Entender procesos de aplicación\n• Navegar por diferentes secciones\n• Información sobre fechas límite y cantidades\n\n¿Qué área específica te interesa?",
-      greeting: "¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?",
+      greeting: "🎉 ¡Feliz Año Nuevo 2026! 🎊\n\n¡Hola! Soy tu asistente avanzado de descubrimiento de subvenciones. ¿En qué puedo ayudarte hoy?",
+      newYear2026: "🎉 ¡Feliz Año Nuevo 2026! 🎊\n\n¡Que tu año esté lleno de oportunidades de subvenciones y éxito financiero! ¿Cómo puedo ayudarte hoy?",
       analytics: "Analíticas",
       history: "Historial",
       settings: "Configuración", 
       holidayMode: "Modo Festivo"
     },
     fr: {
-      welcome: "Bonjour! Je suis votre assistant avancé de découverte de subventions. Je peux vous aider à trouver des subventions, vérifier l'éligibilité, comprendre les exigences et naviguer sur la plateforme. Que souhaitez-vous explorer?",
+      welcome: "🎉 Bonne Année 2026! 🎊\n\nBonjour! Je suis votre assistant avancé de découverte de subventions. Je peux vous aider à trouver des subventions, vérifier l'éligibilité, comprendre les exigences et naviguer sur la plateforme. Que souhaitez-vous explorer?",
       help: "Je peux vous aider avec:\n\n• Trouver des subventions et opportunités de financement\n• Vérifier les critères d'éligibilité\n• Comprendre les processus de candidature\n• Naviguer vers différentes sections\n• Informations sur les délais et les montants\n\nQuel domaine spécifique vous intéresse?",
-      greeting: "Bonjour! Je suis votre assistant avancé de découverte de subvenciones. Comment puis-je vous aider aujourd'hui?",
+      greeting: "🎉 Bonne Année 2026! 🎊\n\nBonjour! Je suis votre assistant avancé de découverte de subvenciones. Comment puis-je vous aider aujourd'hui?",
+      newYear2026: "🎉 Bonne Année 2026! 🎊\n\nQue votre année soit remplie d'opportunités de subventions et de succès financier! Comment puis-je vous aider aujourd'hui?",
       analytics: "Analytique",
       history: "Historique",
       settings: "Paramètres",
@@ -971,7 +974,7 @@ const ChatBot = () => {
         aria-expanded={isOpen}
         title={isOpen ? 'Close chat (Ctrl+K)' : 'Open chat (Ctrl+K)'}
       >
-        {isOpen ? '×' : isHolidayMode ? '🎅' : '💬'}
+        {isOpen ? '×' : isHolidayMode ? '🎅' : '🎊'}
       </button>
 
       {/* Chat Window */}
@@ -985,12 +988,12 @@ const ChatBot = () => {
               </div>
               <div className="chatbot-header-info">
                 <h3 id="chatbot-title">
-                  {isHolidayMode ? 'Santa Grant Helper 🎄' : 'Grant Assistant Pro'}
+                  {isHolidayMode ? 'Santa Grant Helper 🎄' : '🎊 Grant Assistant Pro 2026 🎊'}
                 </h3>
                 <div className="chatbot-status">
                   <span className="status-indicator"></span>
-                  <span>{isHolidayMode ? '🎅 Online - Ho Ho Ho!' : 'Online'}</span>
-                  <span className="pro-badge">{isHolidayMode ? '🎄 Pro' : 'Pro'}</span>
+                  <span>{isHolidayMode ? '🎅 Online - Ho Ho Ho!' : '🎊 Online - Happy New Year 2026!'}</span>
+                  <span className="pro-badge">{isHolidayMode ? '🎄 Pro' : '🎊 Pro'}</span>
                   {isHolidayMode && <span className="holiday-badge">🎁 Festive</span>}
                 </div>
               </div>
@@ -1035,15 +1038,15 @@ const ChatBot = () => {
             {messages.length === 0 && (
               <div className="chatbot-empty-state">
                 <div className="chatbot-empty-icon">
-                  {isHolidayMode ? '🎅' : '🤖'}
+                  {isHolidayMode ? '🎅' : '🎊'}
                 </div>
                 <h4>
-                  {isHolidayMode ? 'Welcome to Santa Grant Helper 🎄' : 'Welcome to Grant Assistant Pro'}
+                  {isHolidayMode ? 'Welcome to Santa Grant Helper 🎄' : '🎊 Welcome to Grant Assistant Pro 2026 🎊'}
                 </h4>
                 <p>
                   {isHolidayMode 
                     ? 'Ho ho ho! Santa here to help you find the perfect grants for your projects! What grant would you like to discover?' 
-                    : 'Your intelligent grant discovery companion. I\'m here to help you find funding opportunities, understand requirements, and navigate the platform with ease.'
+                    : '🎉 Happy New Year 2026! 🎊\n\nYour intelligent grant discovery companion. I\'m here to help you find funding opportunities, understand requirements, and navigate the platform with ease.'
                   }
                 </p>
               </div>
@@ -1095,7 +1098,7 @@ const ChatBot = () => {
                         </div>
                       )}
                     </div>
-                  ) : '🤖'}
+                  ) : '🎊'}
                 </div>
                 <div className="chatbot-message-bubble">
                   <div className="chatbot-typing-indicator">
@@ -1107,9 +1110,9 @@ const ChatBot = () => {
                       </>
                     ) : (
                       <>
-                        <span className="typing-dot"></span>
-                        <span className="typing-dot"></span>
-                        <span className="typing-dot"></span>
+                        <span className="typing-dot" style={{ background: '#f59e0b' }}>🎊</span>
+                        <span className="typing-dot" style={{ background: '#dc2626' }}>✨</span>
+                        <span className="typing-dot" style={{ background: '#3b82f6' }}>⭐</span>
                       </>
                     )}
                   </div>
@@ -1122,7 +1125,15 @@ const ChatBot = () => {
                       }}>
                         🎄 Ho ho ho, thinking of perfect grants... 🎁
                       </span>
-                    ) : 'Thinking...'}
+                    ) : (
+                      <span style={{ 
+                        color: '#f59e0b',
+                        fontWeight: '600',
+                        textShadow: '0 0 5px rgba(245, 158, 11, 0.3)'
+                      }}>
+                        🎊 Thinking of grant opportunities for 2026... ⭐
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1142,7 +1153,7 @@ const ChatBot = () => {
                 onKeyPress={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
                 placeholder={isHolidayMode 
                   ? "Ho ho ho! What grant are you looking for? 🎄"
-                  : "Ask about grants or navigation..."
+                  : "🎊 Ask about grants or navigation..."
                 }
                 disabled={isLoading}
                 className="chatbot-input"
@@ -1157,38 +1168,26 @@ const ChatBot = () => {
                 className="chatbot-send-button"
                 aria-label="Send message"
               >
-                {isLoading ? '⏳' : isHolidayMode ? '🎅' : '➤'}
+                {isLoading ? '⏳' : isHolidayMode ? '🎅' : '🎊'}
               </button>
             </div>
 
             {/* Quick Actions */}
             <div className="chatbot-quick-actions" role="group" aria-label="Quick actions">
               <div className="quick-actions-label">
-                {isHolidayMode ? '🎄 Santa\'s Suggestions:' : 'Try asking:'}
+                {isHolidayMode ? '🎄 Santa\'s Suggestions:' : '🎊 Try asking:'}
               </div>
               <div className="quick-actions-list">
                 {quickActions.map((action, index) => (
                   <button
                     key={index}
-                    className="quick-action-button"
-                    onClick={(e) => {
-                      // Add visual feedback for holiday mode
-                      if (isHolidayMode) {
-                        e.target.style.transform = 'scale(0.95)';
-                        e.target.style.boxShadow = '0 0 20px rgba(220, 38, 38, 0.6)';
-                        setTimeout(() => {
-                          e.target.style.transform = 'scale(1)';
-                          e.target.style.boxShadow = '';
-                        }, 200);
-                      }
-                      handleQuickAction(action);
-                    }}
+                    onClick={() => handleQuickAction(action)}
                     disabled={isLoading}
                     aria-label={`Ask: ${action}`}
                   >
                     {isHolidayMode ? (
                       <>
-                        <span style={{ 
+                        <span style={{
                           marginRight: '4px',
                           animation: 'sparkle 1.5s ease-in-out infinite alternate'
                         }}>
