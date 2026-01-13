@@ -1,6 +1,7 @@
 // src/Home.jsx
 import { Link } from "react-router-dom";
 import "./App.css";
+import FallingSnowballs from "./components/FallingSnowballs";
 
 function IconNetwork() {
   return (
@@ -104,69 +105,8 @@ function IconRobot() {
 export default function Home() {
   return (
     <main className="page-scroll" style={{ position: 'relative', overflow: 'visible', zIndex: 1 }}>
-      {/* Night sky background with static stars */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-        background: 'radial-gradient(ellipse at 50% 20%, #232946 60%, #0a0a1a 100%)'
-      }}>
-        <style>{`
-          .night-star {
-            position: absolute;
-            border-radius: 50%;
-            background: white;
-            opacity: 0.7;
-            pointer-events: none;
-            box-shadow: 0 0 6px 1px #fffbe7cc;
-          }
-          .night-star.twinkle {
-            animation: twinkle 2s ease-in-out infinite;
-          }
-          @keyframes twinkle {
-            0%, 100% {
-              opacity: 0.3;
-              transform: scale(0.8);
-            }
-            50% {
-              opacity: 1;
-              transform: scale(1.2);
-            }
-          }
-        `}</style>
-        {/* Static stars with twinkling effect */}
-        {Array.from({ length: 120 }).map((_, i) => {
-          const size = Math.random() * 2 + 0.5;
-          const left = Math.random() * 100;
-          const top = Math.random() * 100;
-          const opacity = 0.3 + Math.random() * 0.7;
-          const blur = Math.random() * 0.7;
-          const delay = Math.random() * 3;
-          const duration = 1.5 + Math.random() * 2.5;
-          const isTwinkle = Math.random() > 0.5;
-          return (
-            <div
-              key={i}
-              className={isTwinkle ? 'night-star twinkle' : 'night-star'}
-              style={{
-                width: `${size + 1}px`,
-                height: `${size + 1}px`,
-                left: `${left}%`,
-                top: `${top}%`,
-                opacity,
-                filter: `blur(${blur}px)`,
-                animationDelay: `${delay}s`,
-                animationDuration: `${duration}s`
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* Falling Snowballs Background */}
+      <FallingSnowballs />
 
       {/* HERO */}
       <section className="panel panel-hero reveal visible" style={{ position: 'relative', overflow: 'hidden' }}>
