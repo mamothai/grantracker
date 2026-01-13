@@ -16,7 +16,7 @@ const FallingSnowballs = () => {
     const balls = Array.from({ length: SNOWBALL_COUNT }).map((_, i) => ({
       id: i,
       left: randomBetween(0, 100),
-      size: randomBetween(8, 24),
+      size: randomBetween(4, 14),
       duration: randomBetween(8, 16),
       delay: randomBetween(0, 5),
       swingDistance: randomBetween(-60, 60)
@@ -34,7 +34,7 @@ const FallingSnowballs = () => {
             newBalls[i] = {
               ...newBalls[i],
               left: randomBetween(0, 100),
-              size: randomBetween(8, 24),
+              size: randomBetween(4, 14),
               duration: randomBetween(8, 16),
               delay: randomBetween(0, 5),
               swingDistance: randomBetween(-60, 60)
