@@ -1,7 +1,7 @@
 // src/Home.jsx
 import { Link } from "react-router-dom";
 import "./App.css";
-import ShootingStar from "./components/ShootingStar";
+// import ShootingStar from "./components/ShootingStar";
 import AdvancedGrantChatBot from "./components/AdvancedGrantChatBot";
 
 function IconNetwork() {
@@ -173,7 +173,7 @@ export default function Home() {
           );
         })}
         {/* Multiple Random Shooting Stars */}
-        <ShootingStar />
+        {/* <ShootingStar /> */}
       </div>
 
       {/* HERO */}
