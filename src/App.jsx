@@ -3,21 +3,21 @@ import { Routes, Route, Navigate, Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
 import Home from "./Home.jsx";
-import About from "./About.jsx";
-import SuggestionBox from "./SuggestionBox.jsx";
-import GrantSectorChart from "./components/GrantSectorChart.jsx";
-import CreatorLogin from "./CreatorLogin.jsx";
-import CreateGrant from "./createGrant.jsx";
-import GovLogin from "./GovLogin.jsx";
-import GovDashboard from "./GovDashboard.jsx";
-import PublicView from "./PublicView.jsx";
-import SectorDetails from "./pages/SectorDetails.jsx";
-import BenefitsScheme from "./pages/BenefitsScheme.jsx";
+import About from "./features/pages/About.jsx";
+import SuggestionBox from "./features/pages/SuggestionBox.jsx";
+import GrantSectorChart from "./common/components/GrantSectorChart.jsx";
+import CreatorLogin from "./features/auth/CreatorLogin.jsx";
+import CreateGrant from "./features/pages/createGrant.jsx";
+import GovLogin from "./features/auth/GovLogin.jsx";
+import GovDashboard from "./features/auth/GovDashboard.jsx";
+import PublicView from "./features/pages/PublicView.jsx";
+import SectorDetails from "./features/pages/SectorDetails.jsx";
+import BenefitsScheme from "./features/pages/BenefitsScheme.jsx";
 
-import ChatBot from "./components/ChatBot.ultimate.jsx";
+import ChatBot from "./features/chatbot/ChatBot.jsx";
 
-import "./App.css";
-import "./scrollAnimations.css";
+import "./common/styles/App.css";
+import "./common/styles/scrollAnimations.css";
 
 // Initialize scroll animations using Intersection Observer
 function initScrollAnimations() {

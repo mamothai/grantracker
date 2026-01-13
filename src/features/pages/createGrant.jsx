@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
-import "./App.css";
+import "../../common/styles/App.css";
 
 export default function CreateGrant() {
   // simple auth check (creator must be logged in)

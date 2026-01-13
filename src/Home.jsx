@@ -1,8 +1,8 @@
 // src/Home.jsx
 import { Link } from "react-router-dom";
-import "./App.css";
-import FallingSnowballs from "./components/FallingSnowballs";
-import Globe3D from "./components/Globe3D";
+import "./common/styles/App.css";
+import FallingSnowballs from "./common/components/FallingSnowballs";
+import Globe3D from "./common/components/Globe3D";
 
 function IconNetwork() {
   return (

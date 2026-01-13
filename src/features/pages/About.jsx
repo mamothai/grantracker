@@ -1,5 +1,5 @@
 // src/About.jsx
-import "./App.css";
+import "../../common/styles/App.css";
 
 export default function About() {
   return (

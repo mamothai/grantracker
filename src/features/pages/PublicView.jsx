@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { GRANTS } from './data/grants'
-import './App.css'
+import { GRANTS } from '../../common/data/grants'
+import '../../common/styles/App.css'
 
 export default function PublicView() {
   const { id } = useParams()

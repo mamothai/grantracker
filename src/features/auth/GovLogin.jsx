@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import "./App.css";
+import "../../common/styles/App.css";
 
 export default function GovLogin() {
   const [email, setEmail] = useState("");

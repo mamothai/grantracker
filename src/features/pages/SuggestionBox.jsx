@@ -1,6 +1,6 @@
 // src/SuggestionBox.jsx
 import { useState } from "react";
-import "./App.css";
+import "../../common/styles/App.css";
 
 export default function SuggestionBox() {
   const [grantId, setGrantId] = useState("");

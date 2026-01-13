@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { chatAPI, askOpenAI } from '../services/apiService.js';
+import { chatAPI, askOpenAI } from '../../common/services/apiService.js';
 // Santa image removed
 import './ChatBot.css';
 

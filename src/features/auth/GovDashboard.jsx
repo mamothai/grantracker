@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link, Navigate } from 'react-router-dom'
-import './App.css'
+import '../../common/styles/App.css'
 
 export default function GovDashboard() {
   const [grantId, setGrantId] = useState('')

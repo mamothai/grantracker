@@ -2,7 +2,7 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
-import "../App.css";
+import "../styles/App.css";
 
 const COLORS = [
   "#06b6d4", // cyan
