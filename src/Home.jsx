@@ -2,6 +2,7 @@
 import { Link } from "react-router-dom";
 import "./App.css";
 import FallingSnowballs from "./components/FallingSnowballs";
+import Globe3D from "./components/Globe3D";
 
 function IconNetwork() {
   return (
@@ -157,12 +158,8 @@ export default function Home() {
         </div>
 
         <div className="panel-right reveal-right hero-image-container" style={{ position: 'relative' }}>
-          <div className="hero-image-wrapper" style={{ position: 'relative', zIndex: 2 }}>
-            <img 
-              src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80&auto=format&fit=crop" 
-              alt="Digital Network" 
-              className="hero-image"
-            />
+          <div className="hero-image-wrapper" style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Globe3D />
             <div className="hero-image-overlay"></div>
           </div>
           <div 
