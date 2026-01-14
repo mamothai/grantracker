@@ -988,7 +988,7 @@ const ChatBot = () => {
               </div>
               <div className="chatbot-header-info">
                 <h3 id="chatbot-title">
-                  {isHolidayMode ? 'Santa Grant Helper 🎄' : '🎊 Grant Assistant Pro 2026 🎊'}
+                  {isHolidayMode ? 'Santa Grant Helper 🎄' : '💬 Grant Assistant'}
                 </h3>
                 <div className="chatbot-status">
                   <span className="status-indicator"></span>
@@ -1041,7 +1041,7 @@ const ChatBot = () => {
                   {isHolidayMode ? '🎅' : '🎊'}
                 </div>
                 <h4>
-                  {isHolidayMode ? 'Welcome to Santa Grant Helper 🎄' : '🎊 Welcome to Grant Assistant Pro 2026 🎊'}
+                  {isHolidayMode ? 'Welcome to Santa Grant Helper 🎄' : '💬 Grant Assistant'}
                 </h4>
                 <p>
                   {isHolidayMode 
