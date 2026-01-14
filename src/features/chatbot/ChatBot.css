@@ -51,8 +51,8 @@
   right: 0;
   width: 100%;
   max-width: 420px;
-  height: 560px;
-  max-height: 75vh;
+  height: 480px;
+  max-height: 65vh;
   background: rgba(15, 22, 36, 0.92);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(6, 182, 212, 0.12);
