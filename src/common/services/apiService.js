@@ -5,7 +5,7 @@ import GrantDataExtractor from '../components/GrantDataExtractor.js';
 
 // --- OpenAI Integration ---
 // Add your OpenAI API key below (or set via environment variable)
-const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY || '';
+const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY || 'AIzaSyAdU52wJ4z3sWP5PMIoKi2YUQMiED0O_70';
 
 export async function askOpenAI(message, sessionId = 'default', language = 'en') {
   if (!OPENAI_API_KEY) {
