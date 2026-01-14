@@ -974,7 +974,7 @@ const ChatBot = () => {
         aria-expanded={isOpen}
         title={isOpen ? 'Close chat (Ctrl+K)' : 'Open chat (Ctrl+K)'}
       >
-        {isOpen ? '×' : isHolidayMode ? '🎅' : '🎊'}
+        {isOpen ? '×' : isHolidayMode ? '🎅' : '💬'}
       </button>
 
       {/* Chat Window */}
