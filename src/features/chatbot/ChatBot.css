@@ -51,8 +51,8 @@
   right: 0;
   width: 100%;
   max-width: 420px;
-  height: 600px;
-  max-height: 70vh;
+  height: 680px;
+  max-height: 85vh;
   background: rgba(15, 22, 36, 0.92);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(6, 182, 212, 0.12);
@@ -85,6 +85,8 @@
   align-items: center;
   flex-shrink: 0;
   backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 10;
 }
 
 .chatbot-header-content {
@@ -703,6 +705,11 @@
 .confetti-container,
 .holiday-overlay {
   display: none;
+}
+
+/* ========== QUICK ACTIONS ========== */
+.chatbot-quick-actions {
+  display: none !important;
 }
 
 /* ========== RESPONSIVE ========== */
